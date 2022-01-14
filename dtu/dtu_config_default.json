@@ -1,0 +1,104 @@
+{
+  "plate": 1,
+  "password": "123",
+  "conf": {
+    "1": {
+      "protocol": "tcp",
+      "ping": "",
+      "heartbeat": 30,
+      "url": "220.180.239.212",
+      "port": "9139",
+      "keepAlive": 300,
+      "serialID": 1
+    },
+    "2": {
+      "protocol": "tcp",
+      "ping": "",
+      "heartbeat": 30,
+      "url": "220.180.239.212",
+      "port": "8305",
+      "keepAlive": 300,
+      "serialID": 2
+    },
+    "3": {
+      "protocol": "mqtt",
+      "clientID": "test_mqtt",
+      "keepAlive": "",
+      "url": "broker-cn.emqx.io",
+      "port": "1883",
+      "cleanSession": true,
+      "subscribe": {"0": "/python/mqtt"},
+      "publish": {"0": "/python/mqtt"},
+      "qos": "0",
+      "retain": "1",
+      "serialID": "1"
+    },
+    "4": {
+      "protocol": "aliyun",
+      "type": "mos",
+      "keepAlive": "test_mos",
+      "clientID": "light01",
+      "Devicename": "a1QNbCDxIWM",
+      "ProductKey": "0bceb8010ade0df2e6989982e63f7601",
+      "DeviceSecret": "",
+      "ProductSecret": "",
+      "cleanSession": true,
+      "qos": "1",
+      "subscribe": {"0": "/a1QNbCDxIWM/light01/user/get"},
+      "publish": {"0": "/a1QNbCDxIWM/light01/user/update"},
+      "serialID": "1"
+    },
+    "5": {
+      "protocol": "txyun",
+      "type": "mos",
+      "keepAlive": "",
+      "clientID": "test_tx_mos",
+      "Devicename": "Smart_test01",
+      "ProductKey": "H7MBLRYXN9",
+      "DeviceSecret": "89c7tXT3s3grZTr/YFjxSg==",
+      "ProductSecret": "",
+      "cleanSession": true,
+      "qos": "1",
+      "subscribe": {"0": "H7MBLRYXN9/Smart_test01/control"},
+      "publish": {"0": "H7MBLRYXN9/Smart_test01/event"},
+      "serialID": "1"
+    }
+  },
+  "reg": 1,
+  "convert": 0,
+  "version": 100,
+  "nolog": 0,
+  "message": {},
+  "uconf": {
+    "1": {
+      "baudrate": "115200",
+      "databits": "8",
+      "parity": "0",
+      "stopbits": "1",
+      "flowctl": "0"
+    },
+    "2": {
+      "baudrate": "115200",
+      "databits": "8",
+      "parity": "0",
+      "stopbits": "1",
+      "flowctl": "0"
+    }
+  },
+  "fota": 1,
+  "pins": [
+    "pio1",
+    "pio2",
+    "pio3"
+  ],
+  "direction_pin": {},
+  "apn": [
+    "",
+    "",
+    ""
+  ],
+  "service_acquire": 0,
+  "work_mode": "command",
+  "auto_connect": 1,
+  "offline_storage": false
+}
