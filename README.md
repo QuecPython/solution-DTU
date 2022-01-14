@@ -4,6 +4,7 @@
 | :------ | ---------- | ---------- | --------------------- |
 | 1.0     | 2021-11-25 | 陈驰      | 初始版本                   |
 | 1.1     | 2021-11-30 | 陈驰      | 增加对DTU配套组件和服务的描述 |
+| 1.2     | 2022-01-14 | 陈驰      | 增加DTU代码和文档链接的描述 |
 
 ## DTU介绍
 
@@ -178,3 +179,25 @@ QPYCom的使用文档，参见安装目录下的`docs`文件夹。
 ### modbus模式
 
 modbus模式下，严格遵守modbus协议规范，且遵守modbus协议的DTU产品在行业内的应用规则：DTU作为主机，根据用户配置，周期性向从机设备索要数据，推送至云端。
+
+## DTU代码下载和使用文档
+
+### 代码下载
+
+`git clone https://gitee.com/qpy-solutions/dtu.git`
+或
+`git clone git@gitee.com:qpy-solutions/dtu.git`
+
+### 使用文档
+
+- DTU产品介绍：[点此进入][1]
+- DTU用户指导：[点此进入][2]
+- DTU协议规范：[点此进入][3]
+- DTU上位机工具用户指导：[点此进入][4]
+
+
+  [1]: https://python.quectel.com/doc/doc/Product_case/zh/dtu/DTU_Product_Introduction.html
+  [2]: https://python.quectel.com/doc/doc/Product_case/zh/dtu/DTU_User_Guides.html
+  [3]: https://python.quectel.com/doc/doc/Product_case/zh/dtu/DTU_Protocol_Specification.html
+  [4]: https://python.quectel.com/doc/doc/Product_case/zh/dtu/DTU_GUI_User_Guides.html
+  
