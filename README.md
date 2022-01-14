@@ -23,7 +23,7 @@
 - RTU功能 = DTU功能 + 控制单元。
 - 下文中的DTU等同于RTU。
 
-![RTU.png](./media/RTU.png)
+![RTU.png](./docs/media/RTU.png)
 
 ### 应用行业和场景
 
@@ -34,7 +34,7 @@
 - 消防安全
 - 市政管网等
 
-![industry.png](./media/industry.png)
+![industry.png](./docs/media/industry.png)
 
 ## 移远DTU及其能力
 
@@ -99,7 +99,7 @@
 
 我司的QuecPython开发板的板载资源丰富，支持照度传感器、温湿度传感器、喇叭接口、咪头接口、三色LED灯、LCD屏接口、Camera接口，及其它丰富的外设接口，配合下节将提及的GUI工具，可在QuecPython开发板上进行终端产品的原型验证。
 
-![](./media/dev_board.png)
+![](./docs/media/dev_board.png)
 
 #### 强大的上位机GUI工具
 
@@ -107,7 +107,7 @@
 
 [点此下载DTU GUI工具。](https://python.quectel.com/download)
 
-![](./media/gui_get_imei.png)
+![](./docs/media/gui_get_imei.png)
 
 #### QPYcom工具
 
@@ -119,7 +119,7 @@ QPYcom工具是一个集**QuecPython repl交互、PC和模组间文件传输、�
 
 QPYCom的使用文档，参见安装目录下的`docs`文件夹。
 
-![](./media/QPYCom_V1.8.png)
+![](./docs/media/QPYCom_V1.8.png)
 
 #### 线上生成配置文件
 
@@ -152,11 +152,11 @@ QPYCom的使用文档，参见安装目录下的`docs`文件夹。
 	
 	- RTU可直接作为主控，省去MCU及其周边电路，降低硬件成本
   
-	  ![Reduce_Hardware_Costs.png](./media/Reduce_Hardware_Costs.png)
+	  ![Reduce_Hardware_Costs.png](./docs/media/Reduce_Hardware_Costs.png)
 	
   - 可使用Python进行二次开发，降低软件开发成本
     
-    ![C2Py.png](./media/C2Py.png)
+    ![C2Py.png](./docs/media/C2Py.png)
 	  
 	- 我司多平台模组适用，使用Python开发，无需修改代码即可快速切换至不同模组
 	
@@ -169,11 +169,11 @@ QPYCom的使用文档，参见安装目录下的`docs`文件夹。
 
 ### 命令模式
 
-![CMD_Mode_Working_Principle.png](./media/CMD_Mode_Working_Principle.png)
+![CMD_Mode_Working_Principle.png](./docs/media/CMD_Mode_Working_Principle.png)
 
 ### 透传模式
 
-![Transparent_Mode_Working_Principle.png](./media/Transparent_Mode_Working_Principle.png)
+![Transparent_Mode_Working_Principle.png](./docs/media/Transparent_Mode_Working_Principle.png)
 
 ### modbus模式
 
