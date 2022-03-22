@@ -190,6 +190,20 @@
 | pubTopic | str | true | 发布主题 |
 | serialD | int | true | MQTT通道捆绑的串口ID (1~3) |
 
+##### 通道类型：移远云
+
+![](./media/gui_quecthing.png)
+
+| **字段** | **type** | **Required** | **含义** |
+| --- | --- | --- | --- |
+| keepAlive | int | false | 通信之间允许的最长时间段（以秒为单位）,默认为120，范围（60-1200）可不填 |
+| ProductKey | str | true | 产品key |
+| ProductSecret | str | false | 产品密钥|
+| QOS | int | false | MQTT消息服务质量（默认0，可选择0或1）0：发送者只发送一次消息，不进行重试 1：发送者最少发送一次消息，确保消息到达Broker |
+| SessionFlag | bool | true | 配置与云平台通信的数据是否采用session加密（默认值为False），True：加密，False：加密 |
+| sendMode | str | true | 移远云数据收发模式，phy：物模型，pass：透传 |
+| serialD | int | true | MQTT通道捆绑的串口ID (1~3) |
+
 ##### APN设置
 
 APN功能暂未上线

@@ -8,7 +8,6 @@ from aLiYun import aLiYun
 from TenCentYun import TXyun
 from umqtt import MQTTClient
 from machine import UART
-import uos
 uos.chdir('/usr/')
 from singleton import Singleton
 from t_h import SensorTH
@@ -42,6 +41,7 @@ class RET:
     PROTOCOLERR = "4008"
     REQERR1 = "4009"
     QUECIOTERR = "4010"
+    HWYUNERR = "4011"
     REQERR2 = "5000"
     # 功能错误
     PASSWORDERR = "5001"
@@ -89,6 +89,7 @@ error_map = {
     RET.TXYUNMQTTERR: u"txyun connect failed",
     RET.PROTOCOLERR: u"protocol parse error",
     RET.QUECIOTERR: u"quecthing connect failed",
+    RET.HWYUNERR: u"huaweiyun connect failed",
     # 功能错误
     RET.PASSWORDERR: u"password not found",
     RET.PASSWDVERIFYERR: u"password verify error",
@@ -120,6 +121,8 @@ CONFIG = {
 
 HISTORY_ERROR = []
 
+SERIAL_MAP = dict()
+CHANNELS = dict()
 
 
 """=================================================  singleton  ===================================================="""
@@ -130,6 +133,65 @@ dev_imei = modem.getDevImei()
 class DTUException(Exception):
     def __init__(self, message):
         self.message = message
+
+
+class ProdDocumentParse(object):
+
+    def __init__(self):
+        self.document = ""
+
+    def read(self, config_path):
+        if not self.document:
+            self.refresh_document(config_path)
+
+    def refresh_document(self, config_path):
+        try:
+            with open(config_path, mode="r") as f:
+                self.document = f.read()
+            return self.document  # new
+        except Exception as e:
+            # 加载旧版本文件
+            try:
+                with open(config_path + ".bak", mode="r") as f:
+                    self.document = f.read()
+                return self.document
+            except Exception as e:
+                # 加载出厂文件
+                try:
+                    with open(CONFIG['config_backup_path'], mode="r") as f:
+                        self.document = f.read()
+                    return self.document
+                except:
+                    print("'dtu_config.json', last version and default config not exist")
+                    raise Exception(RET.READFILEERR)
+
+    def _parse_document(self, parser_obj):
+        try:
+            document_loader = ujson.loads(self.document)
+        except Exception as e:
+            print(error_map.get(RET.JSONLOADERR))
+            raise RET.JSONLOADERR
+        try:
+            dtu_data_obj = parser_obj.reload(**document_loader)
+        except Exception as e:
+            # print("e = {}".format(e))
+            print("{}: {}".format(error_map.get(RET.JSONLOADERR), e))
+            raise RET.JSONPARSEERR
+        return dtu_data_obj
+
+    def parse(self, parser_obj):
+        config_path = CONFIG["config_path"]
+        if not self.exist_config_file(config_path):
+            # 从uart口读取数据
+            print(error_map.get(RET.CONFIGNOTEXIST))
+        else:
+            self.read(config_path=config_path)
+            return self._parse_document(parser_obj=parser_obj)
+
+    @staticmethod
+    def exist_config_file(config_path):
+        config_split = config_path.rsplit("/", 1)
+        return config_split[1] in uos.listdir(config_split[0])
 
 
 """=================================================== dtu object ==================================================="""
@@ -247,7 +309,7 @@ class ProdDtu(object):
             # 升级包下载地址的请求
             version = self.parse_data.version
             moduleType = ota[1]
-            download_url = "https://cloudota.quectel.com:8100/v2/fota/fw"
+            download_url = "https://cloudota.quectel.com:8100/v1/fota/fw"
             headers = {"access_token": access_token, "Content-Type": "application/json"}
             acquire_data = {
                 "version": str(version),
@@ -342,12 +404,13 @@ class ProdDtu(object):
         return data
 
     def server_filter(self):
-        if self.parse_data == 'command':
+        if self.parse_data.work_mode == 'command':
             for cid, channel in self.parse_data.conf.items():
-                if int(channel.serialID) in self.channel.serial_channel_dict:
-                    self.channel.serial_channel_dict[int(channel.serialID)].append(cid)
+                serial_id = int(channel.get("serialID"))
+                if serial_id in self.channel.serial_channel_dict:
+                    self.channel.serial_channel_dict[serial_id].append(cid)
                 else:
-                    self.channel.serial_channel_dict[int(channel.serialID)] = [cid]
+                    self.channel.serial_channel_dict[serial_id] = [cid]
             return self.parse_data.conf
         else:
             serv_map = dict()
@@ -369,6 +432,7 @@ class ProdDtu(object):
         # 透传与modbus服务器筛选
         serv_maps = self.server_filter()
         self._serv_connect(serv_maps, reg_data)
+        print("SERV conn success")
         _thread.start_new_thread(self.uart.read, ())
         if self.parse_data.offline_storage:
             _thread.start_new_thread(self.offline_storage.retry_offline_handler, ())
@@ -495,10 +559,26 @@ class ProdDtu(object):
                         print("quecthing connect waiting server...")
                     else:
                         logger.error(error_map.get(RET.QUECIOTERR))
+
+            elif protocol.startswith("hwyun"):
+                hw_req = HuaweiCloudTransfer()
+                status = hw_req.serialize(data)
+                try:
+                    _thread.start_new_thread(hw_req.connect, ())
+                    utime.sleep_ms(100)
+                except Exception as e:
+                    logger.error("{}: {}".format(error_map.get(RET.HWYUNERR), e))
+                else:
+                    if status == RET.OK:
+                        self.channel.channel_dict[cid] = hw_req
+                        hw_req.channel_id = cid
+                        print("hwyun conn succeed")
+                    else:
+                        logger.error(error_map.get(RET.HWYUNERR))
             else:
                 continue
 
-
+@Singleton
 class ProdGPIO(object):
     def __init__(self):
         # self.gpio1 = Pin(Pin.GPIO1, Pin.OUT, Pin.PULL_DISABLE, 0)
@@ -528,65 +608,6 @@ class ProdGPIO(object):
 
     def show(self):
         self.gpio1.write(1)
-
-
-class ProdDocumentParse(object):
-
-    def __init__(self):
-        self.document = ""
-
-    def read(self, config_path):
-        if not self.document:
-            self.refresh_document(config_path)
-
-    def refresh_document(self, config_path):
-        try:
-            with open(config_path, mode="r") as f:
-                self.document = f.read()
-            return self.document  # new
-        except Exception as e:
-            # 加载旧版本文件
-            try:
-                with open(config_path + ".bak", mode="r") as f:
-                    self.document = f.read()
-                return self.document
-            except Exception as e:
-                # 加载出厂文件
-                try:
-                    with open(CONFIG['config_backup_path'], mode="r") as f:
-                        self.document = f.read()
-                    return self.document
-                except:
-                    logger.info("'dtu_config.json', last version and default config not exist")
-                    raise Exception(RET.READFILEERR)
-
-    def _parse_document(self, parser_obj):
-        try:
-            document_loader = ujson.loads(self.document)
-        except Exception as e:
-            logger.error(error_map.get(RET.JSONLOADERR))
-            raise RET.JSONLOADERR
-        try:
-            dtu_data_obj = parser_obj.reload(**document_loader)
-        except Exception as e:
-            # logger.info("e = {}".format(e))
-            logger.error("{}: {}".format(error_map.get(RET.JSONLOADERR), e))
-            raise RET.JSONPARSEERR
-        return dtu_data_obj
-
-    def parse(self, parser_obj):
-        config_path = CONFIG["config_path"]
-        if not self.exist_config_file(config_path):
-            # 从uart口读取数据
-            logger.error(error_map.get(RET.CONFIGNOTEXIST))
-        else:
-            self.read(config_path=config_path)
-            return self._parse_document(parser_obj=parser_obj)
-
-    @staticmethod
-    def exist_config_file(config_path):
-        config_split = config_path.rsplit("/", 1)
-        return config_split[1] in uos.listdir(config_split[0])
 
 
 """===================================================socket protocol==================================================="""
@@ -794,6 +815,8 @@ class AbstractDtuMqttTransfer(object):
         self.product_secret = ""
         self.device_name = ""
         self.device_secret = ""
+        self.user = ""
+        self.password = ""
         # self.control_channel = False
         self.pub_topic_map = dict()
         self.sub_topic_map = dict()
@@ -816,6 +839,11 @@ class AbstractDtuMqttTransfer(object):
         rec = self.cli.publish(topic, send_msg, qos=self.qos)
 
     def send(self, data, topic_id=None, *args):
+        if topic_id is None:
+            topic_list = self.pub_topic.keys()
+            for topic in topic_list:
+                self.publish(data, topic)
+                print("send data:", data)
         try:
             topic = self.pub_topic.get(str(topic_id))
             self.publish(data, topic)
@@ -828,8 +856,12 @@ class AbstractDtuMqttTransfer(object):
         # 写入uart/远程控制
         rec = self.uart.output(msg.decode(), self.serial, mqtt_id=self.channel_id)
         if isinstance(rec, dict):
-            topic_id = rec.pop('topic_id')
-            self.send(rec, topic_id)
+            if isinstance(rec, dict):
+                if "topic_id" in rec:
+                    topic_id = rec.pop('topic_id')
+                else:
+                    topic_id = list(self.pub_topic.keys())[0]
+                self.send(rec, topic_id)
 
     def disconnect(self):
         self.cli.disconnect()
@@ -843,6 +875,8 @@ class AbstractDtuMqttTransfer(object):
             self.client_id = data.get("clientID")
             self.device_name = data.get("Devicename")
             self.product_key = data.get("ProductKey")
+            self.user = data.get("user")
+            self.password = data.get("password")
             if self.iot_type == "mos":
                 self.device_secret = data.get('DeviceSecret') if data.get("DeviceSecret") else None
                 self.product_secret = None
@@ -875,7 +909,14 @@ class DtuMqttTransfer(AbstractDtuMqttTransfer):
         # self.code = code
 
     def connect(self):
-        self.cli = MQTTClient(self.client_id, self.url, self.port, keepalive=self.keep_alive)
+        print("mqt connect")
+        print(self.url)
+        print(self.port)
+        print(self.client_id)
+        print(self.user)
+        print(self.password)
+        self.cli = MQTTClient(client_id=self.client_id, server=self.url, port=self.port,
+                              user=self.user, password=self.password, keepalive=self.keep_alive)
         self.cli.set_callback(self.callback)
         self.cli.connect(clean_session=self.clean_session)
         for tid, s_topic in self.sub_topic.items():
@@ -1045,7 +1086,10 @@ class QuecthingDtuTransfer:
         quecIot.setEventCB(self.callback)
 
     def send(self, data, pkgid=None, *args):
-        send_data = data['data']
+        if isinstance(data, str):
+            send_data = data
+        else:
+            send_data = ujson.dumps(data)
         if self.send_mode == "pass":
             quecIot.passTransSend(self.qos, send_data)
         else:
@@ -1115,6 +1159,91 @@ class QuecthingDtuTransfer:
         return quecIot.getWorkState()
 
 
+class HuaweiCloudTransfer(DtuMqttTransfer):
+
+    def __init__(self):
+        super().__init__()
+        self.conn_type = "hwyun"
+        self.device_id = ""
+        self.client_id = ""
+        self.user = ""
+        self.password = ""
+
+
+    @staticmethod
+    def hmac_sha256_digest(key_K, data):
+
+        def xor(x, y):
+            return bytes(x[i] ^ y[i] for i in range(min(len(x), len(y))))
+
+        if len(key_K) > 64:
+            raise ValueError('The key must be <= 64 bytes in length')
+        padded_K = key_K + b'\x00' * (64 - len(key_K))
+        ipad = b'\x36' * 64
+        opad = b'\x5c' * 64
+        h_inner = uhashlib.sha256(xor(padded_K, ipad))
+        h_inner.update(data)
+        h_outer = uhashlib.sha256(xor(padded_K, opad))
+        h_outer.update(h_inner.digest())
+        return ubinascii.hexlify(h_outer.digest()).decode()
+
+    def register(self):
+        local_time = utime.localtime()
+        time_sign = "%s%s%s%s" % (local_time[0], "%02d" % local_time[1], "%02d" % local_time[2], "%02d" % local_time[3])
+        self.client_id = self.device_id + "_0_0_" + time_sign
+        print("client id")
+        print(self.client_id)
+        self.user = self.device_id
+        # self.password = hmac.new(time_sign.encode("utf-8"), self.device_secret.encode("utf-8"), digestmod=uhashlib.sha256).hexdigest()
+        self.password = self.hmac_sha256_digest(time_sign.encode("utf-8"), self.device_secret.encode("utf-8"))
+        print("pw")
+        print(self.password)
+
+    def serialize(self, data):
+        print("hwy data")
+        print(data)
+        try:
+            self.url = data.get("url")
+            self.port = data.get("port")
+            self.device_id = data.get("device_id")
+            self.device_secret = data.get("secret")
+            self.keep_alive = int(data.get("keepAlive")) if data.get("keepAlive") else 60
+            clr_ses = data.get('cleanSession')
+            if clr_ses in ["1", 1, True, 'true']:
+                self.clean_session = True
+            else:
+                self.clean_session = False
+            self.sub_topic = data.get('subscribe')
+            self.pub_topic = data.get('publish')
+            self.qos = int(data.get('qos')) if data.get('qos') else 0
+            # self.retain = int(data.get('retain')) if data.get('retain') else 0
+            self.serial = int(data.get('serialID'))
+        except Exception as e:
+            print("SERIAL ERR")
+            print(e)
+            return RET.PARSEERR
+        else:
+            return RET.OK
+
+    def connect(self):
+        self.register()
+        print("hw connect")
+        print(self.url)
+        print(self.port)
+        print(self.client_id)
+        print(self.user)
+        print(self.password)
+        self.cli = MQTTClient(client_id=self.client_id, server=self.url, port=self.port,
+                              user=self.user, password=self.password, keepalive=self.keep_alive, ssl=False)
+        self.cli.set_callback(self.callback)
+        self.cli.connect(clean_session=self.clean_session)
+        for tid, s_topic in self.sub_topic.items():
+            self.cli.subscribe(s_topic, qos=self.qos)
+        for tid, p_topic in self.pub_topic.items():
+            self.cli.publish(p_topic, "hello world", qos=self.qos)
+        logger.info("hw set successful")
+
+
 """===================================================data document protocol==================================================="""
 
 
@@ -1135,7 +1264,7 @@ class DTUDocumentData(object):
         self.conf = dict()
         self.pins = []
         self.apn = []
-        self.modbus = []
+        self.modbus = dict()
         self.work_mode = "command"
         self.auto_connect = True
         self.offline_storage = False
@@ -1295,7 +1424,7 @@ class DtuUart(object):
         config_path = CONFIG["config_path"]
         config_params = ProdDocumentParse().refresh_document(config_path)
         uconf = ujson.loads(config_params)["uconf"]
-        self.serial_map = dict()
+        self.serial_map = SERIAL_MAP
         for sid, conf in uconf.items():
             uart_conn = UART(getattr(UART, 'UART%d' % int(sid)),
                              int(conf.get("baudrate")),
@@ -1306,9 +1435,10 @@ class DtuUart(object):
             self.serial_map[sid] = uart_conn
         # 初始化方向gpio
         self._direction_pin(config_params)
-        self.exec_cmd = DtuExecCommand()
-        self.protocol = DtuProtocolData()
         self.channels = ChannelTransfer()
+        self.exec_cmd = DtuExecCommand()
+        self.exec_modbus = ModbusCommand()
+        self.protocol = DtuProtocolData()
         self.concat_buffer = ""
         self.wait_length = 0
         self.wait_retry_count = 0
@@ -1332,7 +1462,7 @@ class DtuUart(object):
         print(data)
         if isinstance(data, (int, float)):
             data = str(data)
-        if self.dtu_d.work_mode == 'command':
+        if self.dtu_d.work_mode in ['command', "modbus"]:
             print("CMD START")
             try:
                 if isinstance(data, str):
@@ -1356,7 +1486,12 @@ class DtuUart(object):
                         rec['topic_id'] = msg_data.get("topic_id")
                     return rec
                 elif modbus_data is not None:
-                    pass
+                    uart_port = self.serial_map.get(str(serial_id))
+                    if uart_port is None:
+                        print("UART serial id error")
+                        return False
+                    rec = self.exec_modbus.exec_modbus_cmd(modbus_data, uart_port)
+                    return rec
             except Exception as e:
                 logger.info("{}: {}".format(error_map.get(RET.CMDPARSEERR), e))
         # package_data
@@ -1384,6 +1519,8 @@ class DtuUart(object):
         if len(msg_data) < data_len:
             self.concat_buffer = str_msg
             self.wait_length = data_len - len(msg_data)
+            print("wait length")
+            print(self.wait_length)
             return False
         elif len(msg_data) > data_len:
             self.concat_buffer = ""
@@ -1396,14 +1533,6 @@ class DtuUart(object):
 
     # 设备to云端
     def unpackage_datas(self, str_msg, channels, sid):
-        # str_msg = bytestream.decode()
-        if self.concat_buffer:
-            if len(str_msg) > self.wait_length:
-                self.concat_buffer = ""
-                self.wait_length = 0
-            else:
-                str_msg = self.concat_buffer + str_msg
-                self.concat_buffer = ""
         # 移动gui判断逻辑
         gui_flag = self.gui_tools_parse(str_msg, sid)
         # gui命令主动终止
@@ -1411,6 +1540,8 @@ class DtuUart(object):
             return False, []
         # 避免后续pop操作影响已有数据
         channels_copy = [x for x in channels]
+        print("dtu word mode")
+        print(self.dtu_d.work_mode)
         try:
             if self.dtu_d.work_mode == 'command':
                 params_list = str_msg.split(",", 4)
@@ -1462,6 +1593,23 @@ class DtuUart(object):
                         return {'data': msg_data}, [channel, topic_id]
                     else:
                         return False, []
+            elif self.dtu_d.work_mode == 'modbus':
+                channel_id = channels_copy.pop()
+                channel = self.channels.channel_dict.get(str(channel_id))
+                if not channel:
+                    print("Channel id not exist. Check serialID config.")
+                    return False, []
+                print("modbus str_msg")
+                print(type(str_msg))
+                print(str_msg)
+                modbus_data_list = str_msg.split(",")
+                hex_list = ["0x" + x for x in modbus_data_list]
+                # 返回channel
+                if channel.conn_type in ['http', 'tcp', 'udp']:
+                    return hex_list, [channel]
+                else:
+                    topics = list(channel.pub_topic.keys())
+                    return hex_list, [channel, topics[0]]
             # 透传模式
             else:
                 params_list = str_msg.split(",", 3)
@@ -1586,7 +1734,13 @@ class DtuUart(object):
         if not channels:
             logger.error("Serial Config not exist!")
             return False
-        str_msg = data.decode()
+        try:
+            if self.dtu_d.work_mode == "modbus":
+                str_msg = ubinascii.hexlify(data, ',').decode()
+            else:
+                str_msg = data.decode()
+        except:
+            return False
         read_msg, send_params = self.unpackage_datas(str_msg, channels, sid)
         if read_msg is False:
             return False
@@ -1759,16 +1913,13 @@ class BasicSettingCommand(object):
             return {'code': code, 'status': 1}
 
     def set_plate(self, code, data):
-        self.set_int_data(code, data, 'plate')
-        return {'code': code, 'status': 1}
+        return self.set_int_data(code, data, 'plate')
 
     def set_reg(self, code, data):
-        self.set_int_data(code, data, 'reg')
-        return {'code': code, 'status': 1}
+        return self.set_int_data(code, data, 'reg')
 
     def set_version(self, code, data):
-        self.set_int_data(code, data, 'version')
-        return {'code': code, 'status': 1}
+        return self.set_int_data(code, data, 'version')
 
     def set_passwd(self, code, data):
         try:
@@ -1782,8 +1933,7 @@ class BasicSettingCommand(object):
             return {'code': code, 'status': 1}
 
     def set_fota(self, code, data):
-        self.set_int_data(code, data, 'fota')
-        return {'code': code, 'status': 1}
+        return self.set_int_data(code, data, 'fota')
 
     def set_ota(self, code, data):
         print("set_ota: ", code, data)
@@ -1805,12 +1955,10 @@ class BasicSettingCommand(object):
             return {'code': code, 'status': 1}
 
     def set_nolog(self, code, data):
-        self.set_int_data(code, data, 'nolog')
-        return {'code': code, 'status': 1}
+        return self.set_int_data(code, data, 'nolog')
 
     def set_service_acquire(self, code, data):
-        self.set_int_data(code, data, 'service_acquire')
-        return {'code': code, 'status': 1}
+        return self.set_int_data(code, data, 'service_acquire')
 
     def set_uconf(self, code, data):
         # 透传模式不能配置
@@ -1958,14 +2106,71 @@ class BasicSettingCommand(object):
             return {'code': code, 'status': 0}
         return {'code': code, 'status': 1}
 
+@Singleton
+class ModbusCommand:
 
+    def __init__(self):
+        print("modbusCMD start")
+        config_params = ProdDocumentParse().refresh_document(CONFIG["config_path"])
+        mode = ujson.loads(config_params)['work_mode']
+        if mode == "modbus":
+            self.modbus_conf = ujson.loads(config_params)['modbus']
+            print(self.modbus_conf)
+            self.groups = dict()
+            self._load_groups()
 
+    def _load_groups(self):
+        print("modbus load groups")
+        groups_conf = self.modbus_conf.get("groups", [])
+        idx = 0
+        print(groups_conf)
+        for group in groups_conf:
+            print(group)
+            self.groups[idx] = [int(x, 16) for x in group['slave_address']]
+            idx += 1
+
+    def exec_modbus_cmd(self, data, uart_port):
+        print("exec modbus cmd")
+        if "groups" in data:
+            groups_num = data['groups'].get("num")
+            cmd = data['groups'].get("cmd")
+            try:
+                int_cmd = [int(x, 16) for x in cmd]
+            except Exception as e:
+                print("modbus command error: %s" % e)
+                return {"status": 0, "error": e}
+            groups_addr = self.groups.get(int(groups_num))
+            for addr in groups_addr:
+                modbus_cmd = [addr]
+                modbus_cmd.extend(int_cmd)
+                crc_cmd = modbus_crc(bytearray(modbus_cmd))
+                print("modbus uart write")
+                print(crc_cmd)
+                uart_port.write(crc_cmd)
+                utime.sleep(1)
+            return {'code': cmd, 'status': 1}
+        elif "command" in data:
+            command = data['command']
+            try:
+                int_cmd = [int(x, 16) for x in command]
+                crc_cmd = modbus_crc(bytearray(int_cmd))
+            except Exception as e:
+                print("modbus command error: %s" % e)
+                return {"status": 0, "error": e}
+            print("modbus write cmd")
+            print(crc_cmd)
+            uart_port.write(crc_cmd)
+            return {'code': command, 'status': 1}
+        else:
+            err_msg = "can't get any modbus params"
+            print(err_msg)
+            return {'code': 0, "status": 0, "error": err_msg}
 
 @Singleton
 class ChannelTransfer(object):
     def __init__(self):
         self.dtu_c = DTUDocumentData()
-        self.channel_dict = {}
+        self.channel_dict = CHANNELS
         self.serial_channel_dict = dict()
         # self.control_code = None
 
@@ -2050,22 +2255,6 @@ class DtuExecCommand(object):
             return {'code': cmd_code, 'status': 0, 'error': error_map.get(RET.POINTERR)}
         return rec
 
-    def exec_modbus_cmd(self, modbus_cmd, data):
-        if isinstance(modbus_cmd, list):
-            mod_array = bytearray(modbus_cmd)
-            crc_val = modbus_crc(mod_array)
-            for num in crc_val:
-                mod_array.append(num)
-
-        elif isinstance(modbus_cmd, int):
-            pass
-        elif isinstance(modbus_cmd, str):
-            pass
-        else:
-            return {'code': modbus_cmd, 'status': 0, 'error': error_map.get(RET.MODBUSERR)}
-
-        return {'code': modbus_cmd, 'status': 1}
-
 
 @Singleton
 class DTUOfflineHandler:
@@ -2099,7 +2288,9 @@ def modbus_crc(string_byte):
     gen_crc = hex(((crc & 0xff) << 8) + (crc >> 8))
     int_crc = int(gen_crc, 16)
     high, low = divmod(int_crc, 0x100)
-    return high, low
+    string_byte.append(high)
+    string_byte.append(low)
+    return string_byte
 
 
 """=================================================== run ============================================================"""

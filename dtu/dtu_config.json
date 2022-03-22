@@ -3,14 +3,17 @@
   "password": "123",
   "conf": {
     "1": {
-      "protocol": "quecthing",
-      "keepAlive": "",
-      "ProductKey": "p1118c",
-      "ProductSecret": "c3Jzd3ZaNzVrV2Vj",
-      "qos": "1",
-      "SessionFlag": false,
-      "sendMode": "pass",
-      "serialID": "2"
+      "protocol": "hwyun",
+      "url": "a1621ed65c.iot-mqtts.cn-north-4.myhuaweicloud.com",
+      "port": "1883",
+      "device_id": "621ece4cc4e6a958e354301e_869537055499330",
+      "secret": "a306255686a71e56ad53965fc2771bf8",
+      "keep_alive": 10,
+      "cleanSession": true,
+      "subscribe": {"0": "$oc/devices/621ece4cc4e6a958e354301e_869537055499330/sys/messages/down"},
+      "publish": {"0": "$oc/devices/621ece4cc4e6a958e354301e_869537055499330/sys/messages/up"},
+      "qos": 0,
+      "serialID": 2
     }
   },
   "reg": 0,
@@ -40,7 +43,8 @@
     ""
   ],
   "service_acquire": 0,
-  "work_mode": "command",
+  "work_mode": "though",
   "auto_connect": 1,
-  "offline_storage": false
-}
+  "offline_storage": false,
+  "modbus": {}
+  }

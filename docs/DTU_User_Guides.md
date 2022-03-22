@@ -34,70 +34,81 @@
   "plate": 1,									//是否在报文中添加IMEI
   "password": "123",							//设置密码
   "conf": {									//设置在线连接
-"1": {										//通道序号
-//HTTP连接设置
-      "protocol": "http",						//连接类型，固定为http
-      "method": "get",						//请求方式
-      "url": "http://httpbin.org/get",		//请求url
-      "reg_data": "",							//附带的固定文本
-      "timeout": "",							//超时
-      "serialID": 1							//捆绑的串口(1-2)
+    "1": {										//通道序号
+        //HTTP连接设置
+        "protocol": "http",						//连接类型，固定为http
+        "method": "get",						//请求方式
+        "url": "http://httpbin.org/get",		//请求url
+        "reg_data": "",							//附带的固定文本
+        "timeout": "",							//超时
+        "serialID": 1							//捆绑的串口(1-2),需要为配置文件中uconf中存在的key
     },
-"2": {
-//TCP&UDP连接设置
-      "protocol": "tcp",						//连接类型,TCP填写”tcp”,UDP填写”udp”
-      "ping": "",								//ping
-      "heartbeat": 30,						//心跳时间
-      "url": "220.180.239.212",				//请求url
-      "port": "8305",							//端口
-      "keepAlive": 300,						//保持连接时间
-      "serialID": 2							//捆绑串口
+    "2": {
+        //TCP&UDP连接设置
+        "protocol": "tcp",						//连接类型,TCP填写”tcp”,UDP填写”udp”
+        "ping": "",								//ping
+        "heartbeat": 30,						//心跳时间
+        "url": "220.180.239.212",				//请求url
+        "port": "8305",							//端口
+        "keepAlive": 300,						//保持连接时间
+        "serialID": 2							//捆绑串口,需要为配置文件中uconf中存在的key
     },
-"3": {
-//mqtt连接设置
-      "protocol": "mqtt",						//连接类型
-      "clientID": "test_mqtt",				//客户端id
-      "keepAlive": "",						//keep alive超时
-      "url": "mq.tongxinmao.com",			//url
-      "port": "18830",						//端口
-      "cleanSession": "0",					//clean session
-      "subscribe": {"0": "/public/TEST/python"},	//订阅的主题(支持多个)
-      "publish": {"0": "/public/TEST/python"},		//发布的主题(支持多个)
-      "qos": "0",								//QoS
-      "retain": "1",							//是否使用内部重连
-      "serialID": "1"							//捆绑的串口
+    "3": {
+        //mqtt连接设置
+        "protocol": "mqtt",						//连接类型
+        "clientID": "test_mqtt",				//客户端id
+        "keepAlive": "",						//keep alive超时
+        "url": "mq.tongxinmao.com",			//url
+        "port": "18830",						//端口
+        "cleanSession": "0",					//clean session
+        "subscribe": {"0": "/public/TEST/python"},	//订阅的主题(支持多个)
+        "publish": {"0": "/public/TEST/python"},		//发布的主题(支持多个)
+        "qos": "0",								//QoS
+        "retain": "1",							//是否使用内部重连
+        "serialID": "1"							//捆绑的串口
 },
-//阿里云连接设置
     "4": {
-      "protocol": "aliyun",					//连接类型
-      "type": "mos",							//一机一密/一型一密设置
-      "keepAlive": "",						// keep alive超时
-      "clientID": " test_mos ",				//客户端id
-      "Devicename": " light01",				//设备名称
-      "ProductKey": " a1QNbCDxIWM ",			//product key
-      "DeviceSecret": "0bceb8010ade0df2e6989982e63f7601",		//device secret
-      "ProductSecret": "",					//product secret
-      "cleanSession": "0",					//clean session
-      "qos": "1",								//QoS
-      "subscribe": {"0": "/a1QNbCDxIWM/light01/user/get"},		//订阅的主题(支持多个)
-      "publish": {"0": "/a1QNbCDxIWM/light01/user/update"},	//发布的主题(支持多个)
-      "serialID": "1"							//捆绑的串口
+    //阿里云连接设置
+        "protocol": "aliyun",					//连接类型
+        "type": "mos",							//一机一密/一型一密设置
+        "keepAlive": "",						// keep alive超时
+        "clientID": " test_mos ",				//客户端id
+        "Devicename": " light01",				//设备名称
+        "ProductKey": " a1QNbCDxIWM ",			//product key
+        "DeviceSecret": "0bceb8010ade0df2e6989982e63f7601",		//device secret
+        "ProductSecret": "",					//product secret
+        "cleanSession": "0",					//clean session
+        "qos": "1",								//QoS
+        "subscribe": {"0": "/a1QNbCDxIWM/light01/user/get"},		//订阅的主题(支持多个)
+        "publish": {"0": "/a1QNbCDxIWM/light01/user/update"},	//发布的主题(支持多个)
+        "serialID": "1"							//捆绑的串口
     },
-"5": {
-//腾讯云设置
-      "protocol": "txyun",
-      "type": "mos",
-      "keepAlive": "",
-      "clientID": "test_tx_mos",
-      "Devicename": "Smart_test01",
-      "ProductKey": "H7MBLRYXN9",
-      "DeviceSecret": "89c7tXT3s3grZTr/YFjxSg==",
-      "ProductSecret": "",
-      "cleanSession": "0",
-      "qos": "1",
-      "subscribe": {"0": "H7MBLRYXN9/Smart_test01/control"},
-      "publish": {"0": "H7MBLRYXN9/Smart_test01/event"},
-      "serialID": "1"
+    "5": {
+    //腾讯云设置
+        "protocol": "txyun",
+        "type": "mos",
+        "keepAlive": "",
+        "clientID": "test_tx_mos",
+        "Devicename": "Smart_test01",
+        "ProductKey": "H7MBLRYXN9",
+        "DeviceSecret": "89c7tXT3s3grZTr/YFjxSg==",
+        "ProductSecret": "",
+        "cleanSession": "0",
+        "qos": "1",
+        "subscribe": {"0": "H7MBLRYXN9/Smart_test01/control"},
+        "publish": {"0": "H7MBLRYXN9/Smart_test01/event"},
+        "serialID": "1"
+    },
+    "6": {
+        //移远云设置
+        "protocol": "quecthing",                //连接类型
+        "keepAlive": "",                        //心跳时间
+        "ProductKey": "p1118c",                 //product key 
+        "ProductSecret": "c3Jzd3ZaNzVrV2Vj",    //product secret
+        "qos": "1",                             //qos
+        "SessionFlag": false,                   //是否采用session加密
+        "sendMode": "phy",                      //发送模式
+        "serialID": "1"                         //捆绑的串口
     }
   },
   "reg": 1,							//发送登陆消息
@@ -106,7 +117,8 @@
   "nolog": 0,							//是否输出log
   "message": {},						//协议短信透传
   "uconf": {							//串口设置
-    "1": {
+    "1": {                              //key为UART编号,使用UART0填入：“0”，使用UART1则填入“1”，以此类推；同时，
+                                          //该值同时在通道配置的serialID项中使用
       "baudrate": "115200",
       "databits": "8",
       "parity": "0",
@@ -136,14 +148,31 @@
   "service_acquire": 0,			//是否开启服务器获取参数
   "work_mode": "command",			//工作模式
   "auto_connect": 1,				//自动连接
-  "offline_storage": false		//离线存储
+  "offline_storage": false,		//离线存储
+  "modbus": {                   //modbus配置
+      "groups": [             //设备分组,分组编号为其在列表中的下标,从0开始,以此类推
+        {
+          "device_type": "temp_humid_sensor",     //设备类型
+          "device_model": "TH10S-B",              //设备型号
+          "slave_address":["0x01"]                //群组modbus地址,可以填入多个地址
+        },
+        {
+          "device_type": "light_sensor",
+          "device_model": "YGC-BG-M",
+          "slave_address":["0x02", "0x03"]
+        }
+      ]
+  }
 }
 
 
 ```
 
+配置文件中"serialID"字段配置说明：
 
+conf通道配置中的“serialID”字段为捆绑的UART口编号，serialID中的数值必须是uconf串口配置中已经配置的UART口编号
 
+![](./media/config_serial_id.png)
 
 按需求编写配置文件后将配置文件保存为"dtu_config.json"，并保存至DTU代码库中的"dtu"文件夹内
 
@@ -183,7 +212,7 @@ DTU运行成功，下面为读取的配置文件。
 
 ## 报文格式
 
-### 命令模式/modbus模式
+### 命令模式
 
 支持多通道透传，通过配置文件中的serialID字段可以对通道与串口进行绑定，每个串口均支持绑定多个通道。在发送数据时需要传入通道id，DTU会向指定的通道发送数据。
 
@@ -215,13 +244,13 @@ msg_data：消息体，当msg_len为0时，此项可省略
 
 **发送报文：**
 
-`“1,6,376e6e7,abcedf”`	(msg_len不为0)
+`“1,6,1398235801,abcedf”`	(msg_len不为0)
 
 `“1,0”`			(msg_len为0)
 
 **返回报文：**
 
-`“5,2e46f5,20001”`
+`“1,6,2584251182,ijklmn”`
 
 #### MQTT/Aliyun/Txyun
 
@@ -247,13 +276,76 @@ msg_data：消息体，当msg_len为0时此项也不可省略
 
 - 示例报文：
 
-**发送报文：**
+- 发送报文：
 
-`“1,1,6,376e6e7,abcedf”`
+`“1,1,6,1398235801,abcedf”`
 
-**返回报文：**
+- 返回报文：
 
-`“1,1,5,2e46f5,20002”`
+`“1,1,6,2584251182,ijklmn”`
+#### quecthing
+
+- 上行数据报文格式:
+
+`"<channel_id>,<pkgid>,<msg_len>","<crc32>",<msg_data>"`
+
+- 下行数据报文格式:
+
+`"<channel_id>,<pkgid>,<msg_len>","<crc32>",<msg_data>"`
+
+- 字段说明：
+
+channel_id：通道id，配置文件中通道id
+
+pkgid：quecthing物模型pkgid，透传模式上行、下行报文与物模型上行非应答报文时该字段固定值为0
+
+msg_len：消息体长度，字符串格式，可以为0
+
+crc32：消息数据crc32校验码，当msg_len为0时此项也不可省略
+
+msg_data：消息体，当msg_len为0时此项也不可省略
+
+**示例报文：**
+
+- 发送报文：
+
+`“1,0,6,1398235801,abcedf”`     (透传&物模型非应答)
+
+`“1,16929,6,1398235801,abcedf”`     (物模型应答)
+
+- 返回报文：
+
+`“1,0,6,2584251182,ijklmn”`   (透传报文)
+
+`“1,16930,6,2584251182,ijklmn”`    (物模型报文)
+
+#### 从串口执行控制命令
+
+- 发送命令报文格式:
+
+`"<identify>,<msg_len>","<crc32>",<msg_data>"`
+
+- 返回命令报文格式:
+
+`"<msg_len>","<crc32>",<msg_data>"`
+
+- 字段说明：
+
+identify: 串口控制命令识别码，固定值为"99"
+
+msg_len：消息体长度，字符串格式，可以为0
+
+crc32：消息数据crc32校验码，当msg_len为0时此项也不可省略
+
+msg_data：消息体，当msg_len为0时此项也不可省略
+
+- 上行报文：
+
+`“99,6,1398235801,abcedf”`
+
+- 下行报文：
+
+`“99,6,2584251182,ijklmn”`
 
 ### 透传模式
 
@@ -285,13 +377,13 @@ msg_data：消息体，当msg_len为0时，此项可省略
 
 **发送报文：**
 
-`“6,376e6e7,abcedf”`	(msg_len不为0)
+`“6,1398235801,abcedf”`	(msg_len不为0)
 
 `“0”`			(msg_len为0)
 
 **返回报文：**
 
-`“5,2e46f5,20001”`
+`“6,2584251182,ijklmn”`
 
 #### MQTT/Aliyun/Txyun
 
@@ -317,19 +409,66 @@ msg_data：消息体，当msg_len为0时此项也不可省略
 
 **发送报文：**
 
-`“6,376e6e7,abcedf”`
+`“6,1398235801,abcedf”`
 
 **返回报文：**
 
-`“5,2e46f5,20002”`
+`“6,2584251182,ijklmn”`
 
+#### quecthing
+
+- 发送数据报文格式:
+
+`"<pkgid>,<msg_len>","<crc32>",<msg_data>"`
+
+- 返回数据报文格式:
+
+`"<pkgid>,<msg_len>","<crc32>",<msg_data>"`
+
+- 字段说明：
+
+pkgid：quecthing物模型pkgid，透传模式上行、下行报文与物模型上行非应答报文时该字段固定值为0
+
+msg_len：消息体长度，字符串格式，可以为0
+
+crc32：消息数据crc32校验码，当msg_len为0时此项也不可省略
+
+msg_data：消息体，当msg_len为0时此项也不可省略
+
+**示例报文：**
+
+- 上行报文：
+
+`“0,6,1398235801,abcedf”`     (透传&物模型非应答)
+
+`“16929,6,1398235801,abcedf”`     (物模型应答)
+
+- 下行报文：
+
+`“0,6,2584251182,ijklmn”`   (透传报文)
+
+`“16930,6,2584251182,ijklmn”`    (物模型报文)
+
+### modbus模式
+
+modbus模式会完整透传上行与上行报文，上行与下行都为bytes类型
+
+**示例报文：**
+
+- 发送报文
+
+`b'\x01\x03\x04\x01\x01\x02\x0c\xabj'`
+
+- 返回报文
+
+`b'\x01\x03\x04\x01\x01\x02\rj\xaa'`
 ### 与云端通信报文
 
 DTU与云端通信报文使用json格式
 
 #### 云端下行报文
 
-- 命令模式与modbus模式：
+- 命令模式：
 
 `{“msg_id”: msg_id, “data”: “1234”[, “cmd_code”: 0X40, “topic_id”: 1]}`
 
@@ -347,13 +486,36 @@ cmd_code：可选字段，填写对应功能码，并又DTU执行相应的操作
 
 topic_id：可选字段，填写mqtt返回需要publish的topic\_id，此字段仅在命令模式与使用MQTT/Aliyun/Txyun时生效
 
+- modbus模式
+
+`{“msg_id”: msg_id, “modbus”: {"groups": {"num": 0, "cmd": ["0x03", "0x00", "0x00", "0x00", "0x02"]}}}`
+
+字段说明：
+
+msg_id：报文id，一般为时间戳+3位随机数
+
+data：报文消息字段
+
+cmd_code：可选字段，填写对应功能码，并又DTU执行相应的操作，此字段仅在命令模式下生效
+
+topic_id：可选字段，填写mqtt返回需要publish的topic_id，此字段仅在命令模式与使用MQTT/Aliyun/Txyun时生效
+
+modbus：可选字段，此字段仅在modbus模式使用，此字段下有2个子字段：groups与command
+
+&ensp;&ensp;&ensp;&ensp;groups：可选字段，在modbus模式下向指定的地址组发送消息
+
+&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;num：配置文件中的地址组编号
+
+&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;cmd：向地址组发送的modbus命令
+
+&ensp;&ensp;&ensp;&ensp;command：可选字段，在modbus下直接向UART口写入指定modbus命令
 #### 云端上行报文
 
-命令模式与modbus模式：
+- 命令模式与modbus模式：
 
 `{“msg_id”: msg_id, “data”: “1234”[, “cmd_code”: 0X40, “status”: 1]}`
 
-透传模式：
+- 透传模式：
 
 `{“msg_id”: msg_id, “data”: “1234”}`
 
