@@ -832,6 +832,7 @@ class AbstractDtuMqttTransfer(object):
         try:
             topic = self.pub_topic.get(str(topic_id))
             self.publish(data, topic)
+            print("topic:", topic)
             print("send data:", data)
         except Exception as e:
             logger.error("{}: {}".format(error_map.get(RET.DATAPARSEERR), e))
@@ -839,11 +840,13 @@ class AbstractDtuMqttTransfer(object):
     def callback(self, topic, msg):
         print('CallBack Msg >>>> ', topic, msg.decode())
         # 写入uart/远程控制
-        rec = self.uart.output(msg.decode(), self.serial, mqtt_id=self.channel_id)
+        rec = self.uart.output(msg.decode(), self.serial, mqtt_id=topic, request_id=self.channel_id)
         if isinstance(rec, dict):
             if isinstance(rec, dict):
+                print("rec", rec)
                 if "topic_id" in rec:
                     topic_id = rec.pop('topic_id')
+                    print("pop topic:", topic_id)
                 else:
                     topic_id = list(self.pub_topic.keys())[0]
                 self.send(rec, topic_id)
@@ -1360,17 +1363,27 @@ class DtuUart(object):
         print("OUTPUT DATAS")
         print(type(data))
         print(data)
+
+        sub_topic_id = None
+
         if isinstance(data, (int, float)):
             data = str(data)
-        # TODO 
+        # 获取从云端接收到的topic 的id，通过串口下行到外接设备 
         prod =  ProdDtu()
+        if mqtt_id is not None:
+            sub_topic_id = 0
+            for cid, channel in prod.parse_data.conf.items():
+                print("channel:", channel)
+                for k, sub_topic in channel.get('subscribe').items():
+                    print("sub_topic:", sub_topic)
+                    print("mqtt_id:", mqtt_id)
+                    if sub_topic == mqtt_id.decode():
+                        sub_topic_id = k
+
+
         if prod.cloud_protocol == "hwyun":
             data = ujson.loads(data)
-            print("ujson data:", data)
-            print("ujson data type:", type(data))
             data = data["content"]
-            print("content data:", data)
-            print("content data type:", type(data))
         print("data:", data)
         if self.dtu_d.work_mode in ['command', "modbus"]:
             print("CMD START")
@@ -1387,13 +1400,15 @@ class DtuUart(object):
                 modbus_data = msg_data.get("modbus", None)
                 msg_id = msg_data.get("msg_id")
                 password = msg_data.get("password", None)
+                cloud_request_topic = msg_data.get("topic_id", None)
                 if cmd_code is not None:
                     rec = self.exec_cmd.exec_command_code(cmd_code, data=msg_data, password=password)
+                    rec['msg_id'] = msg_id
+                    if cloud_request_topic is not None:
+                        rec['topic_id'] = cloud_request_topic
+
                     print("CMD END")
                     print(rec)
-                    rec['msg_id'] = msg_id
-                    if mqtt_id is not None:
-                        rec['topic_id'] = msg_data.get("topic_id")
                     return rec
                 elif modbus_data is not None:
                     uart_port = self.serial_map.get(str(serial_id))
@@ -1409,21 +1424,30 @@ class DtuUart(object):
         if uart_port is None:
             logger.error("UART serial id error")
             return False
-        topic_id = mqtt_id if mqtt_id else pkgid
-        package_data = self.package_datas(data, topic_id, request_id)
+        topic_id = sub_topic_id if sub_topic_id != None else pkgid
+        # 命令模式下发送数据需要注明通道id
+        if self.dtu_d.work_mode == "command":
+            package_data = self.package_datas(data, topic_id, request_id)
+        elif self.dtu_d.work_mode == "through":
+            package_data = self.package_datas(data, topic_id)
         print("package_data:", package_data)
         uart_port.write(package_data)
         return True
 
     def package_datas(self, msg_data, topic_id=False, request_msg=False):
-        status_code = topic_id if topic_id else request_msg
         print(msg_data)
-        if len(msg_data) == 0 and request_msg:
-            ret_bytes = "%s,%d".encode('utf-8') % (str(request_msg), len(msg_data))
+        if len(msg_data) == 0:
+            if request_msg is not False:
+                ret_bytes = "%s,%s,%d".encode('utf-8') % (str(request_msg), str(topic_id), len(msg_data))
+            else:
+                ret_bytes = "%s,%d".encode('utf-8') % (str(topic_id), len(msg_data))
         else:
             crc32_val = self.protocol.crc32(str(msg_data))
             msg_length = len(str(msg_data))
-            ret_bytes = "%s,%s,%s,%s".encode('utf-8') % (status_code, str(msg_length), str(crc32_val), str(msg_data))
+            if request_msg is not False:
+                ret_bytes = "%s,%s,%s,%s,%s".encode('utf-8') % (str(request_msg), str(topic_id), str(msg_length), str(crc32_val), str(msg_data))
+            else:
+                ret_bytes = "%s,%s,%s,%s".encode('utf-8') % (str(topic_id), str(msg_length), str(crc32_val), str(msg_data))
         return ret_bytes
 
     def validate_length(self, data_len, msg_data, str_msg):
@@ -1658,7 +1682,11 @@ class DtuUart(object):
         if len(send_params) == 2:
             channel = send_params[0]
             topic = send_params[1]
-            channel.send(read_msg, topic)
+            # 移远云发送不需要指定topic
+            if channel.conn_type == "quecthing":
+                channel.send(read_msg)
+            else:
+                channel.send(read_msg, topic)
         elif len(send_params) == 1:
             channel = send_params[0]
             channel.send(read_msg)
