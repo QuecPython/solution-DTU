@@ -1,0 +1,64 @@
+{
+  "plate": 1,
+  "password": "123",
+  "conf": {
+    "1": {
+      "protocol": "hwyun",
+      "url": "a15fbbd7ce.iot-mqtts.cn-north-4.myhuaweicloud.com",
+      "port": "1883",
+      "device_id": "625132b420cfa22b94c54613_dtu_device1_id",
+      "secret": "a306255686a71e56ad53965fc2771bf8",
+      "keep_alive": 10,
+      "cleanSession": true,
+      "subscribe": {"0": "$oc/devices/625132b420cfa22b94c54613_dtu_device1_id/sys/messages/down"},
+      "publish": {"0": "$oc/devices/625132b420cfa22b94c54613_dtu_device1_id/sys/messages/up"},
+      "qos": 0,
+      "serialID": 2
+    }
+  },
+  "reg": 0,
+  "convert": 0,
+  "version": 100,
+  "nolog": 0,
+  "message": {},
+  "uconf": {
+    "2": {
+      "baudrate": "115200",
+      "databits": "8",
+      "parity": "0",
+      "stopbits": "1",
+      "flowctl": "0"
+    }
+  },
+  "fota": 1,
+  "pins": [
+    "1",
+    "2",
+    "3"
+  ],
+  "direction_pin": {},
+  "apn": [
+    "",
+    "",
+    ""
+  ],
+  "service_acquire": 0,
+  "work_mode": "modbus",
+  "auto_connect": 1,
+  "offline_storage": false,
+  "modbus":{
+    "groups":[        
+      {
+        "device_type": "temp_humid_sensor",     
+        "device_model": "TH10S-B",             
+        "slave_address":["0x01"]             
+      },
+      {
+        "device_type": "light_sensor",
+        "device_model": "YGC-BG-M",
+        "slave_address":["0x02", "0x03"]
+      }
+    ]
+  }
+  
+  }
