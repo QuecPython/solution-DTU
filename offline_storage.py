@@ -7,8 +7,8 @@ except:
     import time
     import json
 
-os.chdir('/usr/')
-from singleton import Singleton
+#os.chdir('/usr/')
+from usr.singleton import Singleton
 
 
 @Singleton
