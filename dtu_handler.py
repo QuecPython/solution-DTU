@@ -1,7 +1,4 @@
 import sim, uos, dataCall, ujson, net, modem, utime, _thread, uhashlib, fota, ure, ubinascii, cellLocator, log, request
-from machine import Pin
-from machine import UART
-
 from usr.singleton import Singleton
 from usr.offline_storage import OfflineStorage
 from usr.quecthing import QuecthingDtuTransfer
@@ -19,6 +16,7 @@ from usr.settings import CONFIG
 from usr.command import ChannelTransfer
 from usr.dtu_log import RET
 from usr.dtu_log import error_map
+from usr.dtu_gpio import ProdGPIO
 
 log.basicConfig(level=log.INFO)
 logger = log.getLogger(__name__)
@@ -33,11 +31,9 @@ class ProdDtu(object):
         self.document_parser = None
         self.channel = None
         self.offline_storage = None
-        self.cloud_protocol = None
         #self.apn = None
         #self.ota = None
         #self.pins = None
-        self.channels = None
         self.off_storage = None
 
     def set_gpio(self, gpio):
@@ -52,8 +48,8 @@ class ProdDtu(object):
     def set_document_parser(self, document_parser):
         self.document_parser = document_parser
 
-    def set_channels(self, channels):
-        self.channels = channels
+    def set_channel(self, channel):
+        self.channel = channel
     
     def set_off_storage(self, offline_storage):
         self.offline_storage = offline_storage
@@ -109,10 +105,14 @@ class ProdDtu(object):
                 break
 
     def parse(self): # 更新DTUDocumentData（）
+        print("start parse")
         self.document_parser.parse(self.parse_data)
+        print("parse end")
+        print(self.parse_data.pins)
 
     def request(self):
         print("ota: ", self.parse_data.ota)
+        return
         if self.parse_data.ota[0] == "" or self.parse_data.ota[1] == "" or self.parse_data.ota[2] == "":
             if self.ota[0] == "":
                 logger.info("no uid params")
@@ -282,7 +282,6 @@ class ProdDtu(object):
             if not data:
                 continue
             protocol = data.get('protocol').lower()
-            self.cloud_protocol = protocol
             if protocol == "mqtt":
                 dtu_mq = DtuMqttTransfer(self.uart)
                 status = dtu_mq.serialize(data)
@@ -432,6 +431,7 @@ class ProdDtu(object):
         
         self.request()
         print("dialing request")
+
         self.start()
         # except Exception as e:
         #     print(e)
@@ -478,34 +478,6 @@ class ProdDtu(object):
                 else:
                     continue
             utime.sleep(20)
-@Singleton
-class ProdGPIO(object):
-    def __init__(self, pins):
-        # self.gpio1 = Pin(Pin.GPIO1, Pin.OUT, Pin.PULL_DISABLE, 0)
-        set_gpio = False
-        print("pin: ", pins)
-        for i in pins:
-            if len(i):
-                try:
-                    gpio = int(i)
-                except:
-                    logger.error("dtu_config.json pins setting error! Only allow numbers")
-                    continue
-                print("gpio {} set".format(gpio))
-                gpio_n = getattr(Pin, 'GPIO%d' % gpio)
-                gpio_obj = Pin(gpio_n, Pin.OUT, Pin.PULL_DISABLE, 0)
-                setattr(self, "gpio%d" % gpio, gpio_obj)
-                set_gpio = True
-
-        if not set_gpio:
-            self.gpio1 = Pin(Pin.GPIO1, Pin.OUT, Pin.PULL_DISABLE, 0)
-
-    def status(self):
-        self.gpio1.read()
-
-    def show(self):
-        self.gpio1.write(1)
-
 
 """=================================================== run ============================================================"""
 
@@ -513,6 +485,7 @@ class ProdGPIO(object):
 def run():
 
     config_params = ProdDocumentParse().refresh_document(CONFIG["config_path"])
+    print ("config_params:", config_params)
 
     dtu = ProdDtu()
 
@@ -524,7 +497,7 @@ def run():
 
     dtu.set_document_parser(ProdDocumentParse())
     
-    dtu.set_channels(ChannelTransfer())
+    dtu.set_channel(ChannelTransfer())
 
     dtu.set_off_storage(OfflineStorage())
     

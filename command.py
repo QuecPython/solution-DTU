@@ -18,6 +18,7 @@ from usr.dtu_log import RET
 from usr.dtu_log import error_map
 from usr.modbus import modbus_crc
 from usr.settings import CONFIG
+from usr.dtu_gpio import ProdGPIO
 
 log.basicConfig(level=log.INFO)
 logger = log.getLogger(__name__)
@@ -71,21 +72,21 @@ class DTUSearchCommand(object):
             adc.close()
             return {'code': code, 'data': adcv, 'status': 1}
 
-    #def get_gpio(self, code, data):
-    #    logger.info("get_gpio")
-    #    try:
-    #        pins = data["pins"]
-    #        prod_dtu = ProdDtu()
-    #        gpio_get = getattr(prod_dtu.gpio, "gpio%s" % pins)
-    #        gpor_read = gpio_get.read()
-    #    except DTUException as e:
-    #        logger.error(e)
-    #        return {'code': code, 'status': 0}
-    #    except Exception as e:
-    #       logger.error(e)
-    #        return {'code': code, 'status': 0}
-    #    else:
-    #       return {'code': code, 'data': gpor_read, 'status': 1}
+    def get_gpio(self, code, data):
+        logger.info("get_gpio")
+        try:
+            pins = data["pins"]
+            prod_gpio = ProdGPIO()
+            gpio_get = getattr(prod_gpio, "gpio%s" % pins)
+            gpor_read = gpio_get.read()
+        except DTUException as e:
+            logger.error(e)
+            return {'code': code, 'status': 0}
+        except Exception as e:
+            logger.error(e)
+            return {'code': code, 'status': 0}
+        else:
+           return {'code': code, 'data': gpor_read, 'status': 1}
 
     def get_vbatt(self, code, data):
         logger.info("get_vbatt")
@@ -97,13 +98,13 @@ class DTUSearchCommand(object):
         temp, humid = sensor_th.read()
         return {'code': code, 'data': {"temperature": temp, 'humidity': humid}, 'status': 1}
 
-    #def get_network_connect(self, code, data):
-        #logger.info("get_network_connect")
-        #prod_dtu = ProdDtu()
-        #conn_status = dict()
-        #for code, connect in prod_dtu.channel.channel_dict.items():
-        #    conn_status[code] = connect.check_net()
-        #return {'code': code, 'data': conn_status, 'status': 1}
+    def get_network_connect(self, code, data):
+        logger.info("get_network_connect")
+        channel = ChannelTransfer()
+        conn_status = dict()
+        for code, connect in channel.channel_dict.items():
+            conn_status[code] = connect.check_net()
+        return {'code': code, 'data': conn_status, 'status': 1}
 
     def get_cell_status(self, code, data):
         logger.info("get_cell_status")
@@ -453,7 +454,7 @@ class DtuExecCommand(object):
         self.search_command_func_code_list = self.search_command.keys()
         self.basic_setting_command_list = self.basic_setting_command.keys()
         self.dtu_d = DTUDocumentData()
-        self.ctf = ChannelTransfer()
+        #self.ctf = ChannelTransfer()
         #self.offline_storage = OfflineStorage()
         self.search_cmd = DTUSearchCommand()
         self.setting_cmd = BasicSettingCommand()
