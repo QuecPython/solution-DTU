@@ -8,7 +8,7 @@ except:
     import json
 
 #os.chdir('/usr/')
-from usr.singleton import Singleton
+from usr.modules.common import Singleton
 
 
 @Singleton

@@ -2,9 +2,9 @@ import uos
 import log
 from TenCentYun import TXyun
 from usr.cloud import AbstractDtuMqttTransfer
+from usr.modules.logging import getLogger
 
-log.basicConfig(level=log.INFO)
-logger = log.getLogger(__name__)
+log = getLogger(__name__)
 
 class TXYDtuMqttTransfer(AbstractDtuMqttTransfer):
 
@@ -18,7 +18,7 @@ class TXYDtuMqttTransfer(AbstractDtuMqttTransfer):
         self.cli = TXyun(self.product_key, self.device_name, self.device_secret, self.product_secret)
         if not self.device_secret:  # 一型一密
             if "tx_secret.json" not in uos.listdir("/usr"):
-                logger.info("'tx_secret.json' file not exist")
+                log.info("'tx_secret.json' file not exist")
                 self.cli.DynamicConnectInfo()
                 print("TXyun reg succeed")
                 # return
@@ -28,15 +28,15 @@ class TXYDtuMqttTransfer(AbstractDtuMqttTransfer):
         uos.chdir("/usr/")
         if con_state == 0:
             if not self.device_secret:
-                logger.info("txyun tas set successful")
+                log.info("txyun tas set successful")
             if not self.product_secret:
-                logger.info("txyun mos set successful")
+                log.info("txyun mos set successful")
         if con_state == -1:
             if not self.device_secret:
-                logger.info("txyun tas set failed")
+                log.info("txyun tas set failed")
                 return
             if not self.product_secret:
-                logger.info("txyun mos set failed")
+                log.info("txyun mos set failed")
                 return
         self.cli.setCallback(self.callback)
         for tid, s_topic in self.sub_topic.items():

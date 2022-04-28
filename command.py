@@ -8,24 +8,23 @@ import log
 import modem
 import cellLocator
 import utime
-from usr.singleton import Singleton
+from usr.modules.common import Singleton
 from misc import Power, ADC
 from usr.t_h import SensorTH
 from usr.settings import DTUDocumentData
-#from usr.dtu_handler import ProdDtu
-from usr.dtu_log import DTUException
-from usr.dtu_log import RET
-from usr.dtu_log import error_map
-from usr.modbus import modbus_crc
 from usr.settings import CONFIG
 from usr.dtu_gpio import ProdGPIO
+from usr.dtu_protocol_data import DtuProtocolData
+from usr.dtu_channels import ChannelTransfer
+from usr.modules.logging import getLogger
+from usr.modules.logging import RET
+from usr.modules.logging import error_map
+from usr.modules.logging import DTUException
 
-log.basicConfig(level=log.INFO)
-logger = log.getLogger(__name__)
+log = getLogger(__name__)
 
 dev_imei = modem.getDevImei()
 HISTORY_ERROR = []
-CHANNELS = dict()
 
 @Singleton
 class DTUSearchCommand(object):
@@ -36,78 +35,79 @@ class DTUSearchCommand(object):
         return {'code': code, 'data': dev_imei, 'status': 1}
 
     def get_number(self, code, data):
-        logger.info(sim.getPhoneNumber())
+        log.info(sim.getPhoneNumber())
         return {'code': code, 'data': sim.getPhoneNumber(), 'status': 1}
 
     def get_version(self, code, data):
-        logger.info(self.dtu_c.version)
+        log.info(self.dtu_c.version)
         return {'code': code, 'data': self.dtu_c.version, 'status': 1}
 
     def get_csq(self, code, data):
         return {'code': code, 'data': net.csqQueryPoll(), 'status': 1}
 
     def get_cur_config(self, code, data):
-        logger.info("get_cur_config")
+        log.info("get_cur_config")
         return {'code': code, 'data': self.dtu_c.json_info(need=False), 'status': 1}
 
     def get_diagnostic_info(self, code, data):
-        logger.info("get_diagnostic_message")
+        log.info("get_diagnostic_message")
         return {'code': code, 'data': str(HISTORY_ERROR), 'status': 1}
 
     def get_iccid(self, code, data):
-        logger.info("get_iccid")
+        log.info("get_iccid")
         return {'code': code, 'data': sim.getIccid(), 'status': 1}
 
     def get_adc(self, code, data):
-        logger.info("get_adc")
+        log.info("get_adc")
         try:
             adc = ADC()
             adcn_val = "ADC%s" % str(data['adcn'])
             adcn = getattr(ADC, adcn_val)
             adcv = adc.read(adcn)
         except Exception as e:
-            logger.error(e)
+            log.error(e)
             return {'code': code, 'data': None, 'status': 0}
         else:
             adc.close()
             return {'code': code, 'data': adcv, 'status': 1}
 
     def get_gpio(self, code, data):
-        logger.info("get_gpio")
+        log.info("get_gpio")
         try:
             pins = data["pins"]
             prod_gpio = ProdGPIO()
             gpio_get = getattr(prod_gpio, "gpio%s" % pins)
             gpor_read = gpio_get.read()
         except DTUException as e:
-            logger.error(e)
+            log.error(e)
             return {'code': code, 'status': 0}
         except Exception as e:
-            logger.error(e)
+            log.error(e)
             return {'code': code, 'status': 0}
         else:
            return {'code': code, 'data': gpor_read, 'status': 1}
 
     def get_vbatt(self, code, data):
-        logger.info("get_vbatt")
+        log.info("get_vbatt")
         return {'code': code, 'data': Power.getVbatt(), 'status': 1}
 
     def get_temp_humid(self, code, data):
-        logger.info("get_temp_humid")
+        log.info("get_temp_humid")
         sensor_th = SensorTH()
         temp, humid = sensor_th.read()
         return {'code': code, 'data': {"temperature": temp, 'humidity': humid}, 'status': 1}
 
     def get_network_connect(self, code, data):
-        logger.info("get_network_connect")
+        log.info("get_network_connect")
         channel = ChannelTransfer()
         conn_status = dict()
-        for code, connect in channel.channel_dict.items():
+        #TODO
+        for code, connect in channel.cloud_object_dict.items():
             conn_status[code] = connect.check_net()
         return {'code': code, 'data': conn_status, 'status': 1}
 
     def get_cell_status(self, code, data):
-        logger.info("get_cell_status")
+        log.info("get_cell_status")
         states = net.getState()
         states_dict = {
             "voice_state": states[0][0],
@@ -116,7 +116,7 @@ class DTUSearchCommand(object):
         return {'code': code, 'data': states_dict, 'status': 1}
 
     def get_celllocator(self, code, data):
-        logger.info("get_celllocator")
+        log.info("get_celllocator")
         res = cellLocator.getLocation("www.queclocator.com", 80, "1111111122222222", 8, 1)
         location_dict = {
             "latitude": res[0],
@@ -132,17 +132,16 @@ class BasicSettingCommand(object):
         self.dtu_c = DTUDocumentData()
 
     def restart(self, code, data):
-        logger.info("Restarting...")
+        log.info("Restarting...")
         Power.powerRestart()
 
     def set_int_data(self, code, data, sign):
-        logger.info("data: %s" % data)
+        log.info("data: %s" % data)
         try:
             number = data[sign]
             number = int(number)
         except Exception as e:
-            logger.error("e = {}".format(e))
-            # self.output(code, success=0, status=RET.DATAPARSEERR)
+            log.error("e = {}".format(e))
             return {'code': code, 'status': 0}
         else:
             setattr(self.dtu_c, sign, number)
@@ -162,7 +161,7 @@ class BasicSettingCommand(object):
         try:
             passwd = str(data["new_password"])
         except Exception as e:
-            logger.error("e = {}".format(e))
+            log.error("e = {}".format(e))
             return {'code': code, 'status': 0}
         else:
             setattr(self.dtu_c, "password", passwd)
@@ -181,10 +180,10 @@ class BasicSettingCommand(object):
             if len(ota) != 3:
                 raise DTUException(RET.NUMBERERR)
         except DTUException as e:
-            logger.error(e)
+            log.error(e)
             return {'code': code, 'status': 0}
         except Exception as e:
-            logger.error(e)
+            log.error(e)
             return {'code': code, 'status': 0}
         else:
             setattr(self.dtu_c, "ota", ota)
@@ -206,10 +205,10 @@ class BasicSettingCommand(object):
             if not isinstance(uconf, dict):
                 raise DTUException(RET.DATATYPEERR)
         except DTUException as e:
-            logger.error(e)
+            log.error(e)
             return {'code': code, 'status': 0}
         except Exception as e:
-            logger.error(e)
+            log.error(e)
             return {'code': code, 'status': 0}
         else:
             setattr(self.dtu_c, "uconf", uconf)
@@ -225,10 +224,10 @@ class BasicSettingCommand(object):
             if not isinstance(conf, dict):
                 raise DTUException(RET.DATATYPEERR)
         except DTUException as e:
-            logger.error(e)
+            log.error(e)
             return {'code': code, 'status': 0}
         except Exception as e:
-            logger.error(e)
+            log.error(e)
             return {'code': code, 'status': 0}
         else:
             setattr(self.dtu_c, "conf", conf)
@@ -248,10 +247,10 @@ class BasicSettingCommand(object):
             if len(apn) != 3:
                 raise DTUException(RET.NUMBERERR)
         except DTUException as e:
-            logger.error(e)
+            log.error(e)
             return {'code': code, 'status': 0}
         except Exception as e:
-            logger.error(e)
+            log.error(e)
             return {'code': code, 'status': 0}
         else:
             setattr(self.dtu_c, "apn", apn)
@@ -270,10 +269,10 @@ class BasicSettingCommand(object):
             # if len(pins) != 3:
             #     raise DTUException(RET.NUMBERERR)
         except DTUException as e:
-            logger.error(e)
+            log.error(e)
             return {'code': code, 'status': 0}
         except Exception as e:
-            logger.error(e)
+            log.error(e)
             return {'code': code, 'status': 0}
         else:
             setattr(self.dtu_c, "pins", pins)
@@ -292,10 +291,10 @@ class BasicSettingCommand(object):
             with open(CONFIG["config_path"], mode="w") as f:
                 ujson.dump(conf, f)
         except DTUException as e:
-            logger.error(e)
+            log.error(e)
             return {'code': code, 'status': 0}
         except Exception as e:
-            logger.error(e)
+            log.error(e)
             return {'code': code, 'status': 0}
         else:
             return {'code': code, 'status': 1}
@@ -307,12 +306,10 @@ class BasicSettingCommand(object):
             tts = audio.TTS(device)
             tts.play(4, 0, 2, str(data['string']))
         except Exception as e:
-            logger.error(e)
+            log.error(e)
             return {'code': code, 'status': 0}
-            # self.output(code, success=0, status=RET.DATAPARSEERR)
         else:
             return {'code': code, 'status': 1}
-            # self.output(code)
 
     def set_ntp(self, code, data):
         print("ntp_code_data: ", code, data)
@@ -322,14 +319,11 @@ class BasicSettingCommand(object):
                 ntptime.sethost(ntp_server)
             except Exception as e:
                 return {'code': code, 'status': 0}
-                # logger.error(e)
         try:
             ntptime.settime()
         except Exception as e:
-            logger.error(e)
+            log.error(e)
             return {'code': code, 'status': 0}
-            # self.output(code, success=0, status=RET.METHODERR)
-        # self.output(code)
         return {'code': code, 'status': 1}
 
     def set_message(self, code, data):
@@ -339,76 +333,9 @@ class BasicSettingCommand(object):
             msg = data['sms_msg']
             sms.sendTextMsg(number, msg, "UCS2")
         except Exception as e:
-            logger.error(e)
+            log.error(e)
             return {'code': code, 'status': 0}
         return {'code': code, 'status': 1}
-
-@Singleton
-class ModbusCommand:
-
-    def __init__(self, mode, modbus_conf):
-        print("modbusCMD start")
-        self.modbus_conf = None
-        if mode == "modbus":
-            self.modbus_conf = modbus_conf
-            print(self.modbus_conf)
-            self.groups = dict()
-            self._load_groups()
-
-    def _load_groups(self):
-        print("modbus load groups")
-        groups_conf = self.modbus_conf.get("groups", [])
-        idx = 0
-        print(groups_conf)
-        for group in groups_conf:
-            print(group)
-            self.groups[idx] = [int(x, 16) for x in group['slave_address']]
-            idx += 1
-
-    def exec_modbus_cmd(self, data, uart_port):
-        print("exec modbus cmd")
-        if "groups" in data:
-            groups_num = data['groups'].get("num")
-            cmd = data['groups'].get("cmd")
-            try:
-                int_cmd = [int(x, 16) for x in cmd]
-            except Exception as e:
-                print("modbus command error: %s" % e)
-                return {"status": 0, "error": e}
-            groups_addr = self.groups.get(int(groups_num))
-            for addr in groups_addr:
-                modbus_cmd = [addr]
-                modbus_cmd.extend(int_cmd)
-                crc_cmd = modbus_crc(bytearray(modbus_cmd))
-                print("modbus uart write")
-                print(crc_cmd)
-                uart_port.write(crc_cmd)
-                utime.sleep(1)
-            return {'code': cmd, 'status': 1}
-        elif "command" in data:
-            command = data['command']
-            try:
-                int_cmd = [int(x, 16) for x in command]
-                crc_cmd = modbus_crc(bytearray(int_cmd))
-            except Exception as e:
-                print("modbus command error: %s" % e)
-                return {"status": 0, "error": e}
-            print("modbus write cmd")
-            print(crc_cmd)
-            uart_port.write(crc_cmd)
-            return {'code': command, 'status': 1}
-        else:
-            err_msg = "can't get any modbus params"
-            print(err_msg)
-            return {'code': 0, "status": 0, "error": err_msg}
-
-@Singleton
-class ChannelTransfer(object):
-    def __init__(self):
-        self.dtu_c = DTUDocumentData()
-        self.channel_dict = CHANNELS
-        self.serial_channel_dict = dict()
-        # self.control_code = None
 
 
 @Singleton
@@ -454,39 +381,105 @@ class DtuExecCommand(object):
         self.search_command_func_code_list = self.search_command.keys()
         self.basic_setting_command_list = self.basic_setting_command.keys()
         self.dtu_d = DTUDocumentData()
-        #self.ctf = ChannelTransfer()
-        #self.offline_storage = OfflineStorage()
+        self.protocol = DtuProtocolData()
         self.search_cmd = DTUSearchCommand()
         self.setting_cmd = BasicSettingCommand()
 
-    def exec_command_code(self, cmd_code, data=None, password=None):
-        if data is None:
-            data = dict()
-        if cmd_code not in self.not_need_password_verify_code:
-            # pwd = data.get("password")
-            print("pwd")
-            print(type(password))
-            print(password)
-            print("psw")
-            print(type(self.dtu_d.password))
-            print(self.dtu_d.password)
-            if password != self.dtu_d.password:
-                logger.error(error_map.get(RET.PASSWDVERIFYERR))
-                return {'code': cmd_code, 'status': 0, 'error': error_map.get(RET.PASSWDVERIFYERR)}
-        print("EXEC CMD")
-        print(cmd_code)
-        print(self.search_command_func_code_list)
-        print(self.basic_setting_command_list)
-        if cmd_code in self.search_command_func_code_list:
-            cmd_str = self.search_command.get(cmd_code)
-            func = getattr(self.search_cmd, cmd_str)
-            rec = func(cmd_code, data)
-        elif cmd_code in self.basic_setting_command_list:
-            cmd_str = self.basic_setting_command.get(cmd_code)
-            func = getattr(self.setting_cmd, cmd_str)
-            rec = func(cmd_code, data)
+    def cloud_data_parse(self, data, topic_id, channel_id):
+        ret_data = {"cloud_data":None, "uart_data":None}
+
+        try:
+            if isinstance(data, str):
+                msg_data = ujson.loads(data)
+            elif isinstance(data, bytes):
+                msg_data = ujson.loads(str(data))
+            elif isinstance(data, dict):
+                msg_data = data
+            else:
+                raise error_map.get(RET.CMDPARSEERR)
+
+            cmd_code = msg_data.get("cmd_code", None)
+            msg_id = msg_data.get("msg_id")
+            password = msg_data.get("password", None)
+            cloud_request_topic = msg_data.get("topic_id", None)
+
+            if cmd_code is not None:
+                if cmd_code not in self.not_need_password_verify_code:
+                    if password != self.dtu_d.password:
+                        log.error(error_map.get(RET.PASSWDVERIFYERR))
+                        ret_data["cloud_data"] = {'code': cmd_code, 'status': 0, 'error': error_map.get(RET.PASSWDVERIFYERR)}
+
+                print("cmd_code", cmd_code)
+                if cmd_code in self.search_command_func_code_list:
+                    cmd_str = self.search_command.get(cmd_code)
+                    func = getattr(self.search_cmd, cmd_str)
+                    ret_data["cloud_data"] = func(cmd_code, msg_data)
+                elif cmd_code in self.basic_setting_command_list:
+                    cmd_str = self.basic_setting_command.get(cmd_code)
+                    func = getattr(self.setting_cmd, cmd_str)
+                    ret_data["cloud_data"] = func(cmd_code, msg_data)
+                else:
+                    # err
+                    log.error(error_map.get(RET.POINTERR))
+                    ret_data["cloud_data"] = {'code': cmd_code, 'status': 0, 'error': error_map.get(RET.POINTERR)}
+  
+                ret_data["cloud_data"]['msg_id'] = msg_id
+                if cloud_request_topic is not None:
+                    ret_data["cloud_data"]['topic_id'] = cloud_request_topic
+            else:
+                package_data = self.protocol.package_datas(data, topic_id, channel_id)
+                ret_data["uart_data"] = package_data
+        except Exception as e:
+                log.info("{}: {}".format(error_map.get(RET.CMDPARSEERR), e))
+
+    def uart_data_parse(self, data, channels=None):
+        str_msg = data.decode()
+        params_list = str_msg.split(",")
+        if len(params_list) not in [2, 4, 5]:
+            log.error("param length error")
+            return False, []
+        channel_id = params_list[0]
+        channel = self.channels.cloud_object_dict.get(str(channel_id))
+        if not channel:
+            log.error("Channel id not exist. Check serialID config.")
+            return False, []
+        if channel.conn_type in ['http', 'tcp', 'udp']:
+            msg_len = params_list[1]
+            if msg_len == "0":
+                return {}, [channel_id]
+            else:
+                crc32 = params_list[2]
+                msg_data = params_list[3]
+                try:
+                    msg_len_int = int(msg_len)
+                except:
+                    log.error("data parse error")
+                    return False, []
+                valid_rec = self.validate_length(msg_len_int, msg_data, str_msg)
+                if not valid_rec:
+                    return False, []
+                cal_crc32 = self.protocol.crc32(msg_data)
+                if cal_crc32 == crc32:
+                    return {"data": msg_data}, [channel_id]
+                else:
+                    log.error("crc32 error")
+                    return False, []
         else:
-            # err
-            logger.error(error_map.get(RET.POINTERR))
-            return {'code': cmd_code, 'status': 0, 'error': error_map.get(RET.POINTERR)}
-        return rec
+            topic_id = params_list[1]
+            msg_len = params_list[2]
+            crc32 = params_list[3]
+            msg_data = params_list[4]
+            try:
+                msg_len_int = int(msg_len)
+            except:
+                log.error("data parse error")
+                return False, []
+            # 加入buffer
+            valid_rec = self.validate_length(msg_len_int, msg_data, str_msg)
+            if not valid_rec:
+                return False, []
+            cal_crc32 = self.protocol.crc32(msg_data)
+            if crc32 == cal_crc32:
+                return {'data': msg_data}, [channel_id, topic_id]
+            else:
+                return False, []

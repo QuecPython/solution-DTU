@@ -1,10 +1,11 @@
 import ujson
-import log
-from usr.dtu_log import RET
-from usr.dtu_log import error_map
+from umqtt import MQTTClient
+from usr.modules.logging import getLogger
+from usr.modules.logging import RET
+from usr.modules.logging import error_map
 
-log.basicConfig(level=log.INFO)
-logger = log.getLogger(__name__)
+log = getLogger(__name__)
+
 class AbstractDtuMqttTransfer(object):
 
     def __init__(self, uart):
@@ -59,7 +60,7 @@ class AbstractDtuMqttTransfer(object):
             print("topic:", topic)
             print("send data:", data)
         except Exception as e:
-            logger.error("{}: {}".format(error_map.get(RET.DATAPARSEERR), e))
+            log.error("{}: {}".format(error_map.get(RET.DATAPARSEERR), e))
 
     def callback(self, topic, msg):
         print('CallBack Msg >>>> ', topic, msg.decode())
@@ -106,7 +107,7 @@ class AbstractDtuMqttTransfer(object):
             self.serial = int(data.get('serialID'))
             self.url = data.get("url")
         except Exception as e:
-            logger.error(e)
+            log.error(e)
             return RET.PARSEERR
         else:
             return RET.OK

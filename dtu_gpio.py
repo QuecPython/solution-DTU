@@ -1,23 +1,22 @@
-import log
 from machine import Pin
-from usr.singleton import Singleton
+from usr.modules.logging import getLogger
+from usr.modules.common import Singleton
 
-log.basicConfig(level=log.INFO)
-logger = log.getLogger(__name__)
+log = getLogger(__name__)
 @Singleton
 class ProdGPIO(object):
     def __init__(self, pins):
         # self.gpio1 = Pin(Pin.GPIO1, Pin.OUT, Pin.PULL_DISABLE, 0)
         set_gpio = False
-        print("pin: ", pins)
+        log.info("pin: ", pins)
         for i in pins:
             if len(i):
                 try:
                     gpio = int(i)
                 except:
-                    logger.error("dtu_config.json pins setting error! Only allow numbers")
+                    log.error("dtu_config.json pins setting error! Only allow numbers")
                     continue
-                print("gpio {} set".format(gpio))
+                log.info("gpio {} set".format(gpio))
                 gpio_n = getattr(Pin, 'GPIO%d' % gpio)
                 gpio_obj = Pin(gpio_n, Pin.OUT, Pin.PULL_DISABLE, 0)
                 setattr(self, "gpio%d" % gpio, gpio_obj)

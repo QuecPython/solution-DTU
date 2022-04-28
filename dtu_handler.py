@@ -1,25 +1,26 @@
-import sim, uos, dataCall, ujson, net, modem, utime, _thread, uhashlib, fota, ure, ubinascii, cellLocator, log, request
-from usr.singleton import Singleton
+import sim, uos, dataCall, ujson, net, modem, utime, _thread, uhashlib, fota, ure, ubinascii, cellLocator, request
+from usr.modules.common import Singleton
 from usr.offline_storage import OfflineStorage
-from usr.quecthing import QuecthingDtuTransfer
-from usr.dtu_mqtt import DtuMqttTransfer
-from usr.huawei_cloud import HuaweiCloudTransfer
-from usr.aliyun import ALYDtuMqttTransfer
-from usr.tencent_cloud import TXYDtuMqttTransfer
-from usr.dtu_request import DtuRequest
-from usr.tcp_udpsocket import TcpSocket
-from usr.tcp_udpsocket import UdpSocket
+from usr.modules.aliyunIot import AliYunIot, AliObjectModel
+from usr.modules.quecthing import QuecThing, QuecObjectModel
+from usr.modules.dtu_mqtt import DtuMqttTransfer
+from usr.modules.huawei_cloud import HuaweiCloudTransfer
+from usr.modules.tencent_cloud import TXYDtuMqttTransfer
+from usr.modules.dtu_request import DtuRequest
+from usr.modules.tcp_udpsocket import TcpSocket
+from usr.modules.tcp_udpsocket import UdpSocket
 from usr.uart import DtuUart
 from usr.settings import DTUDocumentData
 from usr.settings import ProdDocumentParse
 from usr.settings import CONFIG
-from usr.command import ChannelTransfer
-from usr.dtu_log import RET
-from usr.dtu_log import error_map
+from usr.dtu_channels import ChannelTransfer
+from usr.dtumodules.logging import RET
+from usr.modules.logging import error_map
 from usr.dtu_gpio import ProdGPIO
+from usr.modules.remote import RemotePublish, RemoteSubscribe
+from usr.modules.logging import getLogger
 
-log.basicConfig(level=log.INFO)
-logger = log.getLogger(__name__)
+log = getLogger(__name__)
 
 @Singleton
 class ProdDtu(object):
@@ -78,7 +79,7 @@ class ProdDtu(object):
                     call_count += 1
                     utime.sleep(1)
                     if call_count > 10:
-                        logger.error("Datacall failed, please restart device and run again.")
+                        log.error("Datacall failed, please restart device and run again.")
                         break
         # else:
         #     while True:
@@ -91,7 +92,7 @@ class ProdDtu(object):
         #             call_count += 1
         #             utime.sleep(1)
         #             if call_count > 10:
-        #                 logger.error("Datacall failed, please restart device and run again.")
+        #                 log.error("Datacall failed, please restart device and run again.")
         #                 break
         count = 0
         max_count = 10
@@ -115,11 +116,11 @@ class ProdDtu(object):
         return
         if self.parse_data.ota[0] == "" or self.parse_data.ota[1] == "" or self.parse_data.ota[2] == "":
             if self.ota[0] == "":
-                logger.info("no uid params")
+                log.info("no uid params")
             if self.ota[1] == "":
-                logger.info("no module_type params")
+                log.info("no module_type params")
             if self.ota[2] == "":
-                logger.info("no pk params")
+                log.info("no pk params")
             print("close ota update")
             return
         # 脚本升级
@@ -138,7 +139,7 @@ class ProdDtu(object):
             # print(url + "?imei=" + imei + "&" + "secret=" + secret)
             resp = request.get(url + "?imei=" + imei + "&" + "secret=" + secret)
             if resp.status_code != 200:
-                logger.info("***********acquire token failed!***********")
+                log.info("***********acquire token failed!***********")
                 return
             data = ""
             for i in resp.content:
@@ -177,7 +178,7 @@ class ProdDtu(object):
                 action = json_data["action"]
                 msg = json_data["msg"]
                 code = json_data["code"]
-                logger.info(msg)
+                log.info(msg)
 
             if action:
                 report_url = "https://cloudota.quectel.com:8100/v1/fota/status/report"
@@ -192,7 +193,7 @@ class ProdDtu(object):
                     utime.sleep_ms(5)
                 f.close()
                 if filesize != count:
-                    logger.info("Failed to download package data validation")
+                    log.info("Failed to download package data validation")
                     uos.remove(usr + "dtu_handler_V1.0.1.py")
                     #  模组状态及结果上报 升级失败，信息上报
                     data = self.data_info(version, imei, 8, "Update Failed")
@@ -202,14 +203,14 @@ class ProdDtu(object):
                 data = self.data_info(version, imei, 7, "upgrade success")
                 resp = request.post(report_url, data=ujson.dumps(data), headers=headers)
                 if resp.status_code == 200:
-                    logger.info("The upgrade is completed and the information is reported successfully")
+                    log.info("The upgrade is completed and the information is reported successfully")
                 else:
-                    logger.info("Upgrade status information failed to be reported")
+                    log.info("Upgrade status information failed to be reported")
             ##################################################################################
             # 模组临终遗言信息上报
             if "system.log" not in uos.listdir(usr):
-                logger.info("**********'system.log' not exist***********")
-                logger.info("*********last will was not reported********")
+                log.info("**********'system.log' not exist***********")
+                log.info("*********last will was not reported********")
                 return
             with open(usr + "system.log", "r") as f:
                 msg = f.read()
@@ -228,9 +229,9 @@ class ProdDtu(object):
             headers = {"Content-Type": "application/json"}
             resp = request.post(Last_will_url, data=ujson.dumps(data), headers=headers)
             if resp.status_code == 200:
-                logger.info("last will reported successfully")
+                log.info("last will reported successfully")
             else:
-                logger.info("last will was reported failed")
+                log.info("last will was reported failed")
                 return
 
     def data_info(self, version, imei, code, msg):
@@ -243,41 +244,31 @@ class ProdDtu(object):
         }
         return data
 
-    def server_filter(self):
-        if self.parse_data.work_mode == 'command':
-            for cid, channel in self.parse_data.conf.items():
-                serial_id = int(channel.get("serialID"))
-                if serial_id in self.channel.serial_channel_dict:
-                    self.channel.serial_channel_dict[serial_id].append(cid)
-                else:
-                    self.channel.serial_channel_dict[serial_id] = [cid]
-            return self.parse_data.conf
-        else:
-            serv_map = dict()
-            serial_list = [0, 1, 2]
-            for cid, channel in self.parse_data.conf.items():
-                serial_id = int(channel.get("serialID"))
-                if serial_id in serial_list:
-                    serv_map[cid] = channel
-                    self.channel.serial_channel_dict[serial_id] = [cid]
-                    serial_list.remove(serial_id)
-                else:
-                    continue
-            return serv_map
-
     def start(self):
-        logger.info("parse data {}".format(self.parse_data.conf))
-        reg_data = {"csq": net.csqQueryPoll(), "imei": modem.getDevImei(), "iccid": sim.getIccid(),
+        log.info("parse data {}".format(self.parse_data.conf))
+        reg_data = {"csq": net.csqQueryPoll(), 
+                    "imei": modem.getDevImei(), 
+                    "iccid": sim.getIccid(),
                     "ver": self.parse_data.version}  # 首次登陆服务器默认注册信息
-        # 透传与modbus服务器筛选
-        serv_maps = self.server_filter()
-        self._serv_connect(serv_maps, reg_data)
+        
+        self._serv_connect(self.channel.cloud_channel_dict, reg_data)
         print("SERV conn success")
         _thread.start_new_thread(self.uart.read, ())
         if self.parse_data.offline_storage:
             _thread.start_new_thread(self.retry_offline_handler, ())
 
     def _serv_connect(self, serv_list, reg_data):
+        remote_sub = RemoteSubscribe() # 观察者，观察不同的云订阅的数据
+
+        remote_pub = RemotePublish()
+
+        dtu_uart = DtuUart()
+
+        remote_sub.add_executor(dtu_uart)
+
+        dtu_uart.add_module(remote_pub)
+        
+
         for cid, data in serv_list.items():
             if not data:
                 continue
@@ -289,30 +280,32 @@ class ProdDtu(object):
                     dtu_mq.connect()
                     _thread.start_new_thread(dtu_mq.wait, ())
                 except Exception as e:
-                    logger.error("{}: {}".format(error_map.get(RET.MQTTERR), e))
+                    log.error("{}: {}".format(error_map.get(RET.MQTTERR), e))
                 else:
                     if status == RET.OK:
-                        self.channel.channel_dict[cid] = dtu_mq
+                        self.channel.cloud_object_dict[cid] = dtu_mq
                         dtu_mq.channel_id = cid
                         print("mqtt conn succeed")
                     else:
-                        logger.error(error_map.get(RET.MQTTERR))
+                        log.error(error_map.get(RET.MQTTERR))
 
             elif protocol == "aliyun":
-                dtu_ali = ALYDtuMqttTransfer(self.uart)
+                dtu_ali = AliYunIot(self.uart)
+                dtu_ali.addObserver(remote_sub)
+                remote_pub.add_cloud(dtu_ali)
                 status = dtu_ali.serialize(data)
                 try:
                     _thread.start_new_thread(dtu_ali.connect, ())
                     utime.sleep_ms(100)
                 except Exception as e:
-                    logger.error("{}: {}".format(error_map.get(RET.ALIYUNMQTTERR), e))
+                    log.error("{}: {}".format(error_map.get(RET.ALIYUNMQTTERR), e))
                 else:
                     if status == RET.OK:
-                        self.channel.channel_dict[cid] = dtu_ali
+                        self.channel.cloud_object_dict[cid] = dtu_ali
                         dtu_ali.channel_id = cid
-                        print("aliyun conn succeed")
+                        log.info("aliyun conn succeed")
                     else:
-                        logger.error(error_map.get(RET.ALIYUNMQTTERR))
+                        log.error(error_map.get(RET.ALIYUNMQTTERR))
 
             elif protocol == "txyun":
                 dtu_txy = TXYDtuMqttTransfer(self.uart)
@@ -321,14 +314,14 @@ class ProdDtu(object):
                     _thread.start_new_thread(dtu_txy.connect, ())
                     utime.sleep_ms(100)
                 except Exception as e:
-                    logger.error("{}: {}".format(error_map.get(RET.TXYUNMQTTERR), e))
+                    log.error("{}: {}".format(error_map.get(RET.TXYUNMQTTERR), e))
                 else:
                     if status == RET.OK:
-                        self.channel.channel_dict[cid] = dtu_txy
+                        self.channel.cloud_object_dict[cid] = dtu_txy
                         dtu_txy.channel_id = cid
-                        print("txyun conn succeed")
+                        log.info("txyun conn succeed")
                     else:
-                        logger.error(error_map.get(RET.TXYUNMQTTERR))
+                        log.error(error_map.get(RET.TXYUNMQTTERR))
 
             elif protocol == "tcp":
                 tcp_sock = TcpSocket(self.uart)
@@ -337,19 +330,19 @@ class ProdDtu(object):
                     tcp_sock.connect()
                     _thread.start_new_thread(tcp_sock.recv, ())
                 except Exception as e:
-                    logger.error("{}: {}".format(error_map.get(RET.TCPERR), e))
+                    log.error("{}: {}".format(error_map.get(RET.TCPERR), e))
                 else:
                     if status == RET.OK:
                         if self.parse_data.reg == 1:
                             tcp_sock.first_reg(reg_data)
-                            logger.info("TCP send first login information {}".format(reg_data))
+                            log.info("TCP send first login information {}".format(reg_data))
                         if data.get("ping"):
                             if int(data.get('heartbeat')) != 0:
                                 _thread.start_new_thread(tcp_sock.Heartbeat, ())
-                        self.channel.channel_dict[cid] = tcp_sock
+                        self.channel.cloud_object_dict[cid] = tcp_sock
                         tcp_sock.channel_id = cid
                     else:
-                        logger.error(error_map.get(RET.TCPERR))
+                        log.error(error_map.get(RET.TCPERR))
 
             elif protocol == "udp":
                 udp_sock = UdpSocket()
@@ -358,32 +351,34 @@ class ProdDtu(object):
                     udp_sock.connect(self.uart)
                     _thread.start_new_thread(udp_sock.recv, ())
                 except Exception as e:
-                    logger.error("{}: {}".format(error_map.get(RET.UDPERR), e))
+                    log.error("{}: {}".format(error_map.get(RET.UDPERR), e))
                 else:
                     if status == RET.OK:
                         if self.parse_data.reg == 1:
                             udp_sock.first_reg(reg_data)
-                            logger.info("UDP send first login information {}".format(reg_data))
+                            log.info("UDP send first login information {}".format(reg_data))
                         if data.get("ping"):
                             if int(data.get('heartbeat')) != 0:
                                 _thread.start_new_thread(udp_sock.Heartbeat, ())
-                        self.channel.channel_dict[cid] = udp_sock
+                        self.channel.cloud_object_dict[cid] = udp_sock
                         udp_sock.channel_id = cid
                     else:
-                        logger.error(error_map.get(RET.UDPERR))
+                        log.error(error_map.get(RET.UDPERR))
 
             elif protocol.startswith("http"):
-                dtu_req = DtuRequest(self.uart)
+                dtu_req = DtuRequest()
+                dtu_req.addObserver(remote_sub)
+                
                 status = dtu_req.serialize(data)
                 if status == RET.OK:
                     data = dtu_req.req()  # 发送请求
                     print("***********************http request***********************")
                     for i in data:
                         print(i)
-                    self.channel.channel_dict[cid] = dtu_req
+                    self.channel.cloud_object_dict[cid] = dtu_req
                     dtu_req.channel_id = cid
                 else:
-                    logger.error(error_map.get(RET.HTTPERR))
+                    log.error(error_map.get(RET.HTTPERR))
             elif protocol.startswith("quecthing"):
                 quec_req = QuecthingDtuTransfer(self.uart)
                 status = quec_req.serialize(data)
@@ -391,14 +386,14 @@ class ProdDtu(object):
                     _thread.start_new_thread(quec_req.connect, ())
                     utime.sleep_ms(100)
                 except Exception as e:
-                    logger.error("{}: {}".format(error_map.get(RET.QUECIOTERR), e))
+                    log.error("{}: {}".format(error_map.get(RET.QUECIOTERR), e))
                 else:
                     if status == RET.OK:
-                        self.channel.channel_dict[cid] = quec_req
+                        self.channel.cloud_object_dict[cid] = quec_req
                         quec_req.channel_id = cid
                         print("quecthing connect waiting server...")
                     else:
-                        logger.error(error_map.get(RET.QUECIOTERR))
+                        log.error(error_map.get(RET.QUECIOTERR))
 
             elif protocol.startswith("hwyun"):
                 hw_req = HuaweiCloudTransfer(self.uart)
@@ -407,14 +402,14 @@ class ProdDtu(object):
                     _thread.start_new_thread(hw_req.connect, ())
                     utime.sleep_ms(100)
                 except Exception as e:
-                    logger.error("{}: {}".format(error_map.get(RET.HWYUNERR), e))
+                    log.error("{}: {}".format(error_map.get(RET.HWYUNERR), e))
                 else:
                     if status == RET.OK:
-                        self.channel.channel_dict[cid] = hw_req
+                        self.channel.cloud_object_dict[cid] = hw_req
                         hw_req.channel_id = cid
                         print("hwyun conn succeed")
                     else:
-                        logger.error(error_map.get(RET.HWYUNERR))
+                        log.error(error_map.get(RET.HWYUNERR))
             else:
                 continue
 
@@ -469,7 +464,7 @@ class ProdDtu(object):
 
     def retry_offline_handler(self):
         while True:
-            for code, channel in self.channels.channel_dict.items():
+            for code, channel in self.channels.cloud_object_dict.items():
                 has_msg = self.off_storage.channel_has_msg(code)
                 if has_msg:
                     msg = self.off_storage.take_out(code)

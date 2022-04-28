@@ -1,11 +1,9 @@
-import log
 from umqtt import MQTTClient
 from usr.cloud import AbstractDtuMqttTransfer
 from usr.dtu_log import RET
+from usr.modules.logging import getLogger
 
-
-log.basicConfig(level=log.INFO)
-logger = log.getLogger(__name__)
+log = getLogger(__name__)
 
 class DtuMqttTransfer(AbstractDtuMqttTransfer):
     def __init__(self, uart):

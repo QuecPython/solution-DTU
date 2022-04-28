@@ -1,16 +1,16 @@
 import request
 import ujson
-import log
 
 from usr.dtu_log import RET
 from usr.dtu_log import error_map
-log.basicConfig(level=log.INFO)
-logger = log.getLogger(__name__)
+from usr.common import CloudObservable
+from usr.modules.logging import getLogger
 
-class DtuRequest(object):
+log = getLogger(__name__)
+class DtuRequest(CloudObservable):
     _data_methods = ("PUT", "POST", "DELETE", "HEAD")
 
-    def __init__(self, uart):
+    def __init__(self):
         # self.code = code
         self.url = ""
         self.port = ""
@@ -18,7 +18,6 @@ class DtuRequest(object):
         self.data = None
         self.serial = 0
         self.channel_id = None
-        self.uart = uart
         # 用于识别连接类型
         self.conn_type = 'http'
 
@@ -59,23 +58,23 @@ class DtuRequest(object):
             else:
                 resp = request.get(uri, data=self.data)
         except Exception as e:
-            # logger.info(e)
-            logger.error("{}: {}".format(error_map.get(RET.HTTPERR), e))
+            # log.info(e)
+            log.error("{}: {}".format(error_map.get(RET.HTTPERR), e))
             return RET.HTTPERR
         else:
             if resp.status_code == 302:
-                logger.error(error_map.get(RET.REQERR1))
+                log.error(error_map.get(RET.REQERR1))
             if resp.status_code == 404:
-                logger.error(error_map.get(RET.REQERR2))
+                log.error(error_map.get(RET.REQERR2))
             if resp.status_code == 500:
-                logger.error(error_map.get(RET.REQERR))
+                log.error(error_map.get(RET.REQERR))
             if resp.status_code == 200:
                 print("HTTP RESP")
                 print(resp)
                 # TODO HTTP data Parse func
-                rec = self.uart.output(resp.status_code, self.serial, request_id=self.channel_id)
-                if isinstance(rec, dict):
-                    self.send(rec)
+                #rec = self.uart.output(resp.status_code, self.serial, request_id=self.channel_id)
+                #if isinstance(rec, dict):
+                 #   self.send(rec)
             return resp.content
 
     def check_net(self):

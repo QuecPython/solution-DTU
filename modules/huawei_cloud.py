@@ -1,5 +1,4 @@
 import hmac
-import log
 import utime
 import ubinascii
 import uhashlib
@@ -8,10 +7,9 @@ import _thread
 from umqtt import MQTTClient
 from usr.cloud import AbstractDtuMqttTransfer
 from usr.dtu_log import RET
+from usr.modules.logging import getLogger
 
-
-log.basicConfig(level=log.INFO)
-logger = log.getLogger(__name__)
+log = getLogger(__name__)
 
 
 class HuaweiCloudTransfer(AbstractDtuMqttTransfer):
@@ -99,7 +97,7 @@ class HuaweiCloudTransfer(AbstractDtuMqttTransfer):
             self.cli.publish(p_topic, "hello world", qos=self.qos)
         self.start_listen()
             
-        logger.info("hw set successful")
+        log.info("hw set successful")
 
     def listen(self):
         while True:

@@ -1,15 +1,13 @@
 import ujson
 import uos
-import log
-from usr.singleton import Singleton
+from usr.modules.common import Singleton
 
 
-from usr.dtu_log import RET
-from usr.dtu_log import error_map
-log.basicConfig(level=log.INFO)
-logger = log.getLogger(__name__)
+from usr.modules.logging import RET
+from usr.modules.logging import error_map
+from usr.modules.logging import getLogger
 
-#uos.chdir('/usr/')
+log = getLogger(__name__)
 
 CONFIG = {
     "config_dir": "/usr",
@@ -114,8 +112,8 @@ class DTUDocumentData(object):
             with open(CONFIG["config_path"], mode="w") as f:
                 f.write(self.json_info())
         except Exception as e:
-            logger.error(e)
-            logger.info("*****'dtu_config.json' not exist*****")
+            log.error(e)
+            log.info("*****'dtu_config.json' not exist*****")
             return
 
     def reload(self, **kwargs):
@@ -133,6 +131,6 @@ class DTUDocumentData(object):
             uos.rename(CONFIG["config_path"], CONFIG["config_path"] + ".old")
             uos.rename(new_path, CONFIG["config_path"])
         except Exception as e:
-            logger.error(e)
-            logger.info("*****'dtu_config.json' not exist*****")
+            log.error(e)
+            log.info("*****'dtu_config.json' not exist*****")
             return
