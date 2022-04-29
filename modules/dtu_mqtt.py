@@ -1,6 +1,6 @@
 from umqtt import MQTTClient
 from usr.cloud import AbstractDtuMqttTransfer
-from usr.dtu_log import RET
+from usr.modules.logging import RET
 from usr.modules.logging import getLogger
 
 log = getLogger(__name__)

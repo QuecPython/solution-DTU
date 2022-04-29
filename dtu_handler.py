@@ -14,7 +14,7 @@ from usr.settings import DTUDocumentData
 from usr.settings import ProdDocumentParse
 from usr.settings import CONFIG
 from usr.dtu_channels import ChannelTransfer
-from usr.dtumodules.logging import RET
+from usr.modules.logging import RET
 from usr.modules.logging import error_map
 from usr.dtu_gpio import ProdGPIO
 from usr.modules.remote import RemotePublish, RemoteSubscribe

@@ -1,9 +1,9 @@
 import request
 import ujson
 
-from usr.dtu_log import RET
-from usr.dtu_log import error_map
-from usr.common import CloudObservable
+from usr.modules.logging import RET
+from usr.modules.logging import error_map
+from usr.modules.common import CloudObservable
 from usr.modules.logging import getLogger
 
 log = getLogger(__name__)

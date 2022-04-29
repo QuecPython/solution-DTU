@@ -12,7 +12,7 @@ PROJECT_NAME = "QuecPython-Tracker"
 
 PROJECT_VERSION = "2.1.0"
 
-CE_FIRMWARE_NAME = uos.uname()[0].split("=")[1]
+DEVICE_FIRMWARE_NAME = uos.uname()[0].split("=")[1]
 
 DEVICE_FIRMWARE_VERSION = modem.getDevFwVersion()
 
