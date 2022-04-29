@@ -7,7 +7,7 @@ from machine import UART
 from usr.modules.common import Singleton
 from usr.dtu_channels import ChannelTransfer
 from usr.command import DtuExecCommand
-from usr.modbus import ModbusCommand
+from usr.modbus import ModbusMode
 from usr.modbus import ThroughMode
 from usr.modules.remote import RemotePublish
 from usr.modules.logging import getLogger
@@ -46,14 +46,12 @@ class DtuUart(object):
         self.cloud_protocol = None
         self.__remote_pub = None
         self.through_mode = None
-
-    def set_dtu_mode(self, mode, modbus_config=None):
-        if mode == "command":
+        if self.work_mode == "command":
             self.exec_cmd = DtuExecCommand()
             self.cloud_data_parse = self.exec_cmd.cloud_data_parse
             self.uart_data_parse = self.exec_cmd.uart_data_parse
-        elif mode == "modbus":
-            self.exec_modbus = ModbusCommand(mode, modbus_config)
+        elif self.work_mode == "modbus":
+            self.exec_modbus = ModbusMode(self.work_mode, ujson.loads(config_params)["modbus"])
             self.cloud_data_parse = self.exec_modbus.cloud_data_parse
             self.uart_data_parse = self.exec_modbus.uart_data_parse
         else:

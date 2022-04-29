@@ -19,6 +19,7 @@ from usr.modules.logging import error_map
 from usr.dtu_gpio import ProdGPIO
 from usr.modules.remote import RemotePublish, RemoteSubscribe
 from usr.modules.logging import getLogger
+from usr.settings import PROJECT_NAME, PROJECT_VERSION, DEVICE_FIRMWARE_NAME, DEVICE_FIRMWARE_VERSION
 
 log = getLogger(__name__)
 
@@ -290,9 +291,22 @@ class ProdDtu(object):
                         log.error(error_map.get(RET.MQTTERR))
 
             elif protocol == "aliyun":
-                dtu_ali = AliYunIot(self.uart)
+                dtu_ali = AliYunIot(data.get("ProductKey"),
+                                    data.get("ProductSecret"),
+                                    data.get("Devicename"),
+                                    data.get("DeviceSecret"),
+                                    ("%s.iot-as-mqtt.cn-shanghai.aliyuncs.com" % data.get("ProductKey")),
+                                    data.get("clientID"),
+                                    burning_method = (1 if data.get("type") == "mos" else 0),
+                                    mcu_name=PROJECT_NAME,
+                                    mcu_version=PROJECT_VERSION,
+                                    firmware_name=DEVICE_FIRMWARE_NAME,
+                                    firmware_version=DEVICE_FIRMWARE_VERSION
+                                    )
                 dtu_ali.addObserver(remote_sub)
                 remote_pub.add_cloud(dtu_ali)
+                
+                """
                 status = dtu_ali.serialize(data)
                 try:
                     _thread.start_new_thread(dtu_ali.connect, ())
@@ -306,7 +320,32 @@ class ProdDtu(object):
                         log.info("aliyun conn succeed")
                     else:
                         log.error(error_map.get(RET.ALIYUNMQTTERR))
-
+                """
+            elif protocol.startswith("quecthing"):
+                quec_req = QuecThing(data.get("ProductKey"),
+                                     data.get("ProductSecret"),
+                                     data.get("Devicename"),
+                                     data.get("DeviceSecret"),
+                                     "iot-south.quectel.com:1883",
+                                     mcu_name=PROJECT_NAME,
+                                     mcu_version=PROJECT_VERSION)
+                quec_req.addObserver(remote_sub)
+                remote_pub.add_cloud(quec_req)
+                """
+                status = quec_req.serialize(data)
+                try:
+                    _thread.start_new_thread(quec_req.connect, ())
+                    utime.sleep_ms(100)
+                except Exception as e:
+                    log.error("{}: {}".format(error_map.get(RET.QUECIOTERR), e))
+                else:
+                    if status == RET.OK:
+                        self.channel.cloud_object_dict[cid] = quec_req
+                        quec_req.channel_id = cid
+                        print("quecthing connect waiting server...")
+                    else:
+                        log.error(error_map.get(RET.QUECIOTERR))
+                """
             elif protocol == "txyun":
                 dtu_txy = TXYDtuMqttTransfer(self.uart)
                 status = dtu_txy.serialize(data)
@@ -379,21 +418,6 @@ class ProdDtu(object):
                     dtu_req.channel_id = cid
                 else:
                     log.error(error_map.get(RET.HTTPERR))
-            elif protocol.startswith("quecthing"):
-                quec_req = QuecthingDtuTransfer(self.uart)
-                status = quec_req.serialize(data)
-                try:
-                    _thread.start_new_thread(quec_req.connect, ())
-                    utime.sleep_ms(100)
-                except Exception as e:
-                    log.error("{}: {}".format(error_map.get(RET.QUECIOTERR), e))
-                else:
-                    if status == RET.OK:
-                        self.channel.cloud_object_dict[cid] = quec_req
-                        quec_req.channel_id = cid
-                        print("quecthing connect waiting server...")
-                    else:
-                        log.error(error_map.get(RET.QUECIOTERR))
 
             elif protocol.startswith("hwyun"):
                 hw_req = HuaweiCloudTransfer(self.uart)

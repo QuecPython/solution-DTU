@@ -1,13 +1,20 @@
 import ujson
 import uos
+import modem
 from usr.modules.common import Singleton
-
-
 from usr.modules.logging import RET
 from usr.modules.logging import error_map
 from usr.modules.logging import getLogger
 
 log = getLogger(__name__)
+
+PROJECT_NAME = "QuecPython-Tracker"
+
+PROJECT_VERSION = "2.1.0"
+
+CE_FIRMWARE_NAME = uos.uname()[0].split("=")[1]
+
+DEVICE_FIRMWARE_VERSION = modem.getDevFwVersion()
 
 CONFIG = {
     "config_dir": "/usr",
