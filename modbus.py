@@ -116,8 +116,8 @@ class ModbusMode(Singleton):
         else:
             topics = list(channel.pub_topic.keys())
             return hex_list, [channel_id, topics[0]]
-@Singleton
-class ThroughMode:
+
+class ThroughMode(Singleton):
     def __init__(self):
         self.protocol = DtuProtocolData()
 
