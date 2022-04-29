@@ -82,8 +82,7 @@ class ProdDocumentParse(object):
         return config_split[1] in uos.listdir(config_split[0])
 
 
-@Singleton
-class DTUDocumentData(object):
+class DTUDocumentData(Singleton):
 
     def __init__(self):
         self.fota = 1

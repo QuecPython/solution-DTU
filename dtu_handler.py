@@ -23,8 +23,8 @@ from usr.settings import PROJECT_NAME, PROJECT_VERSION, DEVICE_FIRMWARE_NAME, DE
 
 log = getLogger(__name__)
 
-@Singleton
-class ProdDtu(object):
+
+class ProdDtu(Singleton):
 
     def __init__(self):
         self.gpio = None

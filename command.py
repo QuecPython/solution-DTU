@@ -26,8 +26,7 @@ log = getLogger(__name__)
 dev_imei = modem.getDevImei()
 HISTORY_ERROR = []
 
-@Singleton
-class DTUSearchCommand(object):
+class DTUSearchCommand(Singleton):
     def __init__(self):
         self.dtu_c = DTUDocumentData()
 
@@ -125,8 +124,7 @@ class DTUSearchCommand(object):
         return {'code': code, 'data': location_dict, 'status': 1}
 
 
-@Singleton
-class BasicSettingCommand(object):
+class BasicSettingCommand(Singleton):
 
     def __init__(self):
         self.dtu_c = DTUDocumentData()
@@ -337,9 +335,7 @@ class BasicSettingCommand(object):
             return {'code': code, 'status': 0}
         return {'code': code, 'status': 1}
 
-
-@Singleton
-class DtuExecCommand(object):
+class DtuExecCommand(Singleton):
 
     def __init__(self):
         self.not_need_password_verify_code = [0x00, 0x01, 0x02, 0x03, 0x05]

@@ -3,8 +3,8 @@ from usr.modules.logging import getLogger
 from usr.modules.common import Singleton
 
 log = getLogger(__name__)
-@Singleton
-class ProdGPIO(object):
+
+class ProdGPIO(Singleton):
     def __init__(self, pins):
         # self.gpio1 = Pin(Pin.GPIO1, Pin.OUT, Pin.PULL_DISABLE, 0)
         set_gpio = False

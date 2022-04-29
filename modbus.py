@@ -27,8 +27,7 @@ def modbus_crc(string_byte):
     return string_byte
 
 
-@Singleton
-class ModbusMode:
+class ModbusMode(Singleton):
     def __init__(self, mode, modbus_conf):
         print("modbusCMD start")
         self.modbus_conf = None

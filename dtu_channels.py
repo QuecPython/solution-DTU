@@ -1,7 +1,6 @@
 from usr.modules.common import Singleton
 
-@Singleton
-class ChannelTransfer(object):
+class ChannelTransfer(Singleton):
     def __init__(self, woke_mode, channels_conf):
         # channel_dict字典中key值是云通道序号（”1“），v值是不同的云配置
         self.cloud_channel_dict = dict()

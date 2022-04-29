@@ -1,7 +1,6 @@
 from usr.modules.common import Singleton
 
-@Singleton
-class DtuProtocolData(object):
+class DtuProtocolData(Singleton):
 
     def __init__(self):
         self.crc_table = []

@@ -15,8 +15,7 @@ from usr.modules.logging import getLogger
 SERIAL_MAP = dict()
 log = getLogger(__name__)
 
-@Singleton
-class DtuUart(object):
+class DtuUart(Singleton):
 
     def __init__(self, config_params):
         # 配置uart
