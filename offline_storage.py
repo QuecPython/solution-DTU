@@ -11,8 +11,7 @@ except:
 from usr.modules.common import Singleton
 
 
-@Singleton
-class OfflineStorage:
+class OfflineStorage(Singleton):
 
     def __init__(self):
         self.status = None

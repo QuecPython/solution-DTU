@@ -60,7 +60,7 @@ class DtuUart(Singleton):
     
     def add_module(self, module, callback=None):
         if isinstance(module, RemotePublish):
-            self.__remote_pub.append(module)
+            self.__remote_pub = module
             return True
 
     def remote_post_data(self, channel_id, topic_id, data):

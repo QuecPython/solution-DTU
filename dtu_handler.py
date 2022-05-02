@@ -33,10 +33,9 @@ class ProdDtu(Singleton):
         self.document_parser = None
         self.channel = None
         self.offline_storage = None
-        #self.apn = None
-        #self.ota = None
-        #self.pins = None
         self.off_storage = None
+        self.remote_sub = None
+        self.remote_pub = None
 
     def set_gpio(self, gpio):
         self.gpio = gpio
@@ -55,6 +54,12 @@ class ProdDtu(Singleton):
     
     def set_off_storage(self, offline_storage):
         self.offline_storage = offline_storage
+
+    def set_remote_sub(self, sub):
+        self.remote_sub = sub
+
+    def set_remote_pub(self, pub):
+        self.remote_pub = pub
 
 
     def prepare(self):
@@ -251,7 +256,6 @@ class ProdDtu(Singleton):
                     "imei": modem.getDevImei(), 
                     "iccid": sim.getIccid(),
                     "ver": self.parse_data.version}  # 首次登陆服务器默认注册信息
-        
         self._serv_connect(self.channel.cloud_channel_dict, reg_data)
         print("SERV conn success")
         _thread.start_new_thread(self.uart.read, ())
@@ -259,16 +263,7 @@ class ProdDtu(Singleton):
             _thread.start_new_thread(self.retry_offline_handler, ())
 
     def _serv_connect(self, serv_list, reg_data):
-        remote_sub = RemoteSubscribe() # 观察者，观察不同的云订阅的数据
-
-        remote_pub = RemotePublish()
-
-        dtu_uart = DtuUart()
-
-        remote_sub.add_executor(dtu_uart)
-
-        dtu_uart.add_module(remote_pub)
-        
+        print("serv_list:",serv_list)
 
         for cid, data in serv_list.items():
             if not data:
@@ -291,6 +286,7 @@ class ProdDtu(Singleton):
                         log.error(error_map.get(RET.MQTTERR))
 
             elif protocol == "aliyun":
+                print("test08")
                 dtu_ali = AliYunIot(data.get("ProductKey"),
                                     data.get("ProductSecret"),
                                     data.get("Devicename"),
@@ -303,9 +299,10 @@ class ProdDtu(Singleton):
                                     firmware_name=DEVICE_FIRMWARE_NAME,
                                     firmware_version=DEVICE_FIRMWARE_VERSION
                                     )
-                dtu_ali.addObserver(remote_sub)
-                remote_pub.add_cloud(dtu_ali)
-                
+                dtu_ali.addObserver(self.remote_sub)
+                print("test09")
+                self.remote_pub.add_cloud(dtu_ali)
+                print("test10")
                 """
                 status = dtu_ali.serialize(data)
                 try:
@@ -329,8 +326,8 @@ class ProdDtu(Singleton):
                                      "iot-south.quectel.com:1883",
                                      mcu_name=PROJECT_NAME,
                                      mcu_version=PROJECT_VERSION)
-                quec_req.addObserver(remote_sub)
-                remote_pub.add_cloud(quec_req)
+                quec_req.addObserver(self.remote_sub)
+                self.remote_pub.add_cloud(quec_req)
                 """
                 status = quec_req.serialize(data)
                 try:
@@ -406,7 +403,7 @@ class ProdDtu(Singleton):
 
             elif protocol.startswith("http"):
                 dtu_req = DtuRequest()
-                dtu_req.addObserver(remote_sub)
+                dtu_req.addObserver(self.remote_sub)
                 
                 status = dtu_req.serialize(data)
                 if status == RET.OK:
@@ -506,17 +503,26 @@ def run():
     config_params = ProdDocumentParse().refresh_document(CONFIG["config_path"])
     print ("config_params:", config_params)
 
+    
     dtu = ProdDtu()
 
     dtu.set_gpio(ProdGPIO(ujson.loads(config_params)["pins"]))
 
     dtu.set_uart(DtuUart(config_params))
+    # 观察者，观察不同的云订阅的数据
+    dtu.set_remote_sub(RemoteSubscribe()) 
+
+    dtu.set_remote_pub(RemotePublish())
+
+    dtu.remote_sub.add_executor(dtu.uart)
+
+    dtu.uart.add_module(dtu.remote_pub)
 
     dtu.set_parse_data(DTUDocumentData())
 
     dtu.set_document_parser(ProdDocumentParse())
     
-    dtu.set_channel(ChannelTransfer())
+    dtu.set_channel(ChannelTransfer(ujson.loads(config_params)["work_mode"], ujson.loads(config_params)["conf"]))
 
     dtu.set_off_storage(OfflineStorage())
     
