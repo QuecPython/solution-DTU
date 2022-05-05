@@ -101,10 +101,11 @@ class ModbusMode(Singleton):
         except Exception as e:
                 log.info("{}: {}".format(error_map.get(RET.CMDPARSEERR), e))
 
-    def uart_data_parse(self, data, cloud_channel_dict, serial_channels=None):
+    def uart_data_parse(self, data, cloud_channel_dict, cloud_channel_array=None):
         str_msg = ubinascii.hexlify(data, ',').decode()
-        channel_id = serial_channels.pop()
-        channel = cloud_channel_dict.get(str(channel_id))
+        # Modbus模式和透传模式 下一个串口通道只能绑定一个云端口
+        cloud_channel_id = cloud_channel_array[0]
+        channel = cloud_channel_dict.get(str(cloud_channel_id))
         if not channel:
             print("Channel id not exist. Check serialID config.")
             return False, []
@@ -115,10 +116,10 @@ class ModbusMode(Singleton):
         hex_list = ["0x" + x for x in modbus_data_list]
         # 返回channel
         if channel.get("protocol") in ['http', 'tcp', 'udp']:
-            return hex_list, [channel_id]
+            return hex_list, [cloud_channel_id]
         else:
             topics = list(channel.get("publish").keys())
-            return hex_list, [channel_id, topics[0]]
+            return hex_list, [cloud_channel_id, topics[0]]
 
 class ThroughMode(Singleton):
     def __init__(self):
@@ -135,14 +136,15 @@ class ThroughMode(Singleton):
         package_data = self.protocol.package_datas(data, topic_id)
         ret_data["uart_data"] = package_data
 
-    def uart_data_parse(self, data, cloud_channel_dict, serial_channels=None):
+    def uart_data_parse(self, data, cloud_channel_dict, cloud_channel_array=None):
         str_msg = data.decode()
         params_list = str_msg.split(",")
         if len(params_list) not in [2, 4, 5]:
             log.error("param length error")
             return False, []
-        channel_id = serial_channels.pop()
-        channel = cloud_channel_dict.get(str(channel_id))
+        # Modbus模式和透传模式 下一个串口通道只能绑定一个云端口
+        cloud_channel_id = cloud_channel_array[0]
+        channel = cloud_channel_dict.get(str(cloud_channel_id))
         if not channel:
             log.error("Channel id not exist. Check serialID config.")
             return False, []
@@ -150,7 +152,7 @@ class ThroughMode(Singleton):
         if channel.get("protocol") in ['http', 'tcp', 'udp']:
             msg_len = params_list[1]
             if msg_len == "0":
-                return "", [channel_id]
+                return "", [cloud_channel_id]
             else:
                 crc32 = params_list[1]
                 msg_data = params_list[2]
@@ -164,7 +166,7 @@ class ThroughMode(Singleton):
                     return False, []
                 cal_crc32 = self.__protocol.crc32(msg_data)
                 if cal_crc32 == crc32:
-                    return msg_data, [channel_id]
+                    return msg_data, [cloud_channel_id]
                 else:
                     log.error("crc32 error")
                     return False, []
@@ -184,6 +186,6 @@ class ThroughMode(Singleton):
                 return False, []
             cal_crc32 = self.__protocol.crc32(msg_data)
             if crc32 == cal_crc32:
-                return msg_data, [channel_id, topic_id]
+                return msg_data, [cloud_channel_id, topic_id]
             else:
                 return False, []

@@ -174,8 +174,8 @@ class DtuUart(Singleton):
     def uart_read_handler(self, data, sid):
         print("sid:", sid)
         print("__channel.serial_channel_dict:", self.__channel.serial_channel_dict)
-        serial_channels = self.__channel.serial_channel_dict.get(int(sid))
-        if not serial_channels:
+        cloud_channel_array = self.__channel.serial_channel_dict.get(int(sid))
+        if not cloud_channel_array:
             log.error("Serial Config not exist!")
             return False
         # 移动gui判断逻辑
@@ -183,7 +183,7 @@ class DtuUart(Singleton):
         if gui_flag:
             return False
         print("test41")
-        read_msg, send_params = self.uart_data_parse(data, self.__channel.cloud_channel_dict, serial_channels)
+        read_msg, send_params = self.uart_data_parse(data, self.__channel.cloud_channel_dict, cloud_channel_array)
         print("read_msg:", read_msg)
         print("send_params:", send_params)
         print("test46")

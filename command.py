@@ -432,13 +432,18 @@ class DtuExecCommand(Singleton):
         except Exception as e:
                 log.info("{}: {}".format(error_map.get(RET.CMDPARSEERR), e))
 
-    def uart_data_parse(self, data, cloud_channel_dict, serial_channels=None):
+    def uart_data_parse(self, data, cloud_channel_dict, cloud_channel_array=None):
         str_msg = data.decode()
         params_list = str_msg.split(",")
         if len(params_list) not in [2, 4, 5]:
             log.error("param length error")
             return False, []
+
         channel_id = params_list[0]
+        if channel_id not in cloud_channel_array:
+            log.error("Channel id not exist. Check conf config.")
+            return False, []
+            
         channel = cloud_channel_dict.get(str(channel_id))
         if not channel:
             log.error("Channel id not exist. Check serialID config.")
