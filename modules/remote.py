@@ -88,6 +88,7 @@ class RemotePublish(Observable):
         return self.__cloud.init(enforce=enforce) if self.__cloud else False
 
     def __cloud_post(self, data, topic_id):
+        print("test55")
         return self.__cloud.through_post_data(data, topic_id) if self.__cloud else False
 
     def add_cloud(self, cloud, channel_id):
@@ -119,10 +120,14 @@ class RemotePublish(Observable):
             "gps": []
         }
         """
+        print("test52")
         res = True
         self.__cloud = self.__clouds[channel_id]
+        print("__cloud:", self.__cloud)
         if not self.__cloud_post(data, topic_id):
+            print("test53")
             if self.__cloud_conn(enforce=True):
+                print("test54")
                 if not self.__cloud_post(data, topic_id):
                     res = False
             else:

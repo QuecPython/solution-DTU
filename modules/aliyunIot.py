@@ -203,13 +203,13 @@ class AliYunIot(CloudObservable):
 
         self.__ota = AliOTA(self, self.__mcu_name, self.__firmware_name)
         if pub_topic == None:
-            self.pub_topic_dict = {"0": "/%s/%s/user/get" % (self.__pk, self.__dk)}
+            self.pub_topic_dict = {"0": "/%s/%s/user/update" % (self.__pk, self.__dk)}
         else:
             self.pub_topic_dict = pub_topic
         if sub_topic == None:
-            self.sub_topic_dict = {"0": "/%s/%s/user/update" % (self.__pk, self.__dk)}
+            self.sub_topic_dict = {"0": "/%s/%s/user/get" % (self.__pk, self.__dk)}
         else:
-            self.sub_topic_dict = pub_topic
+            self.sub_topic_dict = sub_topic
 
         self.ica_topic_property_post = "/sys/%s/%s/thing/event/property/post" % (self.__pk, self.__dk)
         self.ica_topic_property_post_reply = "/sys/%s/%s/thing/event/property/post_reply" % (self.__pk, self.__dk)
@@ -277,6 +277,7 @@ class AliYunIot(CloudObservable):
 
     def __ali_subscribe_topic(self):
         """Subscribe aliyun topic"""
+        """
         if self.__ali.subscribe(self.ica_topic_property_post, qos=0) == -1:
             log.error("Topic [%s] Subscribe Falied." % self.ica_topic_property_post)
         if self.__ali.subscribe(self.ica_topic_property_post_reply, qos=0) == -1:
@@ -291,7 +292,7 @@ class AliYunIot(CloudObservable):
             post_reply_topic = self.ica_topic_event_post_reply.format(tsl_event_identifier)
             if self.__ali.subscribe(post_reply_topic, qos=0) == -1:
                 log.error("Topic [%s] Subscribe Falied." % post_reply_topic)
-
+        
         if self.__ali.subscribe(self.ota_topic_device_upgrade, qos=0) == -1:
             log.error("Topic [%s] Subscribe Falied." % self.ota_topic_device_upgrade)
         if self.__ali.subscribe(self.ota_topic_firmware_get_reply, qos=0) == -1:
@@ -303,6 +304,11 @@ class AliYunIot(CloudObservable):
 
         if self.__ali.subscribe(self.rrpc_topic_request, qos=0) == -1:
             log.error("Topic [%s] Subscribe Falied." % self.rrpc_topic_request)
+        """
+        for id, usr_sub_topic in self.sub_topic_dict.items():
+            print("usr_sub_topic:", usr_sub_topic)
+            if self.__ali.subscribe(usr_sub_topic, qos=0) == -1:
+                log.error("Topic [%s] Subscribe Falied." % usr_sub_topic)
 
     def __ali_sub_cb(self, topic, data):
         """Aliyun subscribe topic callback
@@ -579,6 +585,8 @@ class AliYunIot(CloudObservable):
         return False
 
     def through_post_data(self, data, topic_id):
+        print("test56")
+        print("self.pub_topic_dict[topic_id]:", self.pub_topic_dict[topic_id])
         self.__ali.publish(self.pub_topic_dict[topic_id], data, qos=0)
 
     def rrpc_response(self, message_id, data):

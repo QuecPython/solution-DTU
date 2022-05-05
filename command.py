@@ -14,8 +14,6 @@ from usr.t_h import SensorTH
 from usr.settings import DTUDocumentData
 from usr.settings import CONFIG
 from usr.dtu_gpio import ProdGPIO
-from usr.dtu_protocol_data import DtuProtocolData
-from usr.dtu_channels import ChannelTransfer
 from usr.modules.logging import getLogger
 from usr.modules.logging import RET
 from usr.modules.logging import error_map
@@ -29,6 +27,10 @@ HISTORY_ERROR = []
 class DTUSearchCommand(Singleton):
     def __init__(self):
         self.dtu_c = DTUDocumentData()
+        self.__channel = None
+
+    def set_channel(self, channel):
+        self.__channel = channel
 
     def get_imei(self, code, data):
         return {'code': code, 'data': dev_imei, 'status': 1}
@@ -98,10 +100,9 @@ class DTUSearchCommand(Singleton):
 
     def get_network_connect(self, code, data):
         log.info("get_network_connect")
-        channel = ChannelTransfer()
         conn_status = dict()
         #TODO
-        for code, connect in channel.cloud_object_dict.items():
+        for code, connect in self.__channel.cloud_object_dict.items():
             conn_status[code] = connect.check_net()
         return {'code': code, 'data': conn_status, 'status': 1}
 
@@ -377,9 +378,12 @@ class DtuExecCommand(Singleton):
         self.search_command_func_code_list = self.search_command.keys()
         self.basic_setting_command_list = self.basic_setting_command.keys()
         self.dtu_d = DTUDocumentData()
-        self.protocol = DtuProtocolData()
+        self.__protocol = None
         self.search_cmd = DTUSearchCommand()
         self.setting_cmd = BasicSettingCommand()
+
+    def set_protocol(self, protocol):
+        self.__protocol = protocol
 
     def cloud_data_parse(self, data, topic_id, channel_id):
         ret_data = {"cloud_data":None, "uart_data":None}
@@ -423,23 +427,23 @@ class DtuExecCommand(Singleton):
                 if cloud_request_topic is not None:
                     ret_data["cloud_data"]['topic_id'] = cloud_request_topic
             else:
-                package_data = self.protocol.package_datas(data, topic_id, channel_id)
+                package_data = self.__protocol.package_datas(data, topic_id, channel_id)
                 ret_data["uart_data"] = package_data
         except Exception as e:
                 log.info("{}: {}".format(error_map.get(RET.CMDPARSEERR), e))
 
-    def uart_data_parse(self, data, channels=None):
+    def uart_data_parse(self, data, cloud_channel_dict, serial_channels=None):
         str_msg = data.decode()
         params_list = str_msg.split(",")
         if len(params_list) not in [2, 4, 5]:
             log.error("param length error")
             return False, []
         channel_id = params_list[0]
-        channel = self.channels.cloud_object_dict.get(str(channel_id))
+        channel = cloud_channel_dict.get(str(channel_id))
         if not channel:
             log.error("Channel id not exist. Check serialID config.")
             return False, []
-        if channel.conn_type in ['http', 'tcp', 'udp']:
+        if channel.get("protocol") in ['http', 'tcp', 'udp']:
             msg_len = params_list[1]
             if msg_len == "0":
                 return {}, [channel_id]
@@ -451,10 +455,10 @@ class DtuExecCommand(Singleton):
                 except:
                     log.error("data parse error")
                     return False, []
-                valid_rec = self.validate_length(msg_len_int, msg_data, str_msg)
+                valid_rec = self.__protocol.validate_length(msg_len_int, msg_data, str_msg)
                 if not valid_rec:
                     return False, []
-                cal_crc32 = self.protocol.crc32(msg_data)
+                cal_crc32 = self.__protocol.crc32(msg_data)
                 if cal_crc32 == crc32:
                     return {"data": msg_data}, [channel_id]
                 else:
@@ -471,10 +475,10 @@ class DtuExecCommand(Singleton):
                 log.error("data parse error")
                 return False, []
             # 加入buffer
-            valid_rec = self.validate_length(msg_len_int, msg_data, str_msg)
+            valid_rec = self.__protocol.validate_length(msg_len_int, msg_data, str_msg)
             if not valid_rec:
                 return False, []
-            cal_crc32 = self.protocol.crc32(msg_data)
+            cal_crc32 = self.__protocol.crc32(msg_data)
             if crc32 == cal_crc32:
                 return {'data': msg_data}, [channel_id, topic_id]
             else:

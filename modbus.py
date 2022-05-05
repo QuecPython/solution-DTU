@@ -2,7 +2,6 @@ import ujson
 import utime
 import ubinascii
 from usr.modules.common import Singleton
-from usr.dtu_protocol_data import DtuProtocolData
 from usr.modules.logging import error_map
 from usr.modules.logging import RET
 from usr.modules.logging import getLogger
@@ -31,11 +30,15 @@ class ModbusMode(Singleton):
     def __init__(self, mode, modbus_conf):
         print("modbusCMD start")
         self.modbus_conf = None
+        self.__protocol = None
         if mode == "modbus":
             self.modbus_conf = modbus_conf
             print(self.modbus_conf)
             self.groups = dict()
             self._load_groups()
+
+    def set_protocol(self, protocol):
+        self.__protocol = protocol
 
     def _load_groups(self):
         print("modbus load groups")
@@ -98,10 +101,10 @@ class ModbusMode(Singleton):
         except Exception as e:
                 log.info("{}: {}".format(error_map.get(RET.CMDPARSEERR), e))
 
-    def uart_data_parse(self, data, channels):
+    def uart_data_parse(self, data, cloud_channel_dict, serial_channels=None):
         str_msg = ubinascii.hexlify(data, ',').decode()
-        channel_id = channels.pop()
-        channel = self.channels.cloud_object_dict.get(str(channel_id))
+        channel_id = serial_channels.pop()
+        channel = cloud_channel_dict.get(str(channel_id))
         if not channel:
             print("Channel id not exist. Check serialID config.")
             return False, []
@@ -111,15 +114,18 @@ class ModbusMode(Singleton):
         modbus_data_list = str_msg.split(",")
         hex_list = ["0x" + x for x in modbus_data_list]
         # 返回channel
-        if channel.conn_type in ['http', 'tcp', 'udp',]:
+        if channel.get("protocol") in ['http', 'tcp', 'udp']:
             return hex_list, [channel_id]
         else:
-            topics = list(channel.pub_topic.keys())
+            topics = list(channel.get("publish").keys())
             return hex_list, [channel_id, topics[0]]
 
 class ThroughMode(Singleton):
     def __init__(self):
-        self.protocol = DtuProtocolData()
+        self.__protocol = None
+
+    def set_protocol(self, protocol):
+        self.__protocol = protocol
 
     def cloud_data_parse(self, data, topic_id, channel_id):
         ret_data = {"cloud_data":None, "uart_data":None}
@@ -129,18 +135,19 @@ class ThroughMode(Singleton):
         package_data = self.protocol.package_datas(data, topic_id)
         ret_data["uart_data"] = package_data
 
-    def uart_data_parse(self, data, channels=None):
+    def uart_data_parse(self, data, cloud_channel_dict, serial_channels=None):
         str_msg = data.decode()
         params_list = str_msg.split(",")
         if len(params_list) not in [2, 4, 5]:
             log.error("param length error")
             return False, []
-        channel_id = channels.pop()
-        channel = self.channels.cloud_object_dict.get(str(channel_id))
+        channel_id = serial_channels.pop()
+        channel = cloud_channel_dict.get(str(channel_id))
         if not channel:
             log.error("Channel id not exist. Check serialID config.")
             return False, []
-        if channel.conn_type in ['http', 'tcp', 'udp']:
+        print("channel.get(protocol):", channel.get("protocol"))
+        if channel.get("protocol") in ['http', 'tcp', 'udp']:
             msg_len = params_list[1]
             if msg_len == "0":
                 return "", [channel_id]
@@ -152,10 +159,10 @@ class ThroughMode(Singleton):
                 except:
                     log.error("data parse error")
                     return False, []
-                valid_rec = self.validate_length(msg_len_int, msg_data, str_msg)
+                valid_rec = self.__protocol.validate_length(msg_len_int, msg_data, str_msg)
                 if not valid_rec:
                     return False, []
-                cal_crc32 = self.protocol.crc32(msg_data)
+                cal_crc32 = self.__protocol.crc32(msg_data)
                 if cal_crc32 == crc32:
                     return msg_data, [channel_id]
                 else:
@@ -172,10 +179,10 @@ class ThroughMode(Singleton):
                 log.error("data parse error")
                 return False, []
             # 加入buffer
-            valid_rec = self.validate_length(msg_len_int, msg_data, str_msg)
+            valid_rec = self.__protocol.validate_length(msg_len_int, msg_data, str_msg)
             if not valid_rec:
                 return False, []
-            cal_crc32 = self.protocol.crc32(msg_data)
+            cal_crc32 = self.__protocol.crc32(msg_data)
             if crc32 == cal_crc32:
                 return msg_data, [channel_id, topic_id]
             else:

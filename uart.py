@@ -33,7 +33,6 @@ class DtuUart(Singleton):
         self._direction_pin(ujson.loads(config_params)["direction_pin"])
         self.cloud_conf = ujson.loads(config_params)["conf"]
         self.work_mode = ujson.loads(config_params)["work_mode"]
-        self.channels = ChannelTransfer(self.work_mode, self.cloud_conf)
         self.exec_cmd = None
         self.exec_modbus = None
         self.cloud_data_parse = None
@@ -45,6 +44,7 @@ class DtuUart(Singleton):
         self.cloud_protocol = None
         self.__remote_pub = None
         self.through_mode = None
+        self.__channel = None
         if self.work_mode == "command":
             self.exec_cmd = DtuExecCommand()
             self.cloud_data_parse = self.exec_cmd.cloud_data_parse
@@ -57,16 +57,30 @@ class DtuUart(Singleton):
             self.through_mode = ThroughMode()
             self.cloud_data_parse = self.through_mode.cloud_data_parse
             self.uart_data_parse = self.through_mode.uart_data_parse
-    
+
+    def set_channel(self, channel):
+        print("set channel")
+        self.__channel = channel
+        if isinstance(self.exec_cmd, DtuExecCommand):
+            self.exec_cmd.search_cmd.set_channel(channel)
+
+    def set_procotol_data(self, procotol):
+        if self.exec_cmd is not None:
+            self.exec_cmd.__protocol = procotol
+        elif self.exec_modbus is not None:
+            self.exec_modbus.__protocol = procotol
+        elif self.through_mode is not None:
+            self.through_mode.__protocol = procotol
+
     def add_module(self, module, callback=None):
         if isinstance(module, RemotePublish):
             self.__remote_pub = module
             return True
 
-    def remote_post_data(self, channel_id, topic_id, data):
+    def remote_post_data(self, channel_id, topic_id=None, data=None):
         if not self.__remote_pub:
             raise TypeError("self.__remote_pub is not registered.")
-
+        print("test51")
         return self.__remote_pub.post_data(data, channel_id, topic_id)
 
     def cloud_parse_proc(self, cloud, *args, **kwargs):
@@ -79,11 +93,11 @@ class DtuUart(Singleton):
                 if kwargs["topic"] == v:
                     topic_id = k
         
-        for k, v in self.channels.cloud_object_dict.items():
+        for k, v in self.__channel.cloud_object_dict.items():
             if cloud == v:
                 channel_id = k
         
-        for sid, cid in self.channels.serial_channel_dict.items():
+        for sid, cid in self.__channel.serial_channel_dict.items():
             if channel_id in cid:
                 serial_id = sid
 
@@ -91,7 +105,7 @@ class DtuUart(Singleton):
 
         # reply cloud query command
         if ret_data["cloud_data"] is not None:
-            self.remote_post_data(self, channel_id, topic_id)
+            self.remote_post_data(self, channel_id, topic_id, ret_data["cloud_data"])
         #send to uart cloud message
         if ret_data["uart_data"] is not None:
             uart_port = self.serial_map.get(str(serial_id))
@@ -158,22 +172,28 @@ class DtuUart(Singleton):
 
     # to online
     def uart_read_handler(self, data, sid):
-        channels = self.channels.serial_channel_dict.get(int(sid))
-        if not channels:
+        print("sid:", sid)
+        print("__channel.serial_channel_dict:", self.__channel.serial_channel_dict)
+        serial_channels = self.__channel.serial_channel_dict.get(int(sid))
+        if not serial_channels:
             log.error("Serial Config not exist!")
             return False
         # 移动gui判断逻辑
         gui_flag = self.gui_tools_parse(data, sid)
         if gui_flag:
             return False
-        read_msg, send_params = self.uart_data_parse(data, channels)
+        print("test41")
+        read_msg, send_params = self.uart_data_parse(data, self.__channel.cloud_channel_dict, serial_channels)
+        print("read_msg:", read_msg)
+        print("send_params:", send_params)
+        print("test46")
         if read_msg is False:
             return False
         
         if len(send_params) == 2:
-            self.remote_post_data(channel=send_params[0], topic_id=send_params[1], data=read_msg)
+            self.remote_post_data(channel_id=send_params[0], topic_id=send_params[1], data=read_msg)
         elif len(send_params) == 1:
-            self.remote_post_data(channel=send_params[0], data=read_msg)
+            self.remote_post_data(channel_id=send_params[0], data=read_msg)
 
     def read(self):
         while 1:

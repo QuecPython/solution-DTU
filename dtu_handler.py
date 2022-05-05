@@ -20,6 +20,7 @@ from usr.dtu_gpio import ProdGPIO
 from usr.modules.remote import RemotePublish, RemoteSubscribe
 from usr.modules.logging import getLogger
 from usr.settings import PROJECT_NAME, PROJECT_VERSION, DEVICE_FIRMWARE_NAME, DEVICE_FIRMWARE_VERSION
+from usr.dtu_protocol_data import DtuProtocolData
 
 log = getLogger(__name__)
 
@@ -256,6 +257,7 @@ class ProdDtu(Singleton):
                     "imei": modem.getDevImei(), 
                     "iccid": sim.getIccid(),
                     "ver": self.parse_data.version}  # 首次登陆服务器默认注册信息
+        print("channel.cloud_channel_dict:", self.channel.cloud_channel_dict)
         self._serv_connect(self.channel.cloud_channel_dict, reg_data)
         print("SERV conn success")
         _thread.start_new_thread(self.uart.read, ())
@@ -286,7 +288,6 @@ class ProdDtu(Singleton):
                         log.error(error_map.get(RET.MQTTERR))
 
             elif protocol == "aliyun":
-                print("test08")
                 dtu_ali = AliYunIot(data.get("ProductKey"),
                                     data.get("ProductSecret"),
                                     data.get("Devicename"),
@@ -299,10 +300,10 @@ class ProdDtu(Singleton):
                                     firmware_name=DEVICE_FIRMWARE_NAME,
                                     firmware_version=DEVICE_FIRMWARE_VERSION
                                     )
+                dtu_ali.init(enforce=True)
                 dtu_ali.addObserver(self.remote_sub)
-                print("test09")
-                self.remote_pub.add_cloud(dtu_ali)
-                print("test10")
+                self.remote_pub.add_cloud(dtu_ali, cid)
+                self.channel.cloud_object_dict[cid] = dtu_ali
                 """
                 status = dtu_ali.serialize(data)
                 try:
@@ -327,7 +328,8 @@ class ProdDtu(Singleton):
                                      mcu_name=PROJECT_NAME,
                                      mcu_version=PROJECT_VERSION)
                 quec_req.addObserver(self.remote_sub)
-                self.remote_pub.add_cloud(quec_req)
+                self.remote_pub.add_cloud(quec_req, cid)
+                self.channel.cloud_object_dict[cid] = quec_req
                 """
                 status = quec_req.serialize(data)
                 try:
@@ -502,13 +504,21 @@ def run():
 
     config_params = ProdDocumentParse().refresh_document(CONFIG["config_path"])
     print ("config_params:", config_params)
+    # 实例化通道数据
+    channels = ChannelTransfer(ujson.loads(config_params)["work_mode"], ujson.loads(config_params)["conf"])
+    # 实例化DTU协议数据解析方法
+    dtu_protocol_data = DtuProtocolData()
 
-    
     dtu = ProdDtu()
 
     dtu.set_gpio(ProdGPIO(ujson.loads(config_params)["pins"]))
 
     dtu.set_uart(DtuUart(config_params))
+
+    dtu.uart.set_channel(channels)
+
+    dtu.uart.set_procotol_data(dtu_protocol_data)
+
     # 观察者，观察不同的云订阅的数据
     dtu.set_remote_sub(RemoteSubscribe()) 
 
@@ -522,7 +532,7 @@ def run():
 
     dtu.set_document_parser(ProdDocumentParse())
     
-    dtu.set_channel(ChannelTransfer(ujson.loads(config_params)["work_mode"], ujson.loads(config_params)["conf"]))
+    dtu.set_channel(channels)
 
     dtu.set_off_storage(OfflineStorage())
     

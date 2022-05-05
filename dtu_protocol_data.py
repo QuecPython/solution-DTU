@@ -58,3 +58,4 @@ class DtuProtocolData(Singleton):
             self.concat_buffer = ""
             self.wait_length = 0
             return True
+

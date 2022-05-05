@@ -10,9 +10,8 @@ class ChannelTransfer(Singleton):
 
         # serial_channel_dict字典中每个串口号对应一个数组，数组中记录着串口号对应的云通道序号，在command模式下每个串口号可能对应多个云通道，其他模式都是一对一
         self.serial_channel_dict = dict()
-
         self.init(woke_mode, channels_conf)
-    
+        
     def init(self, woke_mode, channels_conf):
         # serial_channel_dict字典中每个串口号对应一个数组，数组中记录着串口号对应的云通道序号
         # 在command模式下每个串口号可能对应多个云通道，其他模式都是一对一
@@ -23,7 +22,7 @@ class ChannelTransfer(Singleton):
                     self.serial_channel_dict[serial_id].append(cid)
                 else:
                     self.serial_channel_dict[serial_id] = [cid]
-            self.channel_dict = channels_conf
+            self.cloud_channel_dict = channels_conf
         else:
             serv_map = dict()
             serial_list = [0, 1, 2]
@@ -35,4 +34,4 @@ class ChannelTransfer(Singleton):
                     serial_list.remove(serial_id)
                 else:
                     continue
-            self.channel_dict = serv_map
+            self.cloud_channel_dict = serv_map
