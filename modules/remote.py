@@ -33,7 +33,7 @@ class RemoteSubscribe(CloudObserver):
 
     def raw_data(self, observable, *args, **kwargs):
         print("test66")
-        return self.__executor.cloud_parse_proc(observable, *args, **kwargs) if self.__executor else False
+        return self.__executor.cloud_read_data_parse_main(observable, *args, **kwargs) if self.__executor else False
 
     def object_model(self, observable, *args, **kwargs):
         return self.__executor.event_done(*args, **kwargs) if self.__executor else False

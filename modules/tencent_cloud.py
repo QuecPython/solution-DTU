@@ -10,7 +10,7 @@ class TXYDtuMqttTransfer(AbstractDtuMqttTransfer):
 
     def __init__(self):
         super().__init__()
-        self.conn_type = 'txyun'
+        self.conn_type = "txyun"
         # self.code = code
 
     def connect(self):

@@ -19,7 +19,7 @@ class DtuRequest(CloudObservable):
         self.serial = 0
         self.channel_id = None
         # 用于识别连接类型
-        self.conn_type = 'http'
+        self.conn_type = "http"
 
     def serialize(self, data):
         try:

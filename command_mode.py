@@ -336,7 +336,7 @@ class BasicSettingCommand(Singleton):
             return {"code": code, "status": 0}
         return {"code": code, "status": 1}
 
-class DtuExecCommand(Singleton):
+class CommandMode(Singleton):
 
     def __init__(self):
         self.not_need_password_verify_code = [0x00, 0x01, 0x02, 0x03, 0x05]

@@ -30,10 +30,10 @@ class HuaweiCloudTransfer(AbstractDtuMqttTransfer):
             return bytes(x[i] ^ y[i] for i in range(min(len(x), len(y))))
 
         if len(key_K) > 64:
-            raise ValueError('The key must be <= 64 bytes in length')
-        padded_K = key_K + b'\x00' * (64 - len(key_K))
-        ipad = b'\x36' * 64
-        opad = b'\x5c' * 64
+            raise ValueError("The key must be <= 64 bytes in length")
+        padded_K = key_K + b"\x00" * (64 - len(key_K))
+        ipad = b"\x36" * 64
+        opad = b"\x5c" * 64
         h_inner = uhashlib.sha256(xor(padded_K, ipad))
         h_inner.update(data)
         h_outer = uhashlib.sha256(xor(padded_K, opad))
@@ -61,16 +61,16 @@ class HuaweiCloudTransfer(AbstractDtuMqttTransfer):
             self.device_id = data.get("device_id")
             self.device_secret = data.get("secret")
             self.keep_alive = int(data.get("keepAlive")) if data.get("keepAlive") else 60
-            clr_ses = data.get('cleanSession')
-            if clr_ses in ["1", 1, True, 'true']:
+            clr_ses = data.get("cleanSession")
+            if clr_ses in ["1", 1, True, "true"]:
                 self.clean_session = True
             else:
                 self.clean_session = False
-            self.sub_topic = data.get('subscribe')
-            self.pub_topic = data.get('publish')
-            self.qos = int(data.get('qos')) if data.get('qos') else 0
-            # self.retain = int(data.get('retain')) if data.get('retain') else 0
-            self.serial = int(data.get('serialID'))
+            self.sub_topic = data.get("subscribe")
+            self.pub_topic = data.get("publish")
+            self.qos = int(data.get("qos")) if data.get("qos") else 0
+            # self.retain = int(data.get("retain")) if data.get("retain") else 0
+            self.serial = int(data.get("serialID"))
         except Exception as e:
             print("SERIAL ERR")
             print(e)

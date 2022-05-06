@@ -31,16 +31,16 @@ class DtuProtocolData(Singleton):
         print(msg_data)
         if len(msg_data) == 0:
             if request_msg is not False:
-                ret_bytes = "%s,%s,%d".encode('utf-8') % (str(request_msg), str(topic_id), len(msg_data))
+                ret_bytes = "%s,%s,%d".encode("utf-8") % (str(request_msg), str(topic_id), len(msg_data))
             else:
-                ret_bytes = "%s,%d".encode('utf-8') % (str(topic_id), len(msg_data))
+                ret_bytes = "%s,%d".encode("utf-8") % (str(topic_id), len(msg_data))
         else:
             crc32_val = self.crc32(str(msg_data))
             msg_length = len(str(msg_data))
             if request_msg is not False:
-                ret_bytes = "%s,%s,%s,%s,%s".encode('utf-8') % (str(request_msg), str(topic_id), str(msg_length), str(crc32_val), str(msg_data))
+                ret_bytes = "%s,%s,%s,%s,%s".encode("utf-8") % (str(request_msg), str(topic_id), str(msg_length), str(crc32_val), str(msg_data))
             else:
-                ret_bytes = "%s,%s,%s,%s".encode('utf-8') % (str(topic_id), str(msg_length), str(crc32_val), str(msg_data))
+                ret_bytes = "%s,%s,%s,%s".encode("utf-8") % (str(topic_id), str(msg_length), str(crc32_val), str(msg_data))
         return ret_bytes
 
     def validate_length(self, data_len, msg_data, str_msg):

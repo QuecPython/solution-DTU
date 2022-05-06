@@ -25,7 +25,7 @@ class DtuMqttTransfer(AbstractDtuMqttTransfer):
             self.cli.subscribe(s_topic, qos=self.qos)
         for tid, p_topic in self.pub_topic.items():
             self.cli.publish(p_topic, "hello world", qos=self.qos)
-        logger.info("mqtt set successful")
+        log.info("mqtt set successful")
         # super(DtuMqttTransfer, self).connect()
 
     def wait(self):
@@ -38,16 +38,16 @@ class DtuMqttTransfer(AbstractDtuMqttTransfer):
             self.keep_alive = int(data.get("keepAlive")) if data.get("keepAlive") else 60
             self.url = data.get("url")
             self.port = data.get("port")
-            clr_ses = data.get('cleanSession')
-            if clr_ses in ["1", 1, True, 'true']:
+            clr_ses = data.get("cleanSession")
+            if clr_ses in ["1", 1, True, "true"]:
                 self.clean_session = True
             else:
                 self.clean_session = False
-            self.sub_topic = data.get('subscribe')
-            self.pub_topic = data.get('publish')
-            self.qos = int(data.get('qos')) if data.get('qos') else 0
-            self.retain = int(data.get('retain')) if data.get('retain') else 0
-            self.serial = int(data.get('serialID'))
+            self.sub_topic = data.get("subscribe")
+            self.pub_topic = data.get("publish")
+            self.qos = int(data.get("qos")) if data.get("qos") else 0
+            self.retain = int(data.get("retain")) if data.get("retain") else 0
+            self.serial = int(data.get("serialID"))
         except Exception as e:
             print(e)
             return RET.PARSEERR

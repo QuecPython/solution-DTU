@@ -21,7 +21,7 @@ class DtuSocket(object):
         # self.control_channel = False
         self.dtu_uart = uart
         self.channel_id = None
-        self.conn_type = 'socket'
+        self.conn_type = "socket"
 
     def connect(self):
         sock_addr = usocket.getaddrinfo(self.url, int(self.port))[0][-1]
@@ -48,7 +48,7 @@ class DtuSocket(object):
                 utime.sleep_ms(50)
                 continue
             else:
-                if data != b'':
+                if data != b"":
                     print("socket data:", data)
                     """
                     rec = self.dtu_uart.output(data.decode(), self.serial, request_id=self.channel_id)
@@ -66,7 +66,7 @@ class DtuSocket(object):
                 self.cli.send(self.ping.encode("utf-8"))
                 log.info("Send a heartbeat: {}".format(self.ping))
             except Exception as e:
-                log.info('send heartbeat failed !')
+                log.info("send heartbeat failed !")
             print("heart time", self.heart)
             utime.sleep(self.heart)
 
@@ -75,7 +75,7 @@ class DtuSocket(object):
             self.cli.send(str(reg_data).encode("utf-8"))
             # log.info("Send first login information {}".format(reg_data))
         except Exception as e:
-            log.info('send first login information failed !{}'.format(e))
+            log.info("send first login information failed !{}".format(e))
 
     def disconnect(self):
         self.cli.close()
@@ -104,7 +104,7 @@ class TcpSocket(DtuSocket):
         # self.code = code
         self.cli = usocket.socket(usocket.AF_INET, usocket.SOCK_STREAM)
         self.cli.settimeout(self.keep_alive)  # 链接超时最大时间
-        self.conn_type = 'tcp'
+        self.conn_type = "tcp"
 
 
 class UdpSocket(DtuSocket):
@@ -114,4 +114,4 @@ class UdpSocket(DtuSocket):
         # self.code = code
         self.cli = usocket.socket(usocket.AF_INET, usocket.SOCK_DGRAM)
         self.cli.settimeout(self.keep_alive)
-        self.conn_type = 'udp'
+        self.conn_type = "udp"

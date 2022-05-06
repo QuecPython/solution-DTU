@@ -46,7 +46,7 @@ class ProdDocumentParse(object):
             except Exception as e:
                 # 加载出厂文件
                 try:
-                    with open(CONFIG['config_backup_path'], mode="r") as f:
+                    with open(CONFIG["config_backup_path"], mode="r") as f:
                         self.document = f.read()
                     return self.document
                 except:

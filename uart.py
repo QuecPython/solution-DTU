@@ -6,9 +6,9 @@ from machine import Pin
 from machine import UART
 from usr.modules.common import Singleton
 from usr.dtu_channels import ChannelTransfer
-from usr.command import DtuExecCommand
-from usr.modbus import ModbusMode
-from usr.modbus import ThroughMode
+from usr.command_mode import CommandMode
+from usr.modbus_mode import ModbusMode
+from usr.through_mode import ThroughMode
 from usr.modules.remote import RemotePublish
 from usr.modules.logging import getLogger
 
@@ -22,11 +22,11 @@ class DtuUart(Singleton):
         uconf = ujson.loads(config_params)["uconf"]
         self.serial_map = SERIAL_MAP
         for sid, conf in uconf.items():
-            uart_conn = UART(getattr(UART, 'UART%d' % int(sid)),
+            uart_conn = UART(getattr(UART, "UART%d" % int(sid)),
                              int(conf.get("baudrate")),
                              int(conf.get("databits")),
                              int(conf.get("parity")),
-                             int(conf.get('stopbits')),
+                             int(conf.get("stopbits")),
                              int(conf.get("flowctl")))
             self.serial_map[sid] = uart_conn
         # 初始化方向gpio
@@ -46,7 +46,7 @@ class DtuUart(Singleton):
         self.through_mode = None
         self.__channel = None
         if self.work_mode == "command":
-            self.exec_cmd = DtuExecCommand()
+            self.exec_cmd = CommandMode()
             self.cloud_data_parse = self.exec_cmd.cloud_data_parse
             self.uart_data_parse = self.exec_cmd.uart_data_parse
         elif self.work_mode == "modbus":
@@ -61,7 +61,7 @@ class DtuUart(Singleton):
     def set_channel(self, channel):
         print("set channel")
         self.__channel = channel
-        if isinstance(self.exec_cmd, DtuExecCommand):
+        if isinstance(self.exec_cmd, CommandMode):
             self.exec_cmd.search_cmd.set_channel(channel)
 
     def set_procotol_data(self, procotol):
@@ -84,7 +84,7 @@ class DtuUart(Singleton):
         print("data:", data)
         return self.__remote_pub.post_data(data, channel_id, topic_id)
 
-    def cloud_parse_proc(self, cloud, *args, **kwargs):
+    def cloud_read_data_parse_main(self, cloud, *args, **kwargs):
         print("test67")
         print("kwargs:", kwargs)
         topic_id = None
@@ -108,7 +108,7 @@ class DtuUart(Singleton):
         print("serial_id:", serial_id)
 
         data = kwargs["data"].decode() if isinstance(kwargs["data"], bytes) else kwargs["data"]
-
+        print("test68")
         ret_data = self.cloud_data_parse(data, topic_id, channel_id)
 
         print("ret_data:", ret_data)
@@ -187,13 +187,13 @@ class DtuUart(Singleton):
         # 获取需要返回数据的serialID
         uart = self.serial_map.get(str(sid))
         print(uart)
-        uart.write(rec_format.encode('utf-8'))
+        uart.write(rec_format.encode("utf-8"))
         print(rec_format)
-        print('GUI CMD SUCCESS')
+        print("GUI CMD SUCCESS")
         return True
 
     # to online
-    def uart_read_handler(self, data, sid):
+    def uart_read_data_parse_main(self, data, sid):
         print("sid:", sid)
         print("__channel.serial_channel_dict:", self.__channel.serial_channel_dict)
         cloud_channel_array = self.__channel.serial_channel_dict.get(int(sid))
@@ -233,7 +233,7 @@ class DtuUart(Singleton):
                     print(msg)
                     try:
                         # 初始数据是字节类型（bytes）,将字节类型数据进行编码
-                        self.uart_read_handler(msg, sid)
+                        self.uart_read_data_parse_main(msg, sid)
                     except Exception as e:
                         log.error("UART handler error: %s" % e)
                         utime.sleep_ms(100)

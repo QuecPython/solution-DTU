@@ -17,7 +17,7 @@ class ProdGPIO(Singleton):
                     log.error("dtu_config.json pins setting error! Only allow numbers")
                     continue
                 log.info("gpio {} set".format(gpio))
-                gpio_n = getattr(Pin, 'GPIO%d' % gpio)
+                gpio_n = getattr(Pin, "GPIO%d" % gpio)
                 gpio_obj = Pin(gpio_n, Pin.OUT, Pin.PULL_DISABLE, 0)
                 setattr(self, "gpio%d" % gpio, gpio_obj)
                 set_gpio = True

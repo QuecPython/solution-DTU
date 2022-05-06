@@ -1,6 +1,5 @@
 import sim, uos, dataCall, ujson, net, modem, utime, _thread, uhashlib, fota, ure, ubinascii, cellLocator, request
 from usr.modules.common import Singleton
-from usr.offline_storage import OfflineStorage
 from usr.modules.aliyunIot import AliYunIot, AliObjectModel
 from usr.modules.quecthing import QuecThing, QuecObjectModel
 from usr.modules.dtu_mqtt import DtuMqttTransfer
@@ -216,7 +215,7 @@ class ProdDtu(Singleton):
             ##################################################################################
             # 模组临终遗言信息上报
             if "system.log" not in uos.listdir(usr):
-                log.info("**********'system.log' not exist***********")
+                log.info("**********system.log not exist***********")
                 log.info("*********last will was not reported********")
                 return
             with open(usr + "system.log", "r") as f:
@@ -261,8 +260,10 @@ class ProdDtu(Singleton):
         self._serv_connect(self.channel.cloud_channel_dict, reg_data)
         print("SERV conn success")
         _thread.start_new_thread(self.uart.read, ())
+        """
         if self.parse_data.offline_storage:
             _thread.start_new_thread(self.retry_offline_handler, ())
+        """
 
     def _serv_connect(self, serv_list, reg_data):
         print("serv_list:",serv_list)
@@ -270,7 +271,7 @@ class ProdDtu(Singleton):
         for cid, data in serv_list.items():
             if not data:
                 continue
-            protocol = data.get('protocol').lower()
+            protocol = data.get("protocol").lower()
             if protocol == "mqtt":
                 dtu_mq = DtuMqttTransfer(self.uart)
                 status = dtu_mq.serialize(data)
@@ -377,7 +378,7 @@ class ProdDtu(Singleton):
                             tcp_sock.first_reg(reg_data)
                             log.info("TCP send first login information {}".format(reg_data))
                         if data.get("ping"):
-                            if int(data.get('heartbeat')) != 0:
+                            if int(data.get("heartbeat")) != 0:
                                 _thread.start_new_thread(tcp_sock.Heartbeat, ())
                         self.channel.cloud_object_dict[cid] = tcp_sock
                         tcp_sock.channel_id = cid
@@ -398,7 +399,7 @@ class ProdDtu(Singleton):
                             udp_sock.first_reg(reg_data)
                             log.info("UDP send first login information {}".format(reg_data))
                         if data.get("ping"):
-                            if int(data.get('heartbeat')) != 0:
+                            if int(data.get("heartbeat")) != 0:
                                 _thread.start_new_thread(udp_sock.Heartbeat, ())
                         self.channel.cloud_object_dict[cid] = udp_sock
                         udp_sock.channel_id = cid
@@ -470,14 +471,14 @@ class ProdDtu(Singleton):
             except Exception as e:
                 print(e)
                 print("Switch to backup file")
-                CONFIG['config_path'] = CONFIG['config_path'] + ".bak"
+                CONFIG["config_path"] = CONFIG["config_path"] + ".bak"
                 # 尝试加载备份config
                 try:
                     self._run()
                 except Exception as e:
                     print(e)
                     print("Switch to default file")
-                    CONFIG['config_path'] = CONFIG['config_default_path']
+                    CONFIG["config_path"] = CONFIG["config_default_path"]
                     # 尝试加载默认config
                     try:
                         self._run()
@@ -536,11 +537,11 @@ def run():
     
     dtu.set_channel(channels)
 
-    dtu.set_off_storage(OfflineStorage())
+    #dtu.set_off_storage(OfflineStorage())
     
     dtu.refresh()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     run()
 

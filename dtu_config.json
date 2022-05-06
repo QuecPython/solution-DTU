@@ -45,10 +45,22 @@
     ""
   ],
   "service_acquire": 0,
-  "work_mode": "command",
+  "work_mode": "modbus",
   "auto_connect": 1,
   "offline_storage": false,
   "modbus":{
+    "groups":[        
+      {
+        "device_type": "temp_humid_sensor",     
+        "device_model": "TH10S-B",             
+        "slave_address":["0x01"]             
+      },
+      {
+        "device_type": "light_sensor",
+        "device_model": "YGC-BG-M",
+        "slave_address":["0x02", "0x03"]
+      }
+    ]
   }
   
   }

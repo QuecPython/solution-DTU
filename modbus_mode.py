@@ -50,9 +50,9 @@ class ModbusMode(Singleton):
             self.groups[idx] = [int(x, 16) for x in group["slave_address"]]
             idx += 1
 
-    def cloud_data_parse(self, data):
+    def cloud_data_parse(self, data, topic_id, channel_id):
         ret_data = {"cloud_data":None, "uart_data":None}
-
+        print("test69")
         try:
             if isinstance(data, str):
                 msg_data = ujson.loads(data)
@@ -70,7 +70,7 @@ class ModbusMode(Singleton):
                     try:
                         int_cmd = [int(x, 16) for x in cmd]
                     except Exception as e:
-                        print("modbus command error: %s" % e)
+                        log.info("modbus command error: %s" % e)
                         ret_data["cloud_data"] = {"status": 0, "error": e}
                     groups_addr = self.groups.get(int(groups_num))
                     for addr in groups_addr:
@@ -87,7 +87,7 @@ class ModbusMode(Singleton):
                         int_cmd = [int(x, 16) for x in command]
                         crc_cmd = modbus_crc(bytearray(int_cmd))
                     except Exception as e:
-                        print("modbus command error: %s" % e)
+                        log.info("modbus command error: %s" % e)
                         ret_data["cloud_data"] = {"status": 0, "error": e}
                     print("modbus write cmd")
                     print(crc_cmd)
@@ -120,74 +120,3 @@ class ModbusMode(Singleton):
         else:
             topics = list(channel.get("publish").keys())
             return hex_list, [cloud_channel_id, topics[0]]
-
-class ThroughMode(Singleton):
-    def __init__(self):
-        self.__protocol = None
-
-    def set_protocol(self, protocol):
-        self.__protocol = protocol
-
-    def cloud_data_parse(self, data, topic_id, channel_id):
-        ret_data = {"cloud_data":None, "uart_data":None}
-
-        if isinstance(data, (int, float)):
-            data = str(data)
-        package_data = self.__protocol.package_datas(data, topic_id)
-        print("package_data:", package_data)
-        ret_data["uart_data"] = package_data
-        return ret_data
-
-    def uart_data_parse(self, data, cloud_channel_dict, cloud_channel_array=None):
-        str_msg = data.decode()
-        params_list = str_msg.split(",")
-        if len(params_list) not in [2, 4, 5]:
-            log.error("param length error")
-            return False, []
-        # Modbus模式和透传模式 下一个串口通道只能绑定一个云端口
-        cloud_channel_id = cloud_channel_array[0]
-        channel = cloud_channel_dict.get(str(cloud_channel_id))
-        if not channel:
-            log.error("Channel id not exist. Check serialID config.")
-            return False, []
-        print("channel.get(protocol):", channel.get("protocol"))
-        if channel.get("protocol") in ["http", "tcp", "udp"]:
-            msg_len = params_list[1]
-            if msg_len == "0":
-                return "", [cloud_channel_id]
-            else:
-                crc32 = params_list[1]
-                msg_data = params_list[2]
-                try:
-                    msg_len_int = int(msg_len)
-                except:
-                    log.error("data parse error")
-                    return False, []
-                valid_rec = self.__protocol.validate_length(msg_len_int, msg_data, str_msg)
-                if not valid_rec:
-                    return False, []
-                cal_crc32 = self.__protocol.crc32(msg_data)
-                if cal_crc32 == crc32:
-                    return msg_data, [cloud_channel_id]
-                else:
-                    log.error("crc32 error")
-                    return False, []
-        else:
-            topic_id = params_list[0]
-            msg_len = params_list[1]
-            crc32 = params_list[2]
-            msg_data = params_list[3]
-            try:
-                msg_len_int = int(msg_len)
-            except:
-                log.error("data parse error")
-                return False, []
-            # 加入buffer
-            valid_rec = self.__protocol.validate_length(msg_len_int, msg_data, str_msg)
-            if not valid_rec:
-                return False, []
-            cal_crc32 = self.__protocol.crc32(msg_data)
-            if crc32 == cal_crc32:
-                return msg_data, [cloud_channel_id, topic_id]
-            else:
-                return False, []
