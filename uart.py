@@ -84,6 +84,8 @@ class DtuUart(Singleton):
         return self.__remote_pub.post_data(data, channel_id, topic_id)
 
     def cloud_parse_proc(self, cloud, *args, **kwargs):
+        print("test67")
+        print("kwargs:", kwargs)
         topic_id = None
         channel_id = None
         serial_id = None
@@ -100,8 +102,14 @@ class DtuUart(Singleton):
         for sid, cid in self.__channel.serial_channel_dict.items():
             if channel_id in cid:
                 serial_id = sid
+        print("topic_id:", topic_id)
+        print("channel_id:", channel_id)
+        print("serial_id:", serial_id)
 
-        ret_data = self.cloud_data_parse(kwargs["data"], topic_id, channel_id)
+        data = kwargs["data"].decode() if isinstance(kwargs["data"], bytes) else kwargs["data"]
+        ret_data = self.cloud_data_parse(data, topic_id, channel_id)
+        
+        print("ret_data:", ret_data)
 
         # reply cloud query command
         if ret_data["cloud_data"] is not None:

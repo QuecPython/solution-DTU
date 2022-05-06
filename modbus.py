@@ -47,7 +47,7 @@ class ModbusMode(Singleton):
         print(groups_conf)
         for group in groups_conf:
             print(group)
-            self.groups[idx] = [int(x, 16) for x in group['slave_address']]
+            self.groups[idx] = [int(x, 16) for x in group["slave_address"]]
             idx += 1
 
     def cloud_data_parse(self, data):
@@ -65,8 +65,8 @@ class ModbusMode(Singleton):
             modbus_data = msg_data.get("modbus", None)
             if modbus_data is not None:
                 if "groups" in data:
-                    groups_num = data['groups'].get("num")
-                    cmd = data['groups'].get("cmd")
+                    groups_num = data["groups"].get("num")
+                    cmd = data["groups"].get("cmd")
                     try:
                         int_cmd = [int(x, 16) for x in cmd]
                     except Exception as e:
@@ -80,9 +80,9 @@ class ModbusMode(Singleton):
                         print(crc_cmd)
                         ret_data["uart_data"] = crc_cmd
                         utime.sleep(1)
-                    ret_data["cloud_data"] = {'code': cmd, 'status': 1}
+                    ret_data["cloud_data"] = {"code": cmd, "status": 1}
                 elif "command" in data:
-                    command = data['command']
+                    command = data["command"]
                     try:
                         int_cmd = [int(x, 16) for x in command]
                         crc_cmd = modbus_crc(bytearray(int_cmd))
@@ -102,7 +102,7 @@ class ModbusMode(Singleton):
                 log.info("{}: {}".format(error_map.get(RET.CMDPARSEERR), e))
 
     def uart_data_parse(self, data, cloud_channel_dict, cloud_channel_array=None):
-        str_msg = ubinascii.hexlify(data, ',').decode()
+        str_msg = ubinascii.hexlify(data, ",").decode()
         # Modbus模式和透传模式 下一个串口通道只能绑定一个云端口
         cloud_channel_id = cloud_channel_array[0]
         channel = cloud_channel_dict.get(str(cloud_channel_id))
@@ -115,7 +115,7 @@ class ModbusMode(Singleton):
         modbus_data_list = str_msg.split(",")
         hex_list = ["0x" + x for x in modbus_data_list]
         # 返回channel
-        if channel.get("protocol") in ['http', 'tcp', 'udp']:
+        if channel.get("protocol") in ["http", "tcp", "udp"]:
             return hex_list, [cloud_channel_id]
         else:
             topics = list(channel.get("publish").keys())
@@ -133,8 +133,10 @@ class ThroughMode(Singleton):
 
         if isinstance(data, (int, float)):
             data = str(data)
-        package_data = self.protocol.package_datas(data, topic_id)
+        package_data = self.__protocol.package_datas(data, topic_id)
+        print("package_data:", package_data)
         ret_data["uart_data"] = package_data
+        return ret_data
 
     def uart_data_parse(self, data, cloud_channel_dict, cloud_channel_array=None):
         str_msg = data.decode()
@@ -149,7 +151,7 @@ class ThroughMode(Singleton):
             log.error("Channel id not exist. Check serialID config.")
             return False, []
         print("channel.get(protocol):", channel.get("protocol"))
-        if channel.get("protocol") in ['http', 'tcp', 'udp']:
+        if channel.get("protocol") in ["http", "tcp", "udp"]:
             msg_len = params_list[1]
             if msg_len == "0":
                 return "", [cloud_channel_id]

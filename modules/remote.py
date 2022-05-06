@@ -32,7 +32,8 @@ class RemoteSubscribe(CloudObserver):
         return False
 
     def raw_data(self, observable, *args, **kwargs):
-        return self.__executor.cloud_data_parse(observable, *args, **kwargs) if self.__executor else False
+        print("test66")
+        return self.__executor.cloud_parse_proc(observable, *args, **kwargs) if self.__executor else False
 
     def object_model(self, observable, *args, **kwargs):
         return self.__executor.event_done(*args, **kwargs) if self.__executor else False
@@ -52,6 +53,7 @@ class RemoteSubscribe(CloudObserver):
             return False
 
     def execute(self, observable, *args, **kwargs):
+        print("test63")
         """
         1. observable: Cloud Iot Object.
         2. args[1]: Cloud DownLink Data Type.
@@ -65,8 +67,10 @@ class RemoteSubscribe(CloudObserver):
         opt_attr = args[1]
         opt_args = args[2] if not isinstance(args[2], dict) else ()
         opt_kwargs = args[2] if isinstance(args[2], dict) else {}
+        print("test64")
         if hasattr(self, opt_attr):
             option_fun = getattr(self, opt_attr)
+            print("test65")
             return option_fun(observable, *opt_args, **opt_kwargs)
         else:
             log.error("RemoteSubscribe Has No Attribute [%s]." % opt_attr)

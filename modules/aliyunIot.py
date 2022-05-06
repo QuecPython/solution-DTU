@@ -318,7 +318,10 @@ class AliYunIot(CloudObservable):
             data: response dictionary info
         """
         topic = topic.decode()
-        data = ujson.loads(data)
+        try:
+            data = ujson.loads(data)
+        except:
+            pass
         log.info("topic: %s, data: %s" % (topic, data))
         if topic.endswith("/post_reply"):
             self.__put_post_res(data["id"], True if data["code"] == 200 else False)
@@ -358,7 +361,11 @@ class AliYunIot(CloudObservable):
         elif topic.find("/rrpc/request/") != -1:
             self.notifyObservers(self, *("rrpc_request", topic, data))
         else:
-            self.notifyObservers(self, *("raw_data", {"topic":topic, "data":data}))
+            print("test 61")
+            try:
+                self.notifyObservers(self, *("raw_data", {"topic":topic, "data":data} ) )
+            except Exception as e:
+                log.error("{}".format(e))
 
     def __data_format(self, data):
         """Publish data format by AliObjectModel
@@ -587,7 +594,16 @@ class AliYunIot(CloudObservable):
     def through_post_data(self, data, topic_id):
         print("test56")
         print("self.pub_topic_dict[topic_id]:", self.pub_topic_dict[topic_id])
-        self.__ali.publish(self.pub_topic_dict[topic_id], data, qos=0)
+        try:
+            pub_res = self.__ali.publish(self.pub_topic_dict[topic_id], data, qos=0)
+            print("pub_res:", pub_res)
+            if pub_res == 0:
+                return True
+            else:
+                return False
+        except Exception:
+            log.error("AliYun publish topic %s failed. data: %s" % (self.pub_topic_dict[topic_id], data))
+        return False
 
     def rrpc_response(self, message_id, data):
         """Publish rrpc response
