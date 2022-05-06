@@ -387,7 +387,8 @@ class DtuExecCommand(Singleton):
 
     def cloud_data_parse(self, data, topic_id, channel_id):
         ret_data = {"cloud_data":None, "uart_data":None}
-
+        print("data:", data)
+        print("type data:", type(data))
         try:
             if isinstance(data, str):
                 msg_data = ujson.loads(data)
@@ -397,41 +398,60 @@ class DtuExecCommand(Singleton):
                 msg_data = data
             else:
                 raise error_map.get(RET.CMDPARSEERR)
+        except Exception as e:
+                log.info(e)
 
-            cmd_code = msg_data.get("cmd_code", None)
-            msg_id = msg_data.get("msg_id")
-            password = msg_data.get("password", None)
-            cloud_request_topic = msg_data.get("topic_id", None)
+        print("test72")
+        cmd_code = msg_data.get("cmd_code", None)
+        msg_id = msg_data.get("msg_id")
+        password = msg_data.get("password", None)
+        cloud_request_topic = msg_data.get("topic_id", None)
+        data = msg_data.get("data", None)
+        print("test73")
 
-            if cmd_code is not None:
-                if cmd_code not in self.not_need_password_verify_code:
-                    if password != self.dtu_d.password:
-                        log.error(error_map.get(RET.PASSWDVERIFYERR))
-                        ret_data["cloud_data"] = {"code": cmd_code, "status": 0, "error": error_map.get(RET.PASSWDVERIFYERR)}
+        if cmd_code is not None:
+            if cmd_code not in self.not_need_password_verify_code:
+                if password != self.dtu_d.password:
+                    log.error(error_map.get(RET.PASSWDVERIFYERR))
+                    ret_data["cloud_data"] = {"code": cmd_code, "status": 0, "error": error_map.get(RET.PASSWDVERIFYERR)}
 
-                print("cmd_code", cmd_code)
-                if cmd_code in self.search_command_func_code_list:
+            print("cmd_code", cmd_code)
+            if cmd_code in self.search_command_func_code_list:
+                try:
+                    print("test74")
                     cmd_str = self.search_command.get(cmd_code)
+                    print("test75")
                     func = getattr(self.search_cmd, cmd_str)
+                    print("test76")
                     ret_data["cloud_data"] = func(cmd_code, msg_data)
-                elif cmd_code in self.basic_setting_command_list:
+                    print("ret_data:", ret_data["cloud_data"])
+                except Exception as e:
+                    log.error("search_command_func_code_list:", e)
+            elif cmd_code in self.basic_setting_command_list:
+                try:
                     cmd_str = self.basic_setting_command.get(cmd_code)
                     func = getattr(self.setting_cmd, cmd_str)
                     ret_data["cloud_data"] = func(cmd_code, msg_data)
-                else:
-                    # err
-                    log.error(error_map.get(RET.POINTERR))
-                    ret_data["cloud_data"] = {"code": cmd_code, "status": 0, "error": error_map.get(RET.POINTERR)}
-  
-                ret_data["cloud_data"]["msg_id"] = msg_id
-                if cloud_request_topic is not None:
-                    ret_data["cloud_data"]["topic_id"] = cloud_request_topic
+                except Exception as e:
+                    log.error("basic_setting_command_list:", e)
             else:
-                package_data = self.__protocol.package_datas(data, topic_id, channel_id)
-                ret_data["uart_data"] = package_data
-                return ret_data
-        except Exception as e:
-                log.info("{}: {}".format(error_map.get(RET.CMDPARSEERR), e))
+                # err
+                log.error(error_map.get(RET.POINTERR))
+                ret_data["cloud_data"] = {"code": cmd_code, "status": 0, "error": error_map.get(RET.POINTERR)}
+
+            # 应答报文中msg_id与 云端发送的msg_id保持一致
+            ret_data["cloud_data"]["msg_id"] = msg_id
+
+            # 判断云端指令中是否指定应答报文的topic
+            if cloud_request_topic is not None:
+                ret_data["cloud_data"]["topic_id"] = cloud_request_topic
+            
+            return ret_data
+        else:
+            package_data = self.__protocol.package_datas(data, topic_id, channel_id)
+            ret_data["uart_data"] = package_data
+            return ret_data
+        
 
     def uart_data_parse(self, data, cloud_channel_dict, cloud_channel_array=None):
         str_msg = data.decode()

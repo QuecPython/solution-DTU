@@ -191,7 +191,7 @@ class ProdDtu(Singleton):
                 report_url = "https://cloudota.quectel.com:8100/v1/fota/status/report"
                 print("Please do not send instructions during the upgrade...")
                 resp = request.get(url_zip)
-                update_file = "dtu_handler_{}.py".format(targetVersion)
+                update_file = "dtu_{}.py".format(targetVersion)
                 f = open(usr + update_file, "wb+")
                 count = 0
                 for i in resp.content:
@@ -201,7 +201,7 @@ class ProdDtu(Singleton):
                 f.close()
                 if filesize != count:
                     log.info("Failed to download package data validation")
-                    uos.remove(usr + "dtu_handler_V1.0.1.py")
+                    uos.remove(usr + "dtu_V1.0.1.py")
                     #  模组状态及结果上报 升级失败，信息上报
                     data = self.data_info(version, imei, 8, "Update Failed")
                     request.post(report_url, data=ujson.dumps(data), headers=headers)
@@ -294,6 +294,8 @@ class ProdDtu(Singleton):
                                     data.get("DeviceSecret"),
                                     ("%s.iot-as-mqtt.cn-shanghai.aliyuncs.com" % data.get("ProductKey")),
                                     data.get("clientID"),
+                                    data.get("publish"),
+                                    data.get("subscribe"),
                                     burning_method = (1 if data.get("type") == "mos" else 0),
                                     mcu_name=PROJECT_NAME,
                                     mcu_version=PROJECT_VERSION,

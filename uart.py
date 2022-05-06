@@ -81,6 +81,7 @@ class DtuUart(Singleton):
         if not self.__remote_pub:
             raise TypeError("self.__remote_pub is not registered.")
         print("test51")
+        print("data:", data)
         return self.__remote_pub.post_data(data, channel_id, topic_id)
 
     def cloud_parse_proc(self, cloud, *args, **kwargs):
@@ -107,13 +108,26 @@ class DtuUart(Singleton):
         print("serial_id:", serial_id)
 
         data = kwargs["data"].decode() if isinstance(kwargs["data"], bytes) else kwargs["data"]
+
         ret_data = self.cloud_data_parse(data, topic_id, channel_id)
-        
+
         print("ret_data:", ret_data)
 
         # reply cloud query command
         if ret_data["cloud_data"] is not None:
-            self.remote_post_data(self, channel_id, topic_id, ret_data["cloud_data"])
+            if "topic_id" in ret_data["cloud_data"]:
+                topic_id = ret_data["cloud_data"].pop("topic_id")
+                if not isinstance(topic_id, str):
+                    topic_id = str(topic_id)
+                    print("topic type:", type(topic_id))
+                print("pop topic:", topic_id)
+            else:
+                topic_id = list(cloud.pub_topic_dict.keys())[0] 
+                print("topic:", topic_id)
+            print("cloud_data type:", type(ret_data["cloud_data"]))
+            str_data = ujson.dumps(ret_data["cloud_data"])
+
+            self.remote_post_data(channel_id, topic_id, data=str_data)
         #send to uart cloud message
         if ret_data["uart_data"] is not None:
             uart_port = self.serial_map.get(str(serial_id))
@@ -197,6 +211,11 @@ class DtuUart(Singleton):
         print("test46")
         if read_msg is False:
             return False
+
+        if not isinstance(read_msg, str):
+            print("read_msg type1:", type(read_msg))
+            read_msg = str(read_msg)
+            print("read_msg type2:", type(read_msg))
         
         if len(send_params) == 2:
             self.remote_post_data(channel_id=send_params[0], topic_id=send_params[1], data=read_msg)

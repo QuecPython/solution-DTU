@@ -202,6 +202,7 @@ class AliYunIot(CloudObservable):
         self.__id_lock = _thread.allocate_lock()
 
         self.__ota = AliOTA(self, self.__mcu_name, self.__firmware_name)
+        print("pub_topic ali init:", pub_topic)
         if pub_topic == None:
             self.pub_topic_dict = {"0": "/%s/%s/user/update" % (self.__pk, self.__dk)}
         else:
@@ -593,7 +594,10 @@ class AliYunIot(CloudObservable):
 
     def through_post_data(self, data, topic_id):
         print("test56")
+        print("topic_id type:", type(self.pub_topic_dict))
+        print("self.pub_topic_dict:", self.pub_topic_dict)
         print("self.pub_topic_dict[topic_id]:", self.pub_topic_dict[topic_id])
+        print("data:", data)
         try:
             pub_res = self.__ali.publish(self.pub_topic_dict[topic_id], data, qos=0)
             print("pub_res:", pub_res)

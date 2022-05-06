@@ -14,7 +14,7 @@
       "cleanSession": "0",
       "qos": "1",
       "subscribe": {"0": "/gzsi5zT5fH3/dtu_device1/user/get"},
-      "publish": {"0": "/gzsi5zT5fH3/dtu_device1/user/update"},
+      "publish": {"0": "/gzsi5zT5fH3/dtu_device1/user/update", "1": "/gzsi5zT5fH3/dtu_device1/user/update2"},
       "serialID": 2
     }
   },
@@ -45,7 +45,7 @@
     ""
   ],
   "service_acquire": 0,
-  "work_mode": "through",
+  "work_mode": "command",
   "auto_connect": 1,
   "offline_storage": false,
   "modbus":{
