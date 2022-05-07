@@ -328,6 +328,7 @@ class ProdDtu(Singleton):
                                      data.get("Devicename"),
                                      data.get("DeviceSecret"),
                                      "iot-south.quectel.com:1883",
+                                     int(data.get("qos", 0)),
                                      mcu_name=PROJECT_NAME,
                                      mcu_version=PROJECT_VERSION)
                 quec_req.init(enforce=True)

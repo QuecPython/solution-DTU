@@ -270,7 +270,7 @@ class QuecThing(CloudObservable):
         6. cloud.close()
     """
 
-    def __init__(self, pk, ps, dk, ds, server, life_time=120, mcu_name="", mcu_version=""):
+    def __init__(self, pk, ps, dk, ds, server, qos, life_time=120, mcu_name="", mcu_version=""):
         """
         1. Init parent class CloudObservable
         2. Init cloud connect params
@@ -285,6 +285,7 @@ class QuecThing(CloudObservable):
         self.__mcu_name = mcu_name
         self.__mcu_version = mcu_version
         self.__object_model = None
+        self.__qos = qos
 
         self.__ota = QuecOTA()
         self.__post_result_wait_queue = Queue(maxsize=16)
@@ -398,7 +399,9 @@ class QuecThing(CloudObservable):
         elif event == 5:
             if errcode == 10200:
                 # TODO: Data Type Passthrough (Not Support Now).
-                res_data = ("raw_data", {"topic":None, "data":eventdata})
+                print("test quecthing")
+                print("eventdata:", eventdata)
+                res_data = ("raw_data", {"pkgid":0, "data":eventdata})
                 res_datas.append(res_data)
             elif errcode == 10210:
                 dl_data = [(self.__object_model.items_id[k], v.decode() if isinstance(v, bytes) else v) for k, v in eventdata.items()]
@@ -463,8 +466,12 @@ class QuecThing(CloudObservable):
                 res_datas.append(res_data)
 
         if res_datas:
-            for res_data in res_datas:
-                self.notifyObservers(self, *res_data)
+            print("test 61")
+            try:
+                for res_data in res_datas:
+                    self.notifyObservers(self, *res_data)
+            except Exception as e:
+                log.error("{}".format(e))
 
     def set_object_model(self, object_model):
         """Register QuecObjectModel to this class"""
@@ -593,6 +600,25 @@ class QuecThing(CloudObservable):
 
         self.__rm_empty_data(data)
         return res
+
+    def through_post_data(self, data, topic_id=None):
+        print("test56")
+        print("data:{}".format(data))
+        print("data type:{}".format(type(data)))
+        """
+        data_bytes = data.encode("UTF-8")
+        print("data_bytes:{}".format(data_bytes))
+        print("data_bytes type:{}".format(type(data_bytes)))
+        """
+        try:
+            print("__qos:", self.__qos)
+            print("type __qos:", type(self.__qos))
+            pub_res = quecIot.passTransSend(self.__qos, data)
+            print("pub_res:", pub_res)
+            return pub_res
+        except Exception as e:
+            log.error("quecthing passTransSend failed: %s. data: %s" % (e, data))
+        return False
 
     def device_report(self):
         return quecIot.devInfoReport([i for i in range(1, 13)])

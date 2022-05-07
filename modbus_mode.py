@@ -116,7 +116,7 @@ class ModbusMode(Singleton):
         modbus_data_list = str_msg.split(",")
         hex_list = ["0x" + x for x in modbus_data_list]
         # 返回channel
-        if channel.get("protocol") in ["http", "tcp", "udp"]:
+        if channel.get("protocol") in ["http", "tcp", "udp", "quecthing"]:
             return hex_list, [cloud_channel_id]
         else:
             topics = list(channel.get("publish").keys())

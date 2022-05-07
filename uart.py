@@ -91,11 +91,17 @@ class DtuUart(Singleton):
         topic_id = None
         channel_id = None
         serial_id = None
+        pkg_id = None
 
-        if kwargs["topic"] is not None:
+        # 云端为MQTT/Aliyun/Txyun时可获取tpoic id
+        if kwargs.get("topic") is not None:
             for k, v in cloud.sub_topic_dict.items():
                 if kwargs["topic"] == v:
                     topic_id = k
+        # 云端为quecthing 时，没有topic id 
+        pkg_id = kwargs.get("pkgid", None)
+
+        topic_id = topic_id if topic_id is not None else pkg_id
         
         for k, v in self.__channel.cloud_object_dict.items():
             if cloud == v:
@@ -104,7 +110,7 @@ class DtuUart(Singleton):
         for sid, cid in self.__channel.serial_channel_dict.items():
             if channel_id in cid:
                 serial_id = sid
-                
+
         print("topic_id:", topic_id)
         print("channel_id:", channel_id)
         print("serial_id:", serial_id)
@@ -117,16 +123,16 @@ class DtuUart(Singleton):
 
         # reply cloud query command
         if ret_data["cloud_data"] is not None:
-            if "topic_id" in ret_data["cloud_data"]:
-                topic_id = ret_data["cloud_data"].pop("topic_id")
-                if not isinstance(topic_id, str):
-                    topic_id = str(topic_id)
-                    print("topic type:", type(topic_id))
-                print("pop topic:", topic_id)
+            cloud_name = self.__channel.cloud_channel_dict[channel_id].get("protocol")
+            if cloud_name in ["mqtt", "aliyun", "txyun", "hwyun"]:
+                if "topic_id" in ret_data["cloud_data"]:
+                    topic_id = ret_data["cloud_data"].pop("topic_id")
+                    if not isinstance(topic_id, str):
+                        topic_id = str(topic_id)
+                else:
+                    topic_id = list(cloud.pub_topic_dict.keys())[0] 
             else:
-                topic_id = list(cloud.pub_topic_dict.keys())[0] 
-                print("topic:", topic_id)
-            print("cloud_data type:", type(ret_data["cloud_data"]))
+                topic_id = None
             str_data = ujson.dumps(ret_data["cloud_data"])
 
             self.remote_post_data(channel_id, topic_id, data=str_data)

@@ -29,16 +29,27 @@ class DtuProtocolData(Singleton):
 
     def package_datas(self, msg_data, topic_id=None, channel_id=None):
         print(msg_data)
+        print("test691")
 
+        data = []
         msg_length = len(str(msg_data))
-        topic_id_str = str(topic_id) if topic_id is not None else ""
-        channel_id_str = str(channel_id) if channel_id is not None else ""
+        if channel_id is not None:
+            data.append(str(channel_id))
+        if topic_id is not None:
+            data.append(str(topic_id))
+        data.append(str(msg_length))
+        print("test692")
+        print("data array:", data)
 
-        if len(msg_data) == 0:
-            ret_bytes = "%s,%s,%d".encode("utf-8") % (channel_id_str, topic_id_str, msg_length)
-        else:
+        if len(msg_data) != 0:
             crc32_val = self.crc32(str(msg_data))
-            ret_bytes = "%s,%s,%d,%d,%s".encode("utf-8") % (channel_id_str, topic_id_str, msg_length, crc32_val, str(msg_data))
+            data.append(crc32_val)
+            data.append(str(msg_data))
+       
+        data_str = ",".join(data)
+        ret_bytes = data_str.encode()
+        print("ret_bytes:", ret_bytes)
+            
         return ret_bytes
 
     def validate_length(self, data_len, msg_data, str_msg):
