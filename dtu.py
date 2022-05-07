@@ -330,6 +330,7 @@ class ProdDtu(Singleton):
                                      "iot-south.quectel.com:1883",
                                      mcu_name=PROJECT_NAME,
                                      mcu_version=PROJECT_VERSION)
+                quec_req.init(enforce=True)
                 quec_req.addObserver(self.remote_sub)
                 self.remote_pub.add_cloud(quec_req, cid)
                 self.channel.cloud_object_dict[cid] = quec_req

@@ -52,7 +52,8 @@ class ModbusMode(Singleton):
 
     def cloud_data_parse(self, data, topic_id, channel_id):
         ret_data = {"cloud_data":None, "uart_data":None}
-        print("test69")
+        print("data:{}".format(data))
+        print("data type:{}".format(type(data)))
         try:
             if isinstance(data, str):
                 msg_data = ujson.loads(data)
@@ -64,9 +65,9 @@ class ModbusMode(Singleton):
                 raise error_map.get(RET.CMDPARSEERR)
             modbus_data = msg_data.get("modbus", None)
             if modbus_data is not None:
-                if "groups" in data:
-                    groups_num = data["groups"].get("num")
-                    cmd = data["groups"].get("cmd")
+                if "groups" in modbus_data:
+                    groups_num = modbus_data["groups"].get("num")
+                    cmd = modbus_data["groups"].get("cmd")
                     try:
                         int_cmd = [int(x, 16) for x in cmd]
                     except Exception as e:
@@ -82,7 +83,7 @@ class ModbusMode(Singleton):
                         utime.sleep(1)
                     ret_data["cloud_data"] = {"code": cmd, "status": 1}
                 elif "command" in data:
-                    command = data["command"]
+                    command = modbus_data["command"]
                     try:
                         int_cmd = [int(x, 16) for x in command]
                         crc_cmd = modbus_crc(bytearray(int_cmd))

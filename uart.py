@@ -86,7 +86,8 @@ class DtuUart(Singleton):
 
     def cloud_read_data_parse_main(self, cloud, *args, **kwargs):
         print("test67")
-        print("kwargs:", kwargs)
+        print("kwargs:{}".format(kwargs))
+        print("kwargs type:{}".format(type(kwargs)))
         topic_id = None
         channel_id = None
         serial_id = None
@@ -103,6 +104,7 @@ class DtuUart(Singleton):
         for sid, cid in self.__channel.serial_channel_dict.items():
             if channel_id in cid:
                 serial_id = sid
+                
         print("topic_id:", topic_id)
         print("channel_id:", channel_id)
         print("serial_id:", serial_id)
