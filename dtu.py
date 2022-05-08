@@ -4,7 +4,7 @@ from usr.modules.aliyunIot import AliYunIot, AliObjectModel
 from usr.modules.quecthing import QuecThing, QuecObjectModel
 from usr.modules.dtu_mqtt import DtuMqttTransfer
 from usr.modules.huawei_cloud import HuaweiCloudTransfer
-from usr.modules.tencent_cloud import TXYDtuMqttTransfer
+from usr.modules.txyunIot import TXYunIot
 from usr.modules.dtu_request import DtuRequest
 from usr.modules.tcp_udpsocket import TcpSocket
 from usr.modules.tcp_udpsocket import UdpSocket
@@ -20,6 +20,7 @@ from usr.modules.remote import RemotePublish, RemoteSubscribe
 from usr.modules.logging import getLogger
 from usr.settings import PROJECT_NAME, PROJECT_VERSION, DEVICE_FIRMWARE_NAME, DEVICE_FIRMWARE_VERSION
 from usr.dtu_protocol_data import DtuProtocolData
+from usr.modules.history import History
 
 log = getLogger(__name__)
 
@@ -27,46 +28,50 @@ log = getLogger(__name__)
 class ProdDtu(Singleton):
 
     def __init__(self):
-        self.gpio = None
-        self.uart = None
-        self.parse_data = None
-        self.document_parser = None
-        self.channel = None
-        self.offline_storage = None
-        self.off_storage = None
-        self.remote_sub = None
-        self.remote_pub = None
+        self.__gpio = None
+        self.__uart = None
+        self.__parse_data = None
+        self.__document_parser = None
+        self.__channel = None
+        self.__history = None
+        #self.off_storage = None
+        self.__remote_sub = None
+        self.__remote_pub = None
 
-    def set_gpio(self, gpio):
-        self.gpio = gpio
+    def add_module(self, module):
+        if isinstance(module, ProdGPIO):
+            self.__gpio = module
+            return True
+        elif isinstance(module, DtuUart):
+            self.__uart = module
+            return True
+        elif isinstance(module, DTUDocumentData):
+            self.__parse_data = module
+            return True
+        elif isinstance(module, ProdDocumentParse):
+            self.__document_parser = module
+            return True
+        elif isinstance(module, ChannelTransfer):
+            self.__channel = module
+            return True
+        elif isinstance(module, History):
+            self.__history = module
+            return True
+        elif isinstance(module, RemoteSubscribe):
+            self.__remote_sub = module
+            return True
+        elif isinstance(module, RemotePublish):
+            self.__remote_pub = module
+            return True
 
-    def set_uart(self, uart):
-        self.uart = uart
-
-    def set_parse_data(self, parse_data):
-        self.parse_data = parse_data
-
-    def set_document_parser(self, document_parser):
-        self.document_parser = document_parser
-
-    def set_channel(self, channel):
-        self.channel = channel
-    
-    def set_off_storage(self, offline_storage):
-        self.offline_storage = offline_storage
-
-    def set_remote_sub(self, sub):
-        self.remote_sub = sub
-
-    def set_remote_pub(self, pub):
-        self.remote_pub = pub
+        return False
 
 
     def prepare(self):
         while True:
             if not sim.getStatus():
-                if not self.gpio.status():
-                    self.gpio.show()
+                if not self.__gpio.status():
+                    self.__gpio.show()
                 utime.sleep(1)
             else:
                 break
@@ -74,9 +79,9 @@ class ProdDtu(Singleton):
     def dialing(self):
         # 文件备份
         call_count = 0
-        if self.parse_data.apn[0] != "" and self.parse_data.apn[1] != "" and self.parse_data.apn[2] != "":
+        if self.__parse_data.apn[0] != "" and self.__parse_data.apn[1] != "" and self.__parse_data.apn[2] != "":
             while True:
-                res = dataCall.setApn(1, 0, self.parse_data.apn[0], self.parse_data.apn[1], self.parse_data.apn[2], 0)
+                res = dataCall.setApn(1, 0, self.__parse_data.apn[0], self.__parse_data.apn[1], self.__parse_data.apn[2], 0)
                 if res == 0:
                     print("APN datacall successful")
                     break
@@ -105,22 +110,22 @@ class ProdDtu(Singleton):
         while count < max_count:
             if not dataCall.getInfo(1, 0)[2][0]:
                 utime.sleep(1)
-                if not self.gpio.status():
-                    self.gpio.show()
+                if not self.__gpio.status():
+                    self.__gpio.show()
                 utime.sleep(1)
             else:
                 break
 
     def parse(self): # 更新DTUDocumentData（）
         print("start parse")
-        self.document_parser.parse(self.parse_data)
+        self.__document_parser.parse(self.__parse_data)
         print("parse end")
-        print(self.parse_data.pins)
+        print(self.__parse_data.pins)
 
     def request(self):
-        print("ota: ", self.parse_data.ota)
+        print("ota: ", self.__parse_data.ota)
         return
-        if self.parse_data.ota[0] == "" or self.parse_data.ota[1] == "" or self.parse_data.ota[2] == "":
+        if self.__parse_data.ota[0] == "" or self.__parse_data.ota[1] == "" or self.__parse_data.ota[2] == "":
             if self.ota[0] == "":
                 log.info("no uid params")
             if self.ota[1] == "":
@@ -130,7 +135,7 @@ class ProdDtu(Singleton):
             print("close ota update")
             return
         # 脚本升级
-        do_fota = self.parse_data.fota
+        do_fota = self.__parse_data.fota
         if do_fota == 1:
             if "apn_cfg.json" in uos.listdir():  # 旧版本固件
                 usr = ""
@@ -154,8 +159,8 @@ class ProdDtu(Singleton):
             access_token = json_data["data"]["access_Token"]
             print("access_token:", access_token)
             # 升级包下载地址的请求
-            version = self.parse_data.version
-            moduleType = self.parse_data.ota[1]
+            version = self.__parse_data.version
+            moduleType = self.__parse_data.ota[1]
             download_url = "https://cloudota.quectel.com:8100/v1/fota/fw"
             headers = {"access_token": access_token, "Content-Type": "application/json"}
             acquire_data = {
@@ -164,8 +169,8 @@ class ProdDtu(Singleton):
                 "moduleType": moduleType,
                 "battery": 100,
                 "rsrp": net.csqQueryPoll(),
-                "uid": self.parse_data.ota[0],
-                "pk": self.parse_data.ota[2]
+                "uid": self.__parse_data.ota[0],
+                "pk": self.__parse_data.ota[2]
             }
             resp = request.post(download_url, data=ujson.dumps(acquire_data), headers=headers)
             json_data = ""
@@ -251,19 +256,19 @@ class ProdDtu(Singleton):
         return data
 
     def start(self):
-        log.info("parse data {}".format(self.parse_data.conf))
+        log.info("parse data {}".format(self.__parse_data.conf))
+
         reg_data = {"csq": net.csqQueryPoll(), 
                     "imei": modem.getDevImei(), 
                     "iccid": sim.getIccid(),
-                    "ver": self.parse_data.version}  # 首次登陆服务器默认注册信息
-        print("channel.cloud_channel_dict:", self.channel.cloud_channel_dict)
-        self._serv_connect(self.channel.cloud_channel_dict, reg_data)
+                    "ver": self.__parse_data.version}  # 首次登陆服务器默认注册信息
+
+        self._serv_connect(self.__channel.cloud_channel_dict, reg_data)
         print("SERV conn success")
-        _thread.start_new_thread(self.uart.read, ())
-        """
-        if self.parse_data.offline_storage:
-            _thread.start_new_thread(self.retry_offline_handler, ())
-        """
+
+        #self.report_history()
+
+        _thread.start_new_thread(self.__uart.read, ())
 
     def _serv_connect(self, serv_list, reg_data):
         print("serv_list:",serv_list)
@@ -273,7 +278,7 @@ class ProdDtu(Singleton):
                 continue
             protocol = data.get("protocol").lower()
             if protocol == "mqtt":
-                dtu_mq = DtuMqttTransfer(self.uart)
+                dtu_mq = DtuMqttTransfer(self.__uart)
                 status = dtu_mq.serialize(data)
                 try:
                     dtu_mq.connect()
@@ -282,7 +287,7 @@ class ProdDtu(Singleton):
                     log.error("{}: {}".format(error_map.get(RET.MQTTERR), e))
                 else:
                     if status == RET.OK:
-                        self.channel.cloud_object_dict[cid] = dtu_mq
+                        self.__channel.cloud_object_dict[cid] = dtu_mq
                         dtu_mq.channel_id = cid
                         print("mqtt conn succeed")
                     else:
@@ -304,24 +309,9 @@ class ProdDtu(Singleton):
                                     firmware_version=DEVICE_FIRMWARE_VERSION
                                     )
                 dtu_ali.init(enforce=True)
-                dtu_ali.addObserver(self.remote_sub)
-                self.remote_pub.add_cloud(dtu_ali, cid)
-                self.channel.cloud_object_dict[cid] = dtu_ali
-                """
-                status = dtu_ali.serialize(data)
-                try:
-                    _thread.start_new_thread(dtu_ali.connect, ())
-                    utime.sleep_ms(100)
-                except Exception as e:
-                    log.error("{}: {}".format(error_map.get(RET.ALIYUNMQTTERR), e))
-                else:
-                    if status == RET.OK:
-                        self.channel.cloud_object_dict[cid] = dtu_ali
-                        dtu_ali.channel_id = cid
-                        log.info("aliyun conn succeed")
-                    else:
-                        log.error(error_map.get(RET.ALIYUNMQTTERR))
-                """
+                dtu_ali.addObserver(self.__remote_sub)
+                self.__remote_pub.add_cloud(dtu_ali, cid)
+                self.__channel.cloud_object_dict[cid] = dtu_ali
             elif protocol.startswith("quecthing"):
                 quec_req = QuecThing(data.get("ProductKey"),
                                      data.get("ProductSecret"),
@@ -332,42 +322,31 @@ class ProdDtu(Singleton):
                                      mcu_name=PROJECT_NAME,
                                      mcu_version=PROJECT_VERSION)
                 quec_req.init(enforce=True)
-                quec_req.addObserver(self.remote_sub)
-                self.remote_pub.add_cloud(quec_req, cid)
-                self.channel.cloud_object_dict[cid] = quec_req
-                """
-                status = quec_req.serialize(data)
-                try:
-                    _thread.start_new_thread(quec_req.connect, ())
-                    utime.sleep_ms(100)
-                except Exception as e:
-                    log.error("{}: {}".format(error_map.get(RET.QUECIOTERR), e))
-                else:
-                    if status == RET.OK:
-                        self.channel.cloud_object_dict[cid] = quec_req
-                        quec_req.channel_id = cid
-                        print("quecthing connect waiting server...")
-                    else:
-                        log.error(error_map.get(RET.QUECIOTERR))
-                """
+                quec_req.addObserver(self.__remote_sub)
+                self.__remote_pub.add_cloud(quec_req, cid)
+                self.__channel.cloud_object_dict[cid] = quec_req
             elif protocol == "txyun":
-                dtu_txy = TXYDtuMqttTransfer(self.uart)
-                status = dtu_txy.serialize(data)
-                try:
-                    _thread.start_new_thread(dtu_txy.connect, ())
-                    utime.sleep_ms(100)
-                except Exception as e:
-                    log.error("{}: {}".format(error_map.get(RET.TXYUNMQTTERR), e))
-                else:
-                    if status == RET.OK:
-                        self.channel.cloud_object_dict[cid] = dtu_txy
-                        dtu_txy.channel_id = cid
-                        log.info("txyun conn succeed")
-                    else:
-                        log.error(error_map.get(RET.TXYUNMQTTERR))
+                dtu_txyun = TXYunIot(data.get("ProductKey"),
+                                    data.get("ProductSecret"),
+                                    data.get("Devicename"),
+                                    data.get("DeviceSecret"),
+                                    int(data.get("cleanSession"),0),
+                                    data.get("clientID"),
+                                    data.get("publish"),
+                                    data.get("subscribe"),
+                                    burning_method = (1 if data.get("type") == "mos" else 0),
+                                    mcu_name=PROJECT_NAME,
+                                    mcu_version=PROJECT_VERSION,
+                                    firmware_name=DEVICE_FIRMWARE_NAME,
+                                    firmware_version=DEVICE_FIRMWARE_VERSION
+                                    )
+                dtu_txyun.init(enforce=True)
+                dtu_txyun.addObserver(self.__remote_sub)
+                self.__remote_pub.add_cloud(dtu_txyun, cid)
+                self.__channel.cloud_object_dict[cid] = dtu_txyun
 
             elif protocol == "tcp":
-                tcp_sock = TcpSocket(self.uart)
+                tcp_sock = TcpSocket(self.__uart)
                 status = tcp_sock.serialize(data)
                 try:
                     tcp_sock.connect()
@@ -376,13 +355,13 @@ class ProdDtu(Singleton):
                     log.error("{}: {}".format(error_map.get(RET.TCPERR), e))
                 else:
                     if status == RET.OK:
-                        if self.parse_data.reg == 1:
+                        if self.__parse_data.reg == 1:
                             tcp_sock.first_reg(reg_data)
                             log.info("TCP send first login information {}".format(reg_data))
                         if data.get("ping"):
                             if int(data.get("heartbeat")) != 0:
                                 _thread.start_new_thread(tcp_sock.Heartbeat, ())
-                        self.channel.cloud_object_dict[cid] = tcp_sock
+                        self.__channel.cloud_object_dict[cid] = tcp_sock
                         tcp_sock.channel_id = cid
                     else:
                         log.error(error_map.get(RET.TCPERR))
@@ -391,26 +370,26 @@ class ProdDtu(Singleton):
                 udp_sock = UdpSocket()
                 status = udp_sock.serialize(data)
                 try:
-                    udp_sock.connect(self.uart)
+                    udp_sock.connect(self.__uart)
                     _thread.start_new_thread(udp_sock.recv, ())
                 except Exception as e:
                     log.error("{}: {}".format(error_map.get(RET.UDPERR), e))
                 else:
                     if status == RET.OK:
-                        if self.parse_data.reg == 1:
+                        if self.__parse_data.reg == 1:
                             udp_sock.first_reg(reg_data)
                             log.info("UDP send first login information {}".format(reg_data))
                         if data.get("ping"):
                             if int(data.get("heartbeat")) != 0:
                                 _thread.start_new_thread(udp_sock.Heartbeat, ())
-                        self.channel.cloud_object_dict[cid] = udp_sock
+                        self.__channel.cloud_object_dict[cid] = udp_sock
                         udp_sock.channel_id = cid
                     else:
                         log.error(error_map.get(RET.UDPERR))
 
             elif protocol.startswith("http"):
                 dtu_req = DtuRequest()
-                dtu_req.addObserver(self.remote_sub)
+                dtu_req.addObserver(self.__remote_sub)
                 
                 status = dtu_req.serialize(data)
                 if status == RET.OK:
@@ -418,13 +397,13 @@ class ProdDtu(Singleton):
                     print("***********************http request***********************")
                     for i in data:
                         print(i)
-                    self.channel.cloud_object_dict[cid] = dtu_req
+                    self.__channel.cloud_object_dict[cid] = dtu_req
                     dtu_req.channel_id = cid
                 else:
                     log.error(error_map.get(RET.HTTPERR))
 
             elif protocol.startswith("hwyun"):
-                hw_req = HuaweiCloudTransfer(self.uart)
+                hw_req = HuaweiCloudTransfer(self.__uart)
                 status = hw_req.serialize(data)
                 try:
                     _thread.start_new_thread(hw_req.connect, ())
@@ -433,7 +412,7 @@ class ProdDtu(Singleton):
                     log.error("{}: {}".format(error_map.get(RET.HWYUNERR), e))
                 else:
                     if status == RET.OK:
-                        self.channel.cloud_object_dict[cid] = hw_req
+                        self.__channel.cloud_object_dict[cid] = hw_req
                         hw_req.channel_id = cid
                         print("hwyun conn succeed")
                     else:
@@ -465,8 +444,8 @@ class ProdDtu(Singleton):
 
     def refresh(self):
         print("refresh start")
-        print(self.parse_data.auto_connect)
-        if self.parse_data.auto_connect:
+        print(self.__parse_data.auto_connect)
+        if self.__parse_data.auto_connect:
             print("refresh run")
             try:
                 self._run()
@@ -489,21 +468,28 @@ class ProdDtu(Singleton):
                         print("default config load failed.")
         # else:
         #     pass
+    def report_history(self):
+        if not self.__history:
+            raise TypeError("self.__history is not registered.")
+        if not self.__controller:
+            raise TypeError("self.__controller is not registered.")
 
-    def retry_offline_handler(self):
-        while True:
-            for code, channel in self.channels.cloud_object_dict.items():
-                has_msg = self.off_storage.channel_has_msg(code)
-                if has_msg:
-                    msg = self.off_storage.take_out(code)
-                    for m in msg:
-                        channel.send(m)
-                else:
-                    continue
-            utime.sleep(20)
+        res = True
+        hist = self.__history.read()
+        if hist["data"]:
+            pt_count = 0
+            for i, data in enumerate(hist["data"]):
+                pt_count += 1
+                if not self.__controller.remote_post_data(data):
+                    res = False
+                    break
 
-"""=================================================== run ============================================================"""
+            hist["data"] = hist["data"][pt_count:]
+            if hist["data"]:
+                # Flush data in hist-dictionary to tracker_data.hist file.
+                self.__history.write(hist["data"])
 
+        return res
 
 def run():
 
@@ -514,32 +500,37 @@ def run():
     # 实例化DTU协议数据解析方法
     dtu_protocol_data = DtuProtocolData()
 
+    history = History()
+
     dtu = ProdDtu()
 
-    dtu.set_gpio(ProdGPIO(ujson.loads(config_params)["pins"]))
+    dtu.add_module(ProdGPIO(ujson.loads(config_params)["pins"]))
 
-    dtu.set_uart(DtuUart(config_params))
+    dtu.add_module(DtuUart(config_params))
 
-    dtu.uart.set_channel(channels)
-
-    dtu.uart.set_procotol_data(dtu_protocol_data)
+    dtu.add_module(history)
 
     # 观察者，观察不同的云订阅的数据
-    dtu.set_remote_sub(RemoteSubscribe()) 
+    dtu.add_module(RemoteSubscribe()) 
 
-    dtu.set_remote_pub(RemotePublish())
+    dtu.add_module(RemotePublish())
 
-    dtu.remote_sub.add_executor(dtu.uart)
+    dtu.add_module(DTUDocumentData())
 
-    dtu.uart.add_module(dtu.remote_pub)
-
-    dtu.set_parse_data(DTUDocumentData())
-
-    dtu.set_document_parser(ProdDocumentParse())
+    dtu.add_module(ProdDocumentParse())
     
-    dtu.set_channel(channels)
+    dtu.add_module(channels)
 
-    #dtu.set_off_storage(OfflineStorage())
+
+    dtu.__uart.set_channel(channels)
+
+    dtu.__uart.set_procotol_data(dtu_protocol_data)
+
+    dtu.__uart.add_module(dtu.__remote_pub)
+
+    dtu.__remote_sub.add_executor(dtu.__uart)
+
+    dtu.__remote_pub.addObserver(history)
     
     dtu.refresh()
 

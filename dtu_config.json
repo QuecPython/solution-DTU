@@ -3,16 +3,19 @@
   "password": "123",
   "conf": {
     "3": {
-      "protocol": "quecthing",
+      "protocol": "txyun",
+      "type": "mos",
       "keepAlive": "",
-      "ProductKey": "p113LS",
-      "ProductSecret": "ZjY3bGFtTUpsL1RN",
-      "Devicename": "dtudevice1",
-      "DeviceSecret":"",
-      "qos": "0",
-      "SessionFlag": false,
-      "sendMode": "pass",
-      "serialID": "2"
+      "clientID": "0",
+      "Devicename": "dtu_device1",
+      "ProductKey": "I81T7DUSFF",
+      "DeviceSecret": "wF+b5NwEHI53crHmOqdyQA==",
+      "ProductSecret": "",
+      "cleanSession": "0",
+      "qos": "1",
+      "subscribe": {"0": "I81T7DUSFF/dtu_device1/control"},
+      "publish": {"0": "I81T7DUSFF/dtu_device1/event"},
+      "serialID": 2
     }
   },
   "reg": 0,
