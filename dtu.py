@@ -300,6 +300,7 @@ class ProdDtu(Singleton):
                                     data.get("Devicename"),
                                     data.get("DeviceSecret"),
                                     ("%s.iot-as-mqtt.cn-shanghai.aliyuncs.com" % data.get("ProductKey")),
+                                    int(data.get("qos", 0)),
                                     data.get("clientID"),
                                     data.get("publish"),
                                     data.get("subscribe"),
