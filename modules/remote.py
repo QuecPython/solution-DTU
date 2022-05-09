@@ -127,16 +127,21 @@ class RemotePublish(Observable):
         print("test52")
         res = True
         self.__cloud = self.__clouds[channel_id]
-        print("__cloud:", self.__cloud)
-        if not self.__cloud_post(data, topic_id):
-            print("test53")
-            if self.__cloud_conn(enforce=True):
-                print("test54")
-                if not self.__cloud_post(data, topic_id):
+        if self.__cloud_conn():
+            if not self.__cloud_post(data, topic_id):
+                print("test53")
+                if self.__cloud_conn(enforce=True):
+                    print("test54")
+                    if not self.__cloud_post(data, topic_id):
+                        res = False
+                else:
+                    log.error("Cloud Connect Failed.")
                     res = False
-            else:
-                log.error("Cloud Connect Failed.")
-                res = False
+        else:
+            log.error("Cloud Connect Failed.")
+            res = False
+        
+
         
         if res is False:
             # This Observer Is History

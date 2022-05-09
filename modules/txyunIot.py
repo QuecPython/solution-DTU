@@ -26,28 +26,15 @@ class TXYunIot(CloudObservable):
         3.4 Subscribe rrpc request
 
     Attribute:
-        ica_topic_property_post: topic for publish object model property
-        ica_topic_property_post_reply: topic for subscribe publish object model property result
-        ica_topic_property_set: topic for subscribe cloud object model property set
-        ica_topic_event_post: topic for publish object model event
-        ica_topic_event_post_reply: topic for subscribe publish object model event result
-        ota_topic_device_inform: topic for publish device information
-        ota_topic_device_upgrade: topic for subscribe ota plain
-        ota_topic_device_progress: topic for publish ota upgrade process
-        ota_topic_firmware_get: topic for publish ota plain request
-        ota_topic_firmware_get_reply: topic for subscribe ota plain request response
-        ota_topic_file_download: topic for publish ota mqtt file download request
-        ota_topic_file_download_reply: topic for publish ota mqtt file download request response
-        rrpc_topic_request: topic for subscribe rrpc message
-        rrpc_topic_response: topic for publish rrpc response
+        pub_topic_dict: topic dict for publish dtu through data
+        sub_topic_dict: topic dict for subscribe cloud through data
 
     Run step:
         1. cloud = AliYunIot(pk, ps, dk, ds, server, client_id)
         2. cloud.addObserver(RemoteSubscribe)
-        3. cloud.set_object_model(AliObjectModel)
-        4. cloud.init()
-        5. cloud.post_data(data)
-        6. cloud.close()
+        3. cloud.init()
+        4. cloud.post_data(data)
+        5. cloud.close()
     """
     def __init__(self, pk, ps, dk, ds, clean_session, client_id, pub_topic=None, sub_topic=None, burning_method=0, life_time=120,
                  mcu_name="", mcu_version="", firmware_name="", firmware_version="", reconn=True):
@@ -75,11 +62,11 @@ class TXYunIot(CloudObservable):
         self.__post_res = {}
 
         if pub_topic == None:
-            self.pub_topic_dict = {"0": "/%s/%s/user/update" % (self.__pk, self.__dk)}
+            self.pub_topic_dict = {"0": "/%s/%s/event" % (self.__pk, self.__dk)}
         else:
             self.pub_topic_dict = pub_topic
         if sub_topic == None:
-            self.sub_topic_dict = {"0": "/%s/%s/user/get" % (self.__pk, self.__dk)}
+            self.sub_topic_dict = {"0": "/%s/%s/control" % (self.__pk, self.__dk)}
         else:
             self.sub_topic_dict = sub_topic
 

@@ -17,9 +17,9 @@ log = getLogger(__name__)
 
 class DtuUart(Singleton):
 
-    def __init__(self, config_params):
+    def __init__(self, settings):
         # 配置uart
-        uconf = ujson.loads(config_params)["uconf"]
+        uconf = settings.get("uconf")
         self.serial_map = SERIAL_MAP
         for sid, conf in uconf.items():
             uart_conn = UART(getattr(UART, "UART%d" % int(sid)),
@@ -30,9 +30,9 @@ class DtuUart(Singleton):
                              int(conf.get("flowctl")))
             self.serial_map[sid] = uart_conn
         # 初始化方向gpio
-        self._direction_pin(ujson.loads(config_params)["direction_pin"])
-        self.cloud_conf = ujson.loads(config_params)["conf"]
-        self.work_mode = ujson.loads(config_params)["work_mode"]
+        self._direction_pin(settings.get("direction_pin"))
+        self.cloud_conf = settings.get("conf")
+        self.work_mode = settings.get("work_mode")
         self.exec_cmd = None
         self.exec_modbus = None
         self.cloud_data_parse = None
@@ -50,7 +50,7 @@ class DtuUart(Singleton):
             self.cloud_data_parse = self.exec_cmd.cloud_data_parse
             self.uart_data_parse = self.exec_cmd.uart_data_parse
         elif self.work_mode == "modbus":
-            self.exec_modbus = ModbusMode(self.work_mode, ujson.loads(config_params)["modbus"])
+            self.exec_modbus = ModbusMode(self.work_mode, settings.get("modbus"))
             self.cloud_data_parse = self.exec_modbus.cloud_data_parse
             self.uart_data_parse = self.exec_modbus.uart_data_parse
         else:
@@ -260,3 +260,23 @@ class DtuUart(Singleton):
             # 输出电平
             direction_level = conf.get("direction")
             uart.control_485(gpio, direction_level)
+
+
+    def post_hist_data(self, data):
+        log.info("post_hist_data")
+        # 获取云端通道配置任意一个通道的channel_id发送历史数据
+        channel_id = list(self.__channel.cloud_channel_dict.keys())[0]
+        cloud_channel_config = self.__channel.cloud_channel_dict[channel_id]
+
+        try:
+            if cloud_channel_config.get("protocol") in ["http", "tcp", "udp", "quecthing"]:
+                return self.remote_post_data(channel_id = channel_id, data=data)
+            else:
+                print("protocol:", cloud_channel_config.get("protocol"))
+                topics = list(cloud_channel_config.get("publish").keys())
+                print("topics:", topics)
+                return self.remote_post_data(channel_id = channel_id, topic_id=topics[0], data=data)
+        except Exception as e:
+            log.error(e)
+            return False
+

@@ -8,6 +8,7 @@ from usr.modules.txyunIot import TXYunIot
 from usr.modules.dtu_request import DtuRequest
 from usr.modules.tcp_udpsocket import TcpSocket
 from usr.modules.tcp_udpsocket import UdpSocket
+
 from usr.uart import DtuUart
 from usr.settings import DTUDocumentData
 from usr.settings import ProdDocumentParse
@@ -21,6 +22,7 @@ from usr.modules.logging import getLogger
 from usr.settings import PROJECT_NAME, PROJECT_VERSION, DEVICE_FIRMWARE_NAME, DEVICE_FIRMWARE_VERSION
 from usr.dtu_protocol_data import DtuProtocolData
 from usr.modules.history import History
+from usr.settings import settings
 
 log = getLogger(__name__)
 
@@ -83,10 +85,10 @@ class ProdDtu(Singleton):
             while True:
                 res = dataCall.setApn(1, 0, self.__parse_data.apn[0], self.__parse_data.apn[1], self.__parse_data.apn[2], 0)
                 if res == 0:
-                    print("APN datacall successful")
+                    log.info("APN datacall successful")
                     break
                 if res == -1:
-                    print("Try APN datacall...")
+                    log.info("Try APN datacall...")
                     call_count += 1
                     utime.sleep(1)
                     if call_count > 10:
@@ -117,9 +119,7 @@ class ProdDtu(Singleton):
                 break
 
     def parse(self): # 更新DTUDocumentData（）
-        print("start parse")
         self.__document_parser.parse(self.__parse_data)
-        print("parse end")
         print(self.__parse_data.pins)
 
     def request(self):
@@ -265,8 +265,9 @@ class ProdDtu(Singleton):
 
         self._serv_connect(self.__channel.cloud_channel_dict, reg_data)
         print("SERV conn success")
-
-        #self.report_history()
+        # 使能云端掉线历史数据记录功能后，上电之后将历史数据发出
+        if settings.current_settings.get("offline_storage"):
+            self.report_history()
 
         _thread.start_new_thread(self.__uart.read, ())
 
@@ -420,67 +421,44 @@ class ProdDtu(Singleton):
             else:
                 continue
 
-    def _run(self):
-        # try:
-        self.prepare()
-        print("prepart ready")
-
-        self.parse()
-        print("dialing parse")
-
-        self.dialing()
-        print("dialing ready")
-        
-        self.request()
-        print("dialing request")
-
-        self.start()
-        # except Exception as e:
-        #     print(e)
-            # 加载bak文件
-        # else:
-        #     while 1:
-        #         pass
-
     def refresh(self):
-        print("refresh start")
-        print(self.__parse_data.auto_connect)
+        log.info("refresh start")
         if self.__parse_data.auto_connect:
-            print("refresh run")
             try:
-                self._run()
+                self.prepare()
+                log.info("prepart ready")
+
+                self.parse()
+                log.info("dialing parse")
+
+                self.dialing()
+                log.info("dialing ready")
+                
+                self.request()
+                log.info("dialing request")
+
+                self.start()
             except Exception as e:
-                print(e)
-                print("Switch to backup file")
-                CONFIG["config_path"] = CONFIG["config_path"] + ".bak"
-                # 尝试加载备份config
-                try:
-                    self._run()
-                except Exception as e:
-                    print(e)
-                    print("Switch to default file")
-                    CONFIG["config_path"] = CONFIG["config_default_path"]
-                    # 尝试加载默认config
-                    try:
-                        self._run()
-                    except Exception as e:
-                        print(e)
-                        print("default config load failed.")
+                pass
+                
         # else:
         #     pass
+
     def report_history(self):
         if not self.__history:
             raise TypeError("self.__history is not registered.")
-        if not self.__controller:
-            raise TypeError("self.__controller is not registered.")
+        if not self.__uart:
+            raise TypeError("self.__uart is not registered.")
 
         res = True
         hist = self.__history.read()
+        print("hist[data]:", hist["data"])
+
         if hist["data"]:
             pt_count = 0
             for i, data in enumerate(hist["data"]):
                 pt_count += 1
-                if not self.__controller.remote_post_data(data):
+                if not self.__uart.post_hist_data(data):
                     res = False
                     break
 
@@ -493,22 +471,16 @@ class ProdDtu(Singleton):
 
 def run():
 
-    config_params = ProdDocumentParse().refresh_document(CONFIG["config_path"])
-    print ("config_params:", config_params)
     # 实例化通道数据
-    channels = ChannelTransfer(ujson.loads(config_params)["work_mode"], ujson.loads(config_params)["conf"])
+    channels = ChannelTransfer(settings.current_settings.get("work_mode"), settings.current_settings.get("conf"))
     # 实例化DTU协议数据解析方法
     dtu_protocol_data = DtuProtocolData()
 
-    history = History()
-
     dtu = ProdDtu()
 
-    dtu.add_module(ProdGPIO(ujson.loads(config_params)["pins"]))
+    dtu.add_module(ProdGPIO(settings.current_settings.get("pins")))
 
-    dtu.add_module(DtuUart(config_params))
-
-    dtu.add_module(history)
+    dtu.add_module(DtuUart(settings.current_settings))
 
     # 观察者，观察不同的云订阅的数据
     dtu.add_module(RemoteSubscribe()) 
@@ -530,7 +502,11 @@ def run():
 
     dtu.__remote_sub.add_executor(dtu.__uart)
 
-    dtu.__remote_pub.addObserver(history)
+    if settings.current_settings.get("offline_storage"):
+        history = History()
+        dtu.add_module(history)
+        dtu.__remote_pub.addObserver(history)
+    
     
     dtu.refresh()
 

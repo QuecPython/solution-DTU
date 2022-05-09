@@ -1,27 +1,92 @@
-import ujson
+import ure
 import uos
+import ql_fs
+import ujson
 import modem
+import _thread
+
 from usr.modules.common import Singleton
+from usr.modules.common import option_lock
 from usr.modules.logging import RET
 from usr.modules.logging import error_map
 from usr.modules.logging import getLogger
 
 log = getLogger(__name__)
 
-PROJECT_NAME = "QuecPython-Tracker"
+PROJECT_NAME = "QuecPython-Dtu"
 
 PROJECT_VERSION = "2.1.0"
 
 DEVICE_FIRMWARE_NAME = uos.uname()[0].split("=")[1]
-
 DEVICE_FIRMWARE_VERSION = modem.getDevFwVersion()
+
+_settings_lock = _thread.allocate_lock()
 
 CONFIG = {
     "config_dir": "/usr",
     "config_path": "/usr/dtu_config.json",
-    "backup_path": "/usr/dtu_config.json.bak",
-    "config_default_path": "/usr/dtu_default_config.json"
 }
+
+
+class Settings(Singleton):
+
+    def __init__(self, settings_file=CONFIG["config_path"]):
+        self.settings_file = settings_file
+        self.current_settings = {}
+        self.init()
+
+    @option_lock(_settings_lock)
+    def init(self):
+        try:
+            if ql_fs.path_exists(self.settings_file):
+                with open(self.settings_file, "r") as f:
+                    self.current_settings = ujson.load(f)
+                return True
+        except:
+            return False
+
+    @option_lock(_settings_lock)
+    def get(self):
+        return self.current_settings
+
+    @option_lock(_settings_lock)
+    def set(self, opt, val):
+        if opt in self.current_settings["user_cfg"]:
+            if opt == "phone_num":
+                if not isinstance(val, str):
+                    return False
+                pattern = ure.compile(r"^(?:(?:\+)86)?1[3-9]\d\d\d\d\d\d\d\d\d$")
+                if pattern.search(val):
+                    self.current_settings["user_cfg"][opt] = val
+                    return True
+                return False
+        elif opt == "cloud":
+            if not isinstance(val, dict):
+                return False
+            self.current_settings[opt] = val
+            return True
+
+        return False
+
+    @option_lock(_settings_lock)
+    def save(self):
+        try:
+            with open(self.settings_file, "w") as f:
+                ujson.dump(self.current_settings, f)
+            return True
+        except:
+            return False
+
+    @option_lock(_settings_lock)
+    def reset(self):
+        try:
+            uos.remove(self.settings_file)
+            return True
+        except:
+            return False
+
+settings = Settings()
+
 
 class ProdDocumentParse(object):
 
