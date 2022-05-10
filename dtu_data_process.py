@@ -1,7 +1,7 @@
-import ubinascii
+import log
 import utime
 import ujson
-import log
+import osTimer
 from machine import Pin
 from machine import UART
 from usr.modules.common import Singleton
@@ -11,11 +11,13 @@ from usr.modbus_mode import ModbusMode
 from usr.through_mode import ThroughMode
 from usr.modules.remote import RemotePublish
 from usr.modules.logging import getLogger
+from usr.settings import settings
+from usr.settings import PROJECT_NAME, PROJECT_VERSION, DEVICE_FIRMWARE_NAME, DEVICE_FIRMWARE_VERSION
 
 SERIAL_MAP = dict()
 log = getLogger(__name__)
 
-class DtuUart(Singleton):
+class DtuDataProcess(Singleton):
 
     def __init__(self, settings):
         # 配置uart
@@ -30,7 +32,7 @@ class DtuUart(Singleton):
                              int(conf.get("flowctl")))
             self.serial_map[sid] = uart_conn
         # 初始化方向gpio
-        self._direction_pin(settings.get("direction_pin"))
+        self.__direction_pin(settings.get("direction_pin"))
         self.cloud_conf = settings.get("conf")
         self.work_mode = settings.get("work_mode")
         self.exec_cmd = None
@@ -45,6 +47,10 @@ class DtuUart(Singleton):
         self.__remote_pub = None
         self.through_mode = None
         self.__channel = None
+        self.__ota_timer = osTimer()
+        # 周期性上传
+        self.__ota_timer.start(1000 * 60, 1, self.__periodic_ota_check)
+
         if self.work_mode == "command":
             self.exec_cmd = CommandMode()
             self.cloud_data_parse = self.exec_cmd.cloud_data_parse
@@ -77,71 +83,44 @@ class DtuUart(Singleton):
             self.__remote_pub = module
             return True
 
-    def remote_post_data(self, channel_id, topic_id=None, data=None):
+    def __remote_post_data(self, channel_id, topic_id=None, data=None):
         if not self.__remote_pub:
             raise TypeError("self.__remote_pub is not registered.")
-        print("test51")
-        print("data:", data)
         return self.__remote_pub.post_data(data, channel_id, topic_id)
 
-    def cloud_read_data_parse_main(self, cloud, *args, **kwargs):
-        print("test67")
-        print("kwargs:{}".format(kwargs))
-        print("kwargs type:{}".format(type(kwargs)))
-        topic_id = None
-        channel_id = None
-        serial_id = None
-        pkg_id = None
+    def __remote_ota_check(self):
+        if not self.__remote_pub:
+            raise TypeError("self.__remote_pub is not registered.")
+        return self.__remote_pub.cloud_ota_check()
 
-        # 云端为MQTT/Aliyun/Txyun时可获取tpoic id
-        if kwargs.get("topic") is not None:
-            for k, v in cloud.sub_topic_dict.items():
-                if kwargs["topic"] == v:
-                    topic_id = k
-        # 云端为quecthing 时，没有topic id 
-        pkg_id = kwargs.get("pkgid", None)
+    def __remote_ota_action(self, action, module):
+        if not self.__remote_pub:
+            raise TypeError("self.__remote_pub is not registered.")
+        return self.__remote_pub.cloud_ota_action(action, module)
 
-        topic_id = topic_id if topic_id is not None else pkg_id
-        
-        for k, v in self.__channel.cloud_object_dict.items():
-            if cloud == v:
-                channel_id = k
-        
-        for sid, cid in self.__channel.serial_channel_dict.items():
-            if channel_id in cid:
-                serial_id = sid
+    def __remote_device_report(self):
+        if not self.__remote_pub:
+            raise TypeError("self.__remote_pub is not registered.")
+        return self.__remote_pub.cloud_device_report()
 
-        print("topic_id:", topic_id)
-        print("channel_id:", channel_id)
-        print("serial_id:", serial_id)
+    def __periodic_ota_check(self):
+        self.__remote_device_report()
+        if settings.current_settings.get("ota"):
+            self.__remote_ota_check()
 
-        data = kwargs["data"].decode() if isinstance(kwargs["data"], bytes) else kwargs["data"]
-        print("test68")
-        ret_data = self.cloud_data_parse(data, topic_id, channel_id)
+    def __direction_pin(self, direction_pin=None):
+        if direction_pin == None:
+            return
+        print(direction_pin)
+        for sid, conf in direction_pin.items():
+            uart = self.serial_map.get(str(sid))
+            gpio = getattr(Pin, "GPIO%s" % str(conf.get("GPIOn")))
+            # 输出电平
+            direction_level = conf.get("direction")
+            uart.control_485(gpio, direction_level)
 
-        print("ret_data:", ret_data)
-
-        # reply cloud query command
-        if ret_data["cloud_data"] is not None:
-            cloud_name = self.__channel.cloud_channel_dict[channel_id].get("protocol")
-            if cloud_name in ["mqtt", "aliyun", "txyun", "hwyun"]:
-                if "topic_id" in ret_data["cloud_data"]:
-                    topic_id = ret_data["cloud_data"].pop("topic_id")
-                    if not isinstance(topic_id, str):
-                        topic_id = str(topic_id)
-                else:
-                    topic_id = list(cloud.pub_topic_dict.keys())[0] 
-            else:
-                topic_id = None
-            str_data = ujson.dumps(ret_data["cloud_data"])
-
-            self.remote_post_data(channel_id, topic_id, data=str_data)
-        #send to uart cloud message
-        if ret_data["uart_data"] is not None:
-            uart_port = self.serial_map.get(str(serial_id))
-            uart_port.write(ret_data["uart_data"])
-  
-    def gui_tools_parse(self, gui_data, sid):
+      
+    def __gui_tools_parse(self, gui_data, sid):
         print(gui_data)
         gui_data = gui_data.decode()
         data_list = gui_data.split(",", 3)
@@ -200,6 +179,58 @@ class DtuUart(Singleton):
         print("GUI CMD SUCCESS")
         return True
 
+
+    def cloud_read_data_parse_main(self, cloud, *args, **kwargs):
+        print("test67")
+        print("kwargs:{}".format(kwargs))
+        print("kwargs type:{}".format(type(kwargs)))
+        topic_id = None
+        channel_id = None
+        serial_id = None
+        pkg_id = None
+
+        # 云端为MQTT/Aliyun/Txyun时可获取tpoic id
+        if kwargs.get("topic") is not None:
+            for k, v in cloud.sub_topic_dict.items():
+                if kwargs["topic"] == v:
+                    topic_id = k
+        # 云端为quecthing 时，没有topic id 
+        pkg_id = kwargs.get("pkgid", None)
+
+        topic_id = topic_id if topic_id is not None else pkg_id
+        
+        for k, v in self.__channel.cloud_object_dict.items():
+            if cloud == v:
+                channel_id = k
+        
+        for sid, cid in self.__channel.serial_channel_dict.items():
+            if channel_id in cid:
+                serial_id = sid
+
+        data = kwargs["data"].decode() if isinstance(kwargs["data"], bytes) else kwargs["data"]
+        print("test68")
+        ret_data = self.cloud_data_parse(data, topic_id, channel_id)
+
+        # reply cloud query command
+        if ret_data["cloud_data"] is not None:
+            cloud_name = self.__channel.cloud_channel_dict[channel_id].get("protocol")
+            if cloud_name in ["mqtt", "aliyun", "txyun", "hwyun"]:
+                if "topic_id" in ret_data["cloud_data"]:
+                    topic_id = ret_data["cloud_data"].pop("topic_id")
+                    if not isinstance(topic_id, str):
+                        topic_id = str(topic_id)
+                else:
+                    topic_id = list(cloud.pub_topic_dict.keys())[0] 
+            else:
+                topic_id = None
+            str_data = ujson.dumps(ret_data["cloud_data"])
+
+            self.__remote_post_data(channel_id, topic_id, data=str_data)
+        #send to uart cloud message
+        if ret_data["uart_data"] is not None:
+            uart_port = self.serial_map.get(str(serial_id))
+            uart_port.write(ret_data["uart_data"])
+
     # to online
     def uart_read_data_parse_main(self, data, sid):
         print("sid:", sid)
@@ -209,26 +240,20 @@ class DtuUart(Singleton):
             log.error("Serial Config not exist!")
             return False
         # 移动gui判断逻辑
-        gui_flag = self.gui_tools_parse(data, sid)
+        gui_flag = self.__gui_tools_parse(data, sid)
         if gui_flag:
             return False
-        print("test41")
         read_msg, send_params = self.uart_data_parse(data, self.__channel.cloud_channel_dict, cloud_channel_array)
-        print("read_msg:", read_msg)
-        print("send_params:", send_params)
-        print("test46")
         if read_msg is False:
             return False
 
         if not isinstance(read_msg, str):
-            print("read_msg type1:", type(read_msg))
             read_msg = str(read_msg)
-            print("read_msg type2:", type(read_msg))
         
         if len(send_params) == 2:
-            self.remote_post_data(channel_id=send_params[0], topic_id=send_params[1], data=read_msg)
+            self.__remote_post_data(channel_id=send_params[0], topic_id=send_params[1], data=read_msg)
         elif len(send_params) == 1:
-            self.remote_post_data(channel_id=send_params[0], data=read_msg)
+            self.__remote_post_data(channel_id=send_params[0], data=read_msg)
 
     def read(self):
         while 1:
@@ -250,18 +275,6 @@ class DtuUart(Singleton):
                     utime.sleep_ms(100)
                     continue
 
-    def _direction_pin(self, direction_pin=None):
-        if direction_pin == None:
-            return
-        print(direction_pin)
-        for sid, conf in direction_pin.items():
-            uart = self.serial_map.get(str(sid))
-            gpio = getattr(Pin, "GPIO%s" % str(conf.get("GPIOn")))
-            # 输出电平
-            direction_level = conf.get("direction")
-            uart.control_485(gpio, direction_level)
-
-
     def post_hist_data(self, data):
         log.info("post_hist_data")
         # 获取云端通道配置任意一个通道的channel_id发送历史数据
@@ -270,13 +283,41 @@ class DtuUart(Singleton):
 
         try:
             if cloud_channel_config.get("protocol") in ["http", "tcp", "udp", "quecthing"]:
-                return self.remote_post_data(channel_id = channel_id, data=data)
+                return self.__remote_post_data(channel_id = channel_id, data=data)
             else:
                 print("protocol:", cloud_channel_config.get("protocol"))
                 topics = list(cloud_channel_config.get("publish").keys())
                 print("topics:", topics)
-                return self.remote_post_data(channel_id = channel_id, topic_id=topics[0], data=data)
+                return self.__remote_post_data(channel_id = channel_id, topic_id=topics[0], data=data)
         except Exception as e:
             log.error(e)
             return False
 
+
+    def event_ota_plain(self, cloud, *args, **kwargs):
+        log.debug("ota_plain args: %s, kwargs: %s" % (str(args), str(kwargs)))
+        if not self.__controller:
+            raise TypeError("self.__controller is not registered.")
+        current_settings = settings.get()
+
+        if current_settings["ota"] is not True:
+            return
+        
+        if cloud.cloud_name == "quecthing":
+            if args and args[0]:
+                if args[0][0] == "ota_cfg":
+                    module = args[0][1].get("componentNo")
+                    target_version = args[0][1].get("targetVersion")
+                    source_version = DEVICE_FIRMWARE_VERSION if module == DEVICE_FIRMWARE_NAME else PROJECT_VERSION
+                    if target_version != source_version:
+                        self.__remote_ota_action(action=0, module=module)
+        elif cloud.cloud_name == "aliyun":
+            if args and args[0]:
+                if args[0][0] == "ota_cfg":
+                    module = args[0][1].get("module")
+                    target_version = args[0][1].get("version")
+                    source_version = DEVICE_FIRMWARE_VERSION if module == DEVICE_FIRMWARE_NAME else PROJECT_VERSION
+                    if target_version != source_version:
+                        self.__remote_ota_action(action=0, module=module)
+        else:
+            log.error("Current Cloud (0x%X) Not Supported!" % current_settings["sys"]["cloud"])

@@ -42,7 +42,7 @@ class RemoteSubscribe(CloudObserver):
         return self.__executor.event_query(*args, **kwargs) if self.__executor else False
 
     def ota_plain(self, observable, *args, **kwargs):
-        return self.__executor.event_ota_plain(*args, **kwargs) if self.__executor else False
+        return self.__executor.event_ota_plain(observable, *args, **kwargs) if self.__executor else False
 
     def ota_file_download(self, observable, *args, **kwargs):
         # TODO: To Download OTA File For MQTT Association (Not Support Now.)

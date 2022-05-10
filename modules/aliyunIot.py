@@ -211,6 +211,7 @@ class AliYunIot(CloudObservable):
 
         self.__id_iter = numiter()
         self.__id_lock = _thread.allocate_lock()
+        self.cloud_name = "aliyun"
 
         self.__ota = AliOTA(self, self.__mcu_name, self.__firmware_name)
         print("pub_topic ali init:", pub_topic)

@@ -9,7 +9,7 @@ from usr.modules.dtu_request import DtuRequest
 from usr.modules.tcp_udpsocket import TcpSocket
 from usr.modules.tcp_udpsocket import UdpSocket
 
-from usr.uart import DtuUart
+from usr.dtu_data_process import DtuDataProcess
 from usr.settings import DTUDocumentData
 from usr.settings import ProdDocumentParse
 from usr.settings import CONFIG
@@ -31,7 +31,7 @@ class ProdDtu(Singleton):
 
     def __init__(self):
         self.__gpio = None
-        self.__uart = None
+        self.__data_process = None
         self.__parse_data = None
         self.__document_parser = None
         self.__channel = None
@@ -44,8 +44,8 @@ class ProdDtu(Singleton):
         if isinstance(module, ProdGPIO):
             self.__gpio = module
             return True
-        elif isinstance(module, DtuUart):
-            self.__uart = module
+        elif isinstance(module, DtuDataProcess):
+            self.__data_process = module
             return True
         elif isinstance(module, DTUDocumentData):
             self.__parse_data = module
@@ -125,125 +125,6 @@ class ProdDtu(Singleton):
     def request(self):
         print("ota: ", self.__parse_data.ota)
         return
-        if self.__parse_data.ota[0] == "" or self.__parse_data.ota[1] == "" or self.__parse_data.ota[2] == "":
-            if self.ota[0] == "":
-                log.info("no uid params")
-            if self.ota[1] == "":
-                log.info("no module_type params")
-            if self.ota[2] == "":
-                log.info("no pk params")
-            print("close ota update")
-            return
-        # 脚本升级
-        do_fota = self.__parse_data.fota
-        if do_fota == 1:
-            if "apn_cfg.json" in uos.listdir():  # 旧版本固件
-                usr = ""
-            else:  # 新固件
-                usr = "usr/"
-            global url_zip, targetVersion, fileMD5, action, filesize
-            # 获取access token
-            url = "https://cloudota.quectel.com:8100/v1/oauth/token"
-            imei = modem.getDevImei()
-            secret = ubinascii.hexlify(uhashlib.md5("QUEC" + str(imei) + "TEL").digest())
-            secret = secret.decode()
-            # print(url + "?imei=" + imei + "&" + "secret=" + secret)
-            resp = request.get(url + "?imei=" + imei + "&" + "secret=" + secret)
-            if resp.status_code != 200:
-                log.info("***********acquire token failed!***********")
-                return
-            data = ""
-            for i in resp.content:
-                data += i.decode()
-            json_data = ujson.loads(data)
-            access_token = json_data["data"]["access_Token"]
-            print("access_token:", access_token)
-            # 升级包下载地址的请求
-            version = self.__parse_data.version
-            moduleType = self.__parse_data.ota[1]
-            download_url = "https://cloudota.quectel.com:8100/v1/fota/fw"
-            headers = {"access_token": access_token, "Content-Type": "application/json"}
-            acquire_data = {
-                "version": str(version),
-                "imei": imei,
-                "moduleType": moduleType,
-                "battery": 100,
-                "rsrp": net.csqQueryPoll(),
-                "uid": self.__parse_data.ota[0],
-                "pk": self.__parse_data.ota[2]
-            }
-            resp = request.post(download_url, data=ujson.dumps(acquire_data), headers=headers)
-            json_data = ""
-            for i in resp.content:
-                json_data += i.decode()
-            json_data = ujson.loads(json_data)
-            if json_data["code"] == 200:
-                targetVersion = json_data["targetVersion"]
-                url_zip = json_data["url"]
-                fileMD5 = json_data["fileMd5"]
-                action = json_data["action"]
-                filesize = json_data["config"]["fileSize"]
-                print("fileSize: ", filesize)
-                print("targetVersion: ", targetVersion)
-            else:
-                action = json_data["action"]
-                msg = json_data["msg"]
-                code = json_data["code"]
-                log.info(msg)
-
-            if action:
-                report_url = "https://cloudota.quectel.com:8100/v1/fota/status/report"
-                print("Please do not send instructions during the upgrade...")
-                resp = request.get(url_zip)
-                update_file = "dtu_{}.py".format(targetVersion)
-                f = open(usr + update_file, "wb+")
-                count = 0
-                for i in resp.content:
-                    count += len(i)
-                    f.write(i)
-                    utime.sleep_ms(5)
-                f.close()
-                if filesize != count:
-                    log.info("Failed to download package data validation")
-                    uos.remove(usr + "dtu_V1.0.1.py")
-                    #  模组状态及结果上报 升级失败，信息上报
-                    data = self.data_info(version, imei, 8, "Update Failed")
-                    request.post(report_url, data=ujson.dumps(data), headers=headers)
-                    return
-                #  模组状态及结果上报 升级成功，信息上报
-                data = self.data_info(version, imei, 7, "upgrade success")
-                resp = request.post(report_url, data=ujson.dumps(data), headers=headers)
-                if resp.status_code == 200:
-                    log.info("The upgrade is completed and the information is reported successfully")
-                else:
-                    log.info("Upgrade status information failed to be reported")
-            ##################################################################################
-            # 模组临终遗言信息上报
-            if "system.log" not in uos.listdir(usr):
-                log.info("**********system.log not exist***********")
-                log.info("*********last will was not reported********")
-                return
-            with open(usr + "system.log", "r") as f:
-                msg = f.read()
-            Last_will_url = "https://cloudota.quectel.com:8100/v1/fota/msg/report"
-            res = cellLocator.getLocation("www.queclocator.com", 80, "1111111122222222", 8, 1)
-            data = {
-                "imei": imei,
-                "version": str(version),
-                "signalStrength": net.csqQueryPoll(),
-                "battery": 100,
-                "latitude": res[0],
-                "longitude": res[1],
-                "details": "last will message report",
-                "reportMsg": msg
-            }
-            headers = {"Content-Type": "application/json"}
-            resp = request.post(Last_will_url, data=ujson.dumps(data), headers=headers)
-            if resp.status_code == 200:
-                log.info("last will reported successfully")
-            else:
-                log.info("last will was reported failed")
-                return
 
     def data_info(self, version, imei, code, msg):
         data = {
@@ -269,7 +150,7 @@ class ProdDtu(Singleton):
         if settings.current_settings.get("offline_storage"):
             self.report_history()
 
-        _thread.start_new_thread(self.__uart.read, ())
+        _thread.start_new_thread(self.__data_process.read, ())
 
     def _serv_connect(self, serv_list, reg_data):
         print("serv_list:",serv_list)
@@ -279,7 +160,7 @@ class ProdDtu(Singleton):
                 continue
             protocol = data.get("protocol").lower()
             if protocol == "mqtt":
-                dtu_mq = DtuMqttTransfer(self.__uart)
+                dtu_mq = DtuMqttTransfer(self.__data_process)
                 status = dtu_mq.serialize(data)
                 try:
                     dtu_mq.connect()
@@ -348,7 +229,7 @@ class ProdDtu(Singleton):
                 self.__channel.cloud_object_dict[cid] = dtu_txyun
 
             elif protocol == "tcp":
-                tcp_sock = TcpSocket(self.__uart)
+                tcp_sock = TcpSocket(self.__data_process)
                 status = tcp_sock.serialize(data)
                 try:
                     tcp_sock.connect()
@@ -372,7 +253,7 @@ class ProdDtu(Singleton):
                 udp_sock = UdpSocket()
                 status = udp_sock.serialize(data)
                 try:
-                    udp_sock.connect(self.__uart)
+                    udp_sock.connect(self.__data_process)
                     _thread.start_new_thread(udp_sock.recv, ())
                 except Exception as e:
                     log.error("{}: {}".format(error_map.get(RET.UDPERR), e))
@@ -405,7 +286,7 @@ class ProdDtu(Singleton):
                     log.error(error_map.get(RET.HTTPERR))
 
             elif protocol.startswith("hwyun"):
-                hw_req = HuaweiCloudTransfer(self.__uart)
+                hw_req = HuaweiCloudTransfer(self.__data_process)
                 status = hw_req.serialize(data)
                 try:
                     _thread.start_new_thread(hw_req.connect, ())
@@ -448,8 +329,8 @@ class ProdDtu(Singleton):
     def report_history(self):
         if not self.__history:
             raise TypeError("self.__history is not registered.")
-        if not self.__uart:
-            raise TypeError("self.__uart is not registered.")
+        if not self.__data_process:
+            raise TypeError("self.__data_process is not registered.")
 
         res = True
         hist = self.__history.read()
@@ -459,7 +340,7 @@ class ProdDtu(Singleton):
             pt_count = 0
             for i, data in enumerate(hist["data"]):
                 pt_count += 1
-                if not self.__uart.post_hist_data(data):
+                if not self.__data_process.post_hist_data(data):
                     res = False
                     break
 
@@ -477,37 +358,36 @@ def run():
     # 实例化DTU协议数据解析方法
     dtu_protocol_data = DtuProtocolData()
 
+    if settings.current_settings.get("offline_storage"):
+        history = History()
+
+    data_process = DtuDataProcess(settings.current_settings)
+
+    data_process.set_channel(channels)
+
+    data_process.set_procotol_data(dtu_protocol_data)
+    
+    remote_sub = RemoteSubscribe()
+    remote_sub.add_executor(data_process)
+
+    remote_pub = RemotePublish()
+    if settings.current_settings.get("offline_storage"):
+        remote_pub.addObserver(history)
+
+
     dtu = ProdDtu()
 
     dtu.add_module(ProdGPIO(settings.current_settings.get("pins")))
 
-    dtu.add_module(DtuUart(settings.current_settings))
-
-    # 观察者，观察不同的云订阅的数据
-    dtu.add_module(RemoteSubscribe()) 
-
-    dtu.add_module(RemotePublish())
+    dtu.add_module(data_process)
 
     dtu.add_module(DTUDocumentData())
 
     dtu.add_module(ProdDocumentParse())
     
     dtu.add_module(channels)
-
-
-    dtu.__uart.set_channel(channels)
-
-    dtu.__uart.set_procotol_data(dtu_protocol_data)
-
-    dtu.__uart.add_module(dtu.__remote_pub)
-
-    dtu.__remote_sub.add_executor(dtu.__uart)
-
     if settings.current_settings.get("offline_storage"):
-        history = History()
-        dtu.add_module(history)
-        dtu.__remote_pub.addObserver(history)
-    
+        dtu.add_module(history)    
     
     dtu.refresh()
 

@@ -290,6 +290,7 @@ class QuecThing(CloudObservable):
         self.__ota = QuecOTA()
         self.__post_result_wait_queue = Queue(maxsize=16)
         self.__quec_timer = osTimer()
+        self.cloud_name = "quecthing"
 
     def __rm_empty_data(self, data):
         """Remove post success data item from data"""
