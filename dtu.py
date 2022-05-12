@@ -36,9 +36,6 @@ class ProdDtu(Singleton):
         self.__document_parser = None
         self.__channel = None
         self.__history = None
-        #self.off_storage = None
-        self.__remote_sub = None
-        self.__remote_pub = None
 
     def add_module(self, module):
         if isinstance(module, ProdGPIO):
@@ -59,13 +56,6 @@ class ProdDtu(Singleton):
         elif isinstance(module, History):
             self.__history = module
             return True
-        elif isinstance(module, RemoteSubscribe):
-            self.__remote_sub = module
-            return True
-        elif isinstance(module, RemotePublish):
-            self.__remote_pub = module
-            return True
-
         return False
 
 
@@ -78,12 +68,12 @@ class ProdDtu(Singleton):
             else:
                 break
 
-    def dialing(self):
+    def dialing(self, apn):
         # 文件备份
         call_count = 0
-        if self.__parse_data.apn[0] != "" and self.__parse_data.apn[1] != "" and self.__parse_data.apn[2] != "":
+        if apn[0] != "" and apn[1] != "" and apn[2] != "":
             while True:
-                res = dataCall.setApn(1, 0, self.__parse_data.apn[0], self.__parse_data.apn[1], self.__parse_data.apn[2], 0)
+                res = dataCall.setApn(1, 0, apn[0], apn[1], apn[2], 0)
                 if res == 0:
                     log.info("APN datacall successful")
                     break
@@ -94,29 +84,11 @@ class ProdDtu(Singleton):
                     if call_count > 10:
                         log.error("Datacall failed, please restart device and run again.")
                         break
-        # else:
-        #     while True:
-        #         res = dataCall.start(1, 0, "3gnet.mnc001.mcc460.gprs", "", "", 0)
-        #         if res == 0:
-        #             print("datacall successful")
-        #             break
-        #         if res == -1:
-        #             print("Try datacall...")
-        #             call_count += 1
-        #             utime.sleep(1)
-        #             if call_count > 10:
-        #                 log.error("Datacall failed, please restart device and run again.")
-        #                 break
-        count = 0
-        max_count = 10
-        while count < max_count:
-            if not dataCall.getInfo(1, 0)[2][0]:
-                utime.sleep(1)
-                if not self.__gpio.status():
-                    self.__gpio.show()
-                utime.sleep(1)
-            else:
-                break
+        else:
+            pass #默认apn在固件实现
+
+        # 检查拨号结果，拨号失败闪烁LED灯
+        self.__gpio.LED_blink(dataCall.getInfo(1, 0)[2][0], 10)
 
     def parse(self): # 更新DTUDocumentData（）
         self.__document_parser.parse(self.__parse_data)
@@ -136,24 +108,13 @@ class ProdDtu(Singleton):
         }
         return data
 
-    def start(self):
-        log.info("parse data {}".format(self.__parse_data.conf))
+    def cloud_init(self, serv_list, remote_sub, remote_pub):
+        print("serv_list:",serv_list)
 
         reg_data = {"csq": net.csqQueryPoll(), 
                     "imei": modem.getDevImei(), 
                     "iccid": sim.getIccid(),
                     "ver": self.__parse_data.version}  # 首次登陆服务器默认注册信息
-
-        self._serv_connect(self.__channel.cloud_channel_dict, reg_data)
-        print("SERV conn success")
-        # 使能云端掉线历史数据记录功能后，上电之后将历史数据发出
-        if settings.current_settings.get("offline_storage"):
-            self.report_history()
-
-        _thread.start_new_thread(self.__data_process.read, ())
-
-    def _serv_connect(self, serv_list, reg_data):
-        print("serv_list:",serv_list)
 
         for cid, data in serv_list.items():
             if not data:
@@ -192,8 +153,8 @@ class ProdDtu(Singleton):
                                     firmware_version=DEVICE_FIRMWARE_VERSION
                                     )
                 dtu_ali.init(enforce=True)
-                dtu_ali.addObserver(self.__remote_sub)
-                self.__remote_pub.add_cloud(dtu_ali, cid)
+                dtu_ali.addObserver(remote_sub)
+                remote_pub.add_cloud(dtu_ali, cid)
                 self.__channel.cloud_object_dict[cid] = dtu_ali
             elif protocol.startswith("quecthing"):
                 quec_req = QuecThing(data.get("ProductKey"),
@@ -205,8 +166,8 @@ class ProdDtu(Singleton):
                                      mcu_name=PROJECT_NAME,
                                      mcu_version=PROJECT_VERSION)
                 quec_req.init(enforce=True)
-                quec_req.addObserver(self.__remote_sub)
-                self.__remote_pub.add_cloud(quec_req, cid)
+                quec_req.addObserver(remote_sub)
+                remote_pub.add_cloud(quec_req, cid)
                 self.__channel.cloud_object_dict[cid] = quec_req
             elif protocol == "txyun":
                 dtu_txyun = TXYunIot(data.get("ProductKey"),
@@ -224,8 +185,8 @@ class ProdDtu(Singleton):
                                     firmware_version=DEVICE_FIRMWARE_VERSION
                                     )
                 dtu_txyun.init(enforce=True)
-                dtu_txyun.addObserver(self.__remote_sub)
-                self.__remote_pub.add_cloud(dtu_txyun, cid)
+                dtu_txyun.addObserver(remote_sub)
+                remote_pub.add_cloud(dtu_txyun, cid)
                 self.__channel.cloud_object_dict[cid] = dtu_txyun
 
             elif protocol == "tcp":
@@ -313,13 +274,7 @@ class ProdDtu(Singleton):
                 self.parse()
                 log.info("dialing parse")
 
-                self.dialing()
-                log.info("dialing ready")
-                
-                self.request()
-                log.info("dialing request")
-
-                self.start()
+                _thread.start_new_thread(self.__data_process.read, ())
             except Exception as e:
                 pass
                 
@@ -371,6 +326,7 @@ def run():
     remote_sub.add_executor(data_process)
 
     remote_pub = RemotePublish()
+    data_process.add_module(remote_pub)
     if settings.current_settings.get("offline_storage"):
         remote_pub.addObserver(history)
 
@@ -379,16 +335,23 @@ def run():
 
     dtu.add_module(ProdGPIO(settings.current_settings.get("pins")))
 
-    dtu.add_module(data_process)
-
     dtu.add_module(DTUDocumentData())
 
     dtu.add_module(ProdDocumentParse())
     
     dtu.add_module(channels)
+
+    dtu.add_module(data_process)
+
+    dtu.dialing(settings.current_settings.get("apn"))
+
+    dtu.cloud_init(settings.current_settings.get("conf"), remote_sub, remote_pub)
+
     if settings.current_settings.get("offline_storage"):
-        dtu.add_module(history)    
-    
+        dtu.add_module(history)
+        # 上电之后向云端发送历史数据
+        dtu.report_history()
+
     dtu.refresh()
 
 

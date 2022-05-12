@@ -1,3 +1,4 @@
+import utime
 from machine import Pin
 from usr.modules.logging import getLogger
 from usr.modules.common import Singleton
@@ -30,3 +31,11 @@ class ProdGPIO(Singleton):
 
     def show(self):
         self.gpio1.write(1)
+
+    def LED_blink(self, sta, cnt):
+        while(sta == 0 and cnt > 0):
+            self.gpio1.write(1)
+            utime.sleep(1)
+            self.gpio1.write(0)
+            utime.sleep(1)
+            cnt -= 1

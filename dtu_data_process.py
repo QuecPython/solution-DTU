@@ -65,7 +65,7 @@ class DtuDataProcess(Singleton):
             self.uart_data_parse = self.through_mode.uart_data_parse
 
     def set_channel(self, channel):
-        print("set channel")
+        log.info("set channel")
         self.__channel = channel
         if isinstance(self.exec_cmd, CommandMode):
             self.exec_cmd.search_cmd.set_channel(channel)
@@ -88,25 +88,29 @@ class DtuDataProcess(Singleton):
             raise TypeError("self.__remote_pub is not registered.")
         return self.__remote_pub.post_data(data, channel_id, topic_id)
 
-    def __remote_ota_check(self):
+    def __remote_ota_check(self, channel_id):
         if not self.__remote_pub:
             raise TypeError("self.__remote_pub is not registered.")
-        return self.__remote_pub.cloud_ota_check()
+        return self.__remote_pub.cloud_ota_check(channel_id)
 
-    def __remote_ota_action(self, action, module):
+    def __remote_ota_action(self, channel_id, action, module):
         if not self.__remote_pub:
             raise TypeError("self.__remote_pub is not registered.")
-        return self.__remote_pub.cloud_ota_action(action, module)
+        return self.__remote_pub.cloud_ota_action(channel_id, action, module)
 
-    def __remote_device_report(self):
+    def __remote_device_report(self, channel_id):
         if not self.__remote_pub:
             raise TypeError("self.__remote_pub is not registered.")
-        return self.__remote_pub.cloud_device_report()
+        return self.__remote_pub.cloud_device_report(channel_id)
 
     def __periodic_ota_check(self):
         self.__remote_device_report()
+        log.info("periodic_ota_check")
+        print("ota", settings.current_settings.get("ota"))
         if settings.current_settings.get("ota"):
-            self.__remote_ota_check()
+            for k, v in settings.current_settings.get("conf"):
+                self.__remote_ota_check(k)
+                utime.sleep(1)
 
     def __direction_pin(self, direction_pin=None):
         if direction_pin == None:
@@ -296,12 +300,14 @@ class DtuDataProcess(Singleton):
 
     def event_ota_plain(self, cloud, *args, **kwargs):
         log.debug("ota_plain args: %s, kwargs: %s" % (str(args), str(kwargs)))
-        if not self.__controller:
-            raise TypeError("self.__controller is not registered.")
         current_settings = settings.get()
 
         if current_settings["ota"] is not True:
             return
+        
+        for k, v in self.__channel.cloud_object_dict.items():
+            if cloud == v:
+                channel_id = k
         
         if cloud.cloud_name == "quecthing":
             if args and args[0]:
@@ -310,14 +316,16 @@ class DtuDataProcess(Singleton):
                     target_version = args[0][1].get("targetVersion")
                     source_version = DEVICE_FIRMWARE_VERSION if module == DEVICE_FIRMWARE_NAME else PROJECT_VERSION
                     if target_version != source_version:
-                        self.__remote_ota_action(action=0, module=module)
+                        self.__remote_ota_action(channel_id, action=1, module=module)
         elif cloud.cloud_name == "aliyun":
             if args and args[0]:
                 if args[0][0] == "ota_cfg":
                     module = args[0][1].get("module")
+                    print("test49")
                     target_version = args[0][1].get("version")
                     source_version = DEVICE_FIRMWARE_VERSION if module == DEVICE_FIRMWARE_NAME else PROJECT_VERSION
                     if target_version != source_version:
-                        self.__remote_ota_action(action=0, module=module)
+                        print("test50")
+                        self.__remote_ota_action(channel_id, action=1, module=module)
         else:
             log.error("Current Cloud (0x%X) Not Supported!" % current_settings["sys"]["cloud"])

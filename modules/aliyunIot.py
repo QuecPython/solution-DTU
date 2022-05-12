@@ -344,6 +344,7 @@ class AliYunIot(CloudObservable):
                 dl_data = list(zip(data.get("params", {}).keys(), data.get("params", {}).values()))
                 self.notifyObservers(self, *("object_model", dl_data))
         elif topic.startswith("/ota/device/upgrade/"):
+            print("subscribe /ota/device/upgrade/")
             self.__put_post_res(data["id"], True if int(data["code"]) == 1000 else False)
             if int(data["code"]) == 1000:
                 if data.get("data"):
@@ -351,6 +352,7 @@ class AliYunIot(CloudObservable):
                     self.notifyObservers(self, *("object_model", [("ota_status", (data["data"]["module"], 1, data["data"]["version"]))]))
                     self.notifyObservers(self, *("ota_plain", [("ota_cfg", data["data"])]))
         elif topic.endswith("/thing/ota/firmware/get_reply"):
+            print("subscribe /ota/device/upgrade/")
             self.__put_post_res(data["id"], True if int(data["code"]) == 200 else False)
             if data["code"] == 200:
                 if data.get("data"):
@@ -673,6 +675,8 @@ class AliYunIot(CloudObservable):
             Ture: Success
             False: Failed
         """
+        print("test41")
+        print("aliyun ota_action action:%s,module:%s" % (action, module))
         if not module:
             log.error("Params[module] Is Empty.")
             return False
@@ -680,8 +684,10 @@ class AliYunIot(CloudObservable):
             log.error("Params[action] Should Be 0 Or 1, Not %s." % action)
             return False
 
+        print("test41")
         if action == 1:
             # if self.ota_device_progress(step=1, module=module):
+            print("test42")
             return self.__ota.start_ota()
         else:
             self.__ota.set_ota_info("", "", [])
@@ -1029,7 +1035,7 @@ class AliOTA(object):
 
     def __set_upgrade_status(self, upgrade_status):
         log.debug("__set_upgrade_status upgrade_status %s" % upgrade_status)
-        self.__aliyuniot.notifyObservers(self, *("object_model", [("ota_status", (self.__module, upgrade_status, self.__version))]))
+        #self.__aliyuniot.notifyObservers(self, *("object_model", [("ota_status", (self.__module, upgrade_status, self.__version))]))
 
     def set_ota_info(self, data):
         """
@@ -1065,9 +1071,11 @@ class AliOTA(object):
         self.__set_upgrade_status(2)
         if self.__module == self.__firmware_name:
             # self.__start_fota()
+            print("test43")
             _thread.start_new_thread(self.__start_fota, ())
         elif self.__module == self.__mcu_name:
             # self.__start_sota()
+            print("test44")
             _thread.start_new_thread(self.__start_sota, ())
 
         return True

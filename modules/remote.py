@@ -32,16 +32,17 @@ class RemoteSubscribe(CloudObserver):
         return False
 
     def raw_data(self, observable, *args, **kwargs):
-        print("test66")
         return self.__executor.cloud_read_data_parse_main(observable, *args, **kwargs) if self.__executor else False
 
     def object_model(self, observable, *args, **kwargs):
-        return self.__executor.event_done(*args, **kwargs) if self.__executor else False
+        pass
+        #return self.__executor.event_done(*args, **kwargs) if self.__executor else False
 
     def query(self, observable, *args, **kwargs):
         return self.__executor.event_query(*args, **kwargs) if self.__executor else False
 
     def ota_plain(self, observable, *args, **kwargs):
+        print("test66")
         return self.__executor.event_ota_plain(observable, *args, **kwargs) if self.__executor else False
 
     def ota_file_download(self, observable, *args, **kwargs):
@@ -68,10 +69,14 @@ class RemoteSubscribe(CloudObserver):
         opt_args = args[2] if not isinstance(args[2], dict) else ()
         opt_kwargs = args[2] if isinstance(args[2], dict) else {}
         print("test64")
+        print("opt_attr:", opt_attr)
         if hasattr(self, opt_attr):
             option_fun = getattr(self, opt_attr)
             print("test65")
-            return option_fun(observable, *opt_args, **opt_kwargs)
+            try:
+                return option_fun(observable, *opt_args, **opt_kwargs)
+            except Exception as e:
+                log.error(e)
         else:
             log.error("RemoteSubscribe Has No Attribute [%s]." % opt_attr)
             return False
@@ -104,14 +109,17 @@ class RemotePublish(Observable):
             return True
         return False
 
-    def cloud_ota_check(self):
-        return self.__cloud.ota_request() if self.__cloud else False
+    def cloud_ota_check(self, channel_id):
+        return self.__clouds[channel_id].ota_request() if self.__clouds[channel_id] else False
 
-    def cloud_ota_action(self, action=1, module=None):
-        return self.__cloud.ota_action(action, module) if self.__cloud else False
+    def cloud_ota_action(self, channel_id, action=1, module=None):
+        print("test40")
+        print("channel_id:", channel_id)
+        print("self.__cloud:", self.__clouds[channel_id])
+        return self.__clouds[channel_id].ota_action(action, module=module) if self.__clouds[channel_id] else False
 
-    def cloud_device_report(self):
-        return self.__cloud.device_report() if self.__cloud else False
+    def cloud_device_report(self, channel_id):
+        return self.__clouds[channel_id].device_report() if self.__clouds[channel_id] else False
 
     def post_data(self, data, channel_id, topic_id):
         """
