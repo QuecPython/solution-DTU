@@ -12,7 +12,7 @@
       "DeviceSecret": "173f006cab770615346978583ac430c0",
       "ProductSecret": "D07Ujh1RvKAs6KEY",
       "cleanSession": "0",
-      "qos": "1",
+      "qos": "0",
       "subscribe": {"0": "/gzsi5zT5fH3/dtu_device1/user/get"},
       "publish": {"0": "/gzsi5zT5fH3/dtu_device1/user/update"},
       "serialID": 2

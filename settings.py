@@ -34,32 +34,20 @@ class Settings(Singleton):
         self.settings_file = settings_file
         self.current_settings = {}
         self.init()
-
-    @option_lock(_settings_lock)
-    def init(self):
-        try:
-            if ql_fs.path_exists(self.settings_file):
-                with open(self.settings_file, "r") as f:
-                    self.current_settings = ujson.load(f)
+        
+    def __read_config(self):
+        if ql_fs.path_exists(self.settings_file):
+            with open(self.settings_file, "r") as f:
+                self.current_settings = ujson.load(f)
                 return True
-        except:
-            return False
+        return False
 
-    @option_lock(_settings_lock)
-    def get(self):
-        return self.current_settings
-
-    @option_lock(_settings_lock)
-    def set(self, opt, val):
-        if opt in self.current_settings["user_cfg"]:
-            if opt == "phone_num":
-                if not isinstance(val, str):
+    def __set_config(self, opt, val):
+        if opt == "ota_status":
+                if not isinstance(val, dict):
                     return False
-                pattern = ure.compile(r"^(?:(?:\+)86)?1[3-9]\d\d\d\d\d\d\d\d\d$")
-                if pattern.search(val):
-                    self.current_settings["user_cfg"][opt] = val
-                    return True
-                return False
+                self.current_settings["user_cfg"][opt] = val
+                return True
         elif opt == "cloud":
             if not isinstance(val, dict):
                 return False
@@ -68,8 +56,7 @@ class Settings(Singleton):
 
         return False
 
-    @option_lock(_settings_lock)
-    def save(self):
+    def __save_config(self):
         try:
             with open(self.settings_file, "w") as f:
                 ujson.dump(self.current_settings, f)
@@ -77,13 +64,45 @@ class Settings(Singleton):
         except:
             return False
 
-    @option_lock(_settings_lock)
-    def reset(self):
+    def __remove_config(self):
         try:
             uos.remove(self.settings_file)
             return True
         except:
             return False
+
+    def __get_config(self):
+        return self.current_settings
+        
+    @option_lock(_settings_lock)
+    def init(self):
+        if self.__read_config() is False:
+            if self.__init_config():
+                return self.__save_config()
+        return False
+
+    @option_lock(_settings_lock)
+    def get(self):
+        return self.__get_config()
+
+    @option_lock(_settings_lock)
+    def set(self, opt, val):
+        return self.__set_config(opt, val)
+
+    @option_lock(_settings_lock)
+    def save(self):
+        return self.__save_config()
+
+    @option_lock(_settings_lock)
+    def remove(self):
+        return self.__remove_config()
+
+    @option_lock(_settings_lock)
+    def reset(self):
+        if self.__remove_config():
+            if self.__init_config():
+                return self.__save_config()
+        return False
 
 settings = Settings()
 

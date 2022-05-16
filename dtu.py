@@ -351,6 +351,9 @@ def run():
         dtu.add_module(history)
         # 上电之后向云端发送历史数据
         dtu.report_history()
+        
+    # 上电后立即发送固件版本号
+    data_process.ota_check()
 
     dtu.refresh()
 

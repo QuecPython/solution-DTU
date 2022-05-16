@@ -103,14 +103,19 @@ class DtuDataProcess(Singleton):
             raise TypeError("self.__remote_pub is not registered.")
         return self.__remote_pub.cloud_device_report(channel_id)
 
-    def __periodic_ota_check(self):
-        self.__remote_device_report()
-        log.info("periodic_ota_check")
-        print("ota", settings.current_settings.get("ota"))
-        if settings.current_settings.get("ota"):
-            for k, v in settings.current_settings.get("conf"):
-                self.__remote_ota_check(k)
-                utime.sleep(1)
+    def ota_check(self):
+        try:
+            if settings.current_settings.get("ota"):
+                for k, v in settings.current_settings.get("conf").items():
+                    log.info("channel id{}".format(k))
+                    self.__remote_ota_check(k)
+                    self.__remote_device_report(k)
+                    utime.sleep(1)
+        except Exception as e:
+            log.error("periodic_ota_check fault", e)
+
+    def __periodic_ota_check(self, args):
+        self.ota_check()
 
     def __direction_pin(self, direction_pin=None):
         if direction_pin == None:
@@ -296,7 +301,6 @@ class DtuDataProcess(Singleton):
         except Exception as e:
             log.error(e)
             return False
-
 
     def event_ota_plain(self, cloud, *args, **kwargs):
         log.debug("ota_plain args: %s, kwargs: %s" % (str(args), str(kwargs)))

@@ -606,20 +606,16 @@ class AliYunIot(CloudObservable):
 
     def through_post_data(self, data, topic_id):
         print("test56")
-        print("topic_id type:", type(self.pub_topic_dict))
-        print("self.pub_topic_dict:", self.pub_topic_dict)
+        print("topic_id type:", type(self.pub_topic_dict[topic_id]))
         print("self.pub_topic_dict[topic_id]:", self.pub_topic_dict[topic_id])
         print("data:", data)
         try:
-            pub_res = self.__ali.publish(self.pub_topic_dict[topic_id], data, qos=self.__qos)
-            print("pub_res:", pub_res)
-            if pub_res == 0:
-                return True
-            else:
-                return False
+            res = self.__ali.publish(self.pub_topic_dict[topic_id], data, qos=self.__qos)
+            print("res:", res)
+            return res
         except Exception:
             log.error("AliYun publish topic %s failed. data: %s" % (self.pub_topic_dict[topic_id], data))
-        return False
+            return False
 
     def rrpc_response(self, message_id, data):
         """Publish rrpc response
@@ -1034,8 +1030,8 @@ class AliOTA(object):
         return False
 
     def __set_upgrade_status(self, upgrade_status):
-        log.debug("__set_upgrade_status upgrade_status %s" % upgrade_status)
-        #self.__aliyuniot.notifyObservers(self, *("object_model", [("ota_status", (self.__module, upgrade_status, self.__version))]))
+        #log.debug("__set_upgrade_status upgrade_status %s" % upgrade_status)
+        self.__aliyuniot.notifyObservers(self, *("object_model", [("ota_status", (self.__module, upgrade_status, self.__version))]))
 
     def set_ota_info(self, data):
         """
