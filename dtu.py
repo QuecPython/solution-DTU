@@ -1,13 +1,27 @@
+# Copyright (c) Quectel Wireless Solution, Co., Ltd.All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import sim, uos, dataCall, ujson, net, modem, utime, _thread, uhashlib, fota, ure, ubinascii, cellLocator, request
 from usr.modules.common import Singleton
 from usr.modules.aliyunIot import AliYunIot, AliObjectModel
 from usr.modules.quecthing import QuecThing, QuecObjectModel
-from usr.modules.dtu_mqtt import DtuMqttTransfer
+from usr.modules.mqttIot import DtuMqttTransfer
 from usr.modules.huawei_cloud import HuaweiCloudTransfer
 from usr.modules.txyunIot import TXYunIot
-from usr.modules.dtu_request import DtuRequest
-from usr.modules.tcp_udpsocket import TcpSocket
-from usr.modules.tcp_udpsocket import UdpSocket
+from usr.modules.requestIot import DtuRequest
+from usr.modules.tcp_udpIot import TcpSocket
+from usr.modules.tcp_udpIot import UdpSocket
 
 from usr.dtu_data_process import DtuDataProcess
 from usr.settings import DTUDocumentData
@@ -307,6 +321,8 @@ class ProdDtu(Singleton):
         return res
 
 def run():
+    log.info("PROJECT_NAME: %s, PROJECT_VERSION: %s" % (PROJECT_NAME, PROJECT_VERSION))
+    log.info("DEVICE_FIRMWARE_NAME: %s, DEVICE_FIRMWARE_VERSION: %s" % (DEVICE_FIRMWARE_NAME, DEVICE_FIRMWARE_VERSION))
 
     # 实例化通道数据
     channels = ChannelTransfer(settings.current_settings.get("work_mode"), settings.current_settings.get("conf"))

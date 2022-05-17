@@ -145,110 +145,65 @@ class QuecObjectModel(CloudObjectModel):
     def __init__(self, om_file="/usr/quec_object_model.json"):
         super().__init__(om_file)
         self.items_id = {}
+        self.code_id = {}
+        self.id_code = {}
+        self.struct_code_id = {}
         self.init()
+
+    def __init_value(self, om_type):
+        if om_type in ("int", "enum", "date"):
+            om_value = 0
+        elif om_type in ("float", "double"):
+            om_value = 0.0
+        elif om_type == "bool":
+            om_value = True
+        elif om_type == "text":
+            om_value = ""
+        elif om_type == "array":
+            om_value = []
+        elif om_type == "struct":
+            om_value = {}
+        else:
+            om_value = None
+        return om_value
+
+    def __get_property(self, om_item):
+        om_item_key = om_item["code"]
+        om_item_type = om_item["dataType"].lower()
+        om_item_val = self.__init_value(om_item_type)
+        self.id_code[om_item["id"]] = om_item["code"]
+        self.code_id[om_item["code"]] = om_item["id"]
+        if om_item_type == "struct":
+            om_item_struct = om_item["specs"]
+            om_item_val = {i["code"]: self.__init_value(i["dataType"].lower()) for i in om_item_struct}
+            self.struct_code_id[om_item["code"]] = {i["code"]: i["id"] for i in om_item_struct}
+        return om_item_key, om_item_val
+
+    def __init_properties(self, om_properties):
+        for om_property in om_properties:
+            om_property_key, om_property_val = self.__get_property(om_property)
+            setattr(self.properties, om_property_key, {om_property_key: om_property_val})
+
+    def __init_events(self, om_events):
+        for om_event in om_events:
+            om_event_key = om_event["code"]
+            om_event_out_put = om_event.get("outputData", [])
+            om_event_val = {}
+            self.id_code[om_event["id"]] = om_event["code"]
+            self.code_id[om_event["code"]] = om_event["id"]
+            if om_event_out_put:
+                for om_property in om_event_out_put:
+                    property_id = int(om_property.get("$ref", "").split("/")[-1])
+                    om_property_key = self.id_code.get(property_id)
+                    om_property_val = getattr(self.properties, om_property_key)
+                    om_property_val.update(om_property_val)
+            setattr(self.events, om_event_key, {om_event_key: om_event_val})
 
     def init(self):
         with open(self.om_file, "rb") as f:
             cloud_object_model = ujson.load(f)
-            for om_type in cloud_object_model.keys():
-                if om_type not in ("events", "properties"):
-                    continue
-                for om_item in cloud_object_model[om_type]:
-                    om_key = om_item["code"]
-                    om_key_id = om_item["id"]
-                    om_key_perm = om_item["subType"].lower()
-                    self.set_item(om_type, om_key, om_key_id, om_key_perm)
-
-                    struct_info_list = []
-                    event_out_put = []
-                    if om_type == "properties":
-                        if om_item["dataType"] == "STRUCT":
-                            struct_info_list = om_item["specs"]
-                    elif om_type == "events":
-                        if om_item.get("outputData"):
-                            event_out_put = [int(struct_item.get("$ref", "").split("/")[-1]) for struct_item in om_item["outputData"]]
-
-                    for struct_info in struct_info_list:
-                        struct_key = struct_info["code"]
-                        struct_key_id = struct_info["id"]
-                        struct_key_struct = {}
-                        if struct_info["dataType"] == "STRUCT":
-                            for struct_key_struct_key in struct_info["dataType"]["specs"]:
-                                struct_key_struct[struct_key_struct_key["identifier"]] = {
-                                    "name": struct_key_struct_key["identifier"]
-                                }
-                        self.set_item_struct(
-                            om_type, om_key, struct_key,
-                            struct_key_id=struct_key_id,
-                            struct_key_struct=struct_key_struct
-                        )
-
-                    for property_id in event_out_put:
-                        struct_key = self.items_id.get(property_id, "")
-                        struct_key_id = property_id
-                        struct_key_struct = self.items.get(struct_key, {}).get("struct_info", {})
-                        self.set_item_struct(
-                            om_type, om_key, struct_key,
-                            struct_key_id=struct_key_id,
-                            struct_key_struct=struct_key_struct
-                        )
-
-    def __set_items_id(self, om_key, om_key_id):
-        """Set object model id, name to items_id
-
-        Parameter:
-            om_key: object model name
-            om_key_id: object model id
-
-        Return:
-            True: Success
-            False: Falied
-        """
-        self.items_id[om_key_id] = om_key
-        return True
-
-    def __del_items_id(self, om_type, om_key):
-        """Delete object model id, name from items_id
-
-        Parameter:
-            om_type: object model type, `event` or `property`
-            om_key: object model name
-
-        Return:
-            True: Success
-            False: Falied
-        """
-        if self.items.get(om_type) is not None:
-            if self.items[om_type].get(om_key):
-                om_key_id = self.items[om_type][om_key]["id"]
-                self.items_id.pop(om_key_id)
-        return True
-
-    def set_item(self, om_type, om_key, om_key_id, om_key_perm):
-        """Set object model item to items
-        This function extend CloudObjectModel.set_item and add __set_items_id function
-
-        Return:
-            True: Success
-            False: Falied
-        """
-        if super().set_item(om_type, om_key, om_key_id=om_key_id, om_key_perm=om_key_perm):
-            self.__set_items_id(om_key, om_key_id)
-            return True
-        return False
-
-    def del_item(self, om_type, om_key):
-        """Delete object model item from items
-        This function extend CloudObjectModel.del_item and add __del_items_id function
-
-        Return:
-            True: Success
-            False: Falied
-        """
-        if super().del_item(om_type, om_key):
-            self.__del_items_id(om_type, om_key)
-            return True
-        return False
+            self.__init_properties(cloud_object_model.get("properties", []))
+            self.__init_events(cloud_object_model.get("events", []))
 
 
 class QuecThing(CloudObservable):
@@ -344,22 +299,32 @@ class QuecThing(CloudObservable):
         # log.debug("k: %s, v: %s" % (k, v))
         k_id = None
         struct_info = {}
-        if self.__object_model.items["events"].get(k):
-            k_id = self.__object_model.items["events"][k]["id"]
-            if isinstance(self.__object_model.items["events"][k]["struct_info"], dict):
-                struct_info = self.__object_model.items["events"][k]["struct_info"]
-        elif self.__object_model.items["properties"].get(k):
-            k_id = self.__object_model.items["properties"][k]["id"]
-            if isinstance(self.__object_model.items["properties"][k]["struct_info"], dict):
-                struct_info = self.__object_model.items["properties"][k]["struct_info"]
+        if hasattr(self.__object_model.properties, k):
+            k_id = self.__object_model.code_id[k]
+            if self.__object_model.struct_code_id.get(k):
+                struct_info = self.__object_model.struct_code_id.get(k)
+        elif hasattr(self.__object_model.events, k):
+            k_id = self.__object_model.code_id[k]
+            event_struct_info = hasattr(self.__object_model.events, k)
+            for i in event_struct_info:
+                if isinstance(getattr(self.__object_model.properties, i), dict):
+                    struct_info[i] = self.__object_model.struct_code_id(i)
+                else:
+                    struct_info[i] = self.__object_model.code_id[i]
         else:
             return False
 
+        log.debug("__data_format struct_info: %s" % str(struct_info))
         if isinstance(v, dict):
             nv = {}
             for ik, iv in v.items():
-                if struct_info.get(ik):
-                    nv[struct_info[ik]["id"]] = iv
+                if isinstance(struct_info.get(ik), int):
+                    nv[struct_info[ik]] = iv
+                elif isinstance(struct_info.get(ik), dict):
+                    if isinstance(iv, dict):
+                        nv[self.__object_model.code_id[ik]] = {struct_info[ik][ivk]: ivv for ivk, ivv in iv.items()}
+                    else:
+                        nv[self.__object_model.code_id[ik]] = iv
                 else:
                     nv[ik] = iv
             v = nv
@@ -405,13 +370,13 @@ class QuecThing(CloudObservable):
                 res_data = ("raw_data", {"pkgid":0, "data":eventdata})
                 res_datas.append(res_data)
             elif errcode == 10210:
-                dl_data = [(self.__object_model.items_id[k], v.decode() if isinstance(v, bytes) else v) for k, v in eventdata.items()]
+                dl_data = [(self.__object_model.id_code[k], v.decode() if isinstance(v, bytes) else v) for k, v in eventdata.items()]
                 res_data = ("object_model", dl_data)
                 res_datas.append(res_data)
             elif errcode == 10211:
                 # eventdata[0] is pkgId.
                 object_model_ids = eventdata[1]
-                object_model_val = [self.__object_model.items_id[i] for i in object_model_ids if self.__object_model.items_id.get(i)]
+                object_model_val = [self.__object_model.id_code[i] for i in object_model_ids if self.__object_model.id_code.get(i)]
                 res_data = ("query", object_model_val)
                 res_datas.append(res_data)
         elif event == 7:
@@ -570,6 +535,7 @@ class QuecThing(CloudObservable):
         # log.debug("post_data: %s" % str(data))
         for k, v in data.items():
             om_data = self.__data_format(k, v)
+            log.debug("post_data om_data: %s" % str(om_data))
             if om_data is not False:
                 if v is not None:
                     phymodelReport_res = quecIot.phymodelReport(1, om_data)
