@@ -48,6 +48,37 @@ class Settings(Singleton):
         self.current_settings = {}
         self.init()
 
+    def __init_config(self):
+        try:
+            """
+            self.current_settings["sys"] = {k: v for k, v in SYSConfig.__dict__.items() if not k.startswith("_")}
+
+            # CloudConfig init
+            if self.current_settings["sys"]["cloud"] == SYSConfig._cloud.AliYun:
+                self.current_settings["cloud"] = {k: v for k, v in AliCloudConfig.__dict__.items() if not k.startswith("_")}
+            elif self.current_settings["sys"]["cloud"] == SYSConfig._cloud.quecIot:
+                self.current_settings["cloud"] = {k: v for k, v in QuecCloudConfig.__dict__.items() if not k.startswith("_")}
+            elif self.current_settings["sys"]["cloud"] == SYSConfig._cloud.JTT808:
+                self.current_settings["cloud"] = {k: v for k, v in JTT808Config.__dict__.items() if not k.startswith("_")}
+            elif self.current_settings["sys"]["cloud"] == SYSConfig._cloud.customization:
+                self.current_settings["cloud"] = {}
+            else:
+                self.current_settings["cloud"] = {}
+
+            # LocConfig init
+            if self.current_settings["sys"]["base_cfg"]["LocConfig"]:
+                self.current_settings["LocConfig"] = {k: v for k, v in LocConfig.__dict__.items() if not k.startswith("_")}
+
+            # UserConfig init
+            if self.current_settings["sys"]["user_cfg"]:
+                self.current_settings["user_cfg"] = {k: v for k, v in UserConfig.__dict__.items() if not k.startswith("_")}
+                self.current_settings["user_cfg"]["ota_status"]["sys_current_version"] = DEVICE_FIRMWARE_VERSION
+                self.current_settings["user_cfg"]["ota_status"]["app_current_version"] = PROJECT_VERSION
+            """
+            return True
+        except:
+            return False
+
     def __read_config(self):
         if ql_fs.path_exists(self.settings_file):
             with open(self.settings_file, "r") as f:

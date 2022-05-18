@@ -17,7 +17,7 @@ import log
 import ujson
 from TenCentYun import TXyun
 from usr.modules.logging import getLogger
-from usr.modules.common import numiter, option_lock, CloudObservable, CloudObjectModel
+from usr.modules.common import CloudObservable
 log = getLogger(__name__)
 
 class TXYunIot(CloudObservable):
@@ -204,4 +204,7 @@ class TXYunIot(CloudObservable):
         pass
 
     def ota_action(self, action, module=None):
+        pass
+
+    def device_report(self):
         pass

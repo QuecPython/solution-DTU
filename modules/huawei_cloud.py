@@ -25,12 +25,12 @@
 """
 
 
-import hmac
 import ujson
 import utime
+import _thread
 import ubinascii
 import uhashlib
-import _thread
+
 
 from umqtt import MQTTClient
 from usr.modules.logging import getLogger
@@ -198,7 +198,7 @@ class HuaweiIot(CloudObservable):
         except Exception as e:
             log.error("HuaweiYun connect error: %s" % e)
         else:
-            self.__huaweiyun.setCallback(self.__huaweiyun_sub_cb)
+            self.__huaweiyun.set_callback(self.__huaweiyun_sub_cb)
             self.__huaweiyun_subscribe_topic()
             log.debug("HuaweiYun __huaweiyun_subscribe_topic")
             self.__start_listen()
@@ -246,4 +246,7 @@ class HuaweiIot(CloudObservable):
         pass
 
     def ota_action(self, action, module=None):
+        pass
+    
+    def device_report(self):
         pass

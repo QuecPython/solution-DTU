@@ -12,6 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""
+@file      :quecthing.py
+@author    :elian.wang
+@brief     :This file shows the interface of quecthing
+@version   :0.1
+@date      :2022-05-18 13:14:44
+@copyright :Copyright (c) 2022
+"""
+
+
 import uos
 import uzlib
 import ql_fs

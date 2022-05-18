@@ -28,7 +28,7 @@ import sim, uos, dataCall, ujson, net, modem, utime, _thread, uhashlib, fota, ur
 from usr.modules.common import Singleton
 from usr.modules.aliyunIot import AliYunIot, AliObjectModel
 from usr.modules.quecthing import QuecThing, QuecObjectModel
-from usr.modules.mqttIot import DtuMqttTransfer
+from usr.modules.mqttIot import MqttIot
 from usr.modules.huawei_cloud import HuaweiIot
 from usr.modules.txyunIot import TXYunIot
 from usr.modules.requestIot import DtuRequest
@@ -36,9 +36,6 @@ from usr.modules.tcp_udpIot import TcpSocket
 from usr.modules.tcp_udpIot import UdpSocket
 
 from usr.dtu_data_process import DtuDataProcess
-from usr.settings import DTUDocumentData
-from usr.settings import ProdDocumentParse
-from usr.settings import CONFIG
 from usr.dtu_channels import ChannelTransfer
 from usr.modules.logging import RET
 from usr.modules.logging import error_map
@@ -53,13 +50,11 @@ from usr.settings import settings
 log = getLogger(__name__)
 
 
-class ProdDtu(Singleton):
+class Dtu(Singleton):
 
     def __init__(self):
         self.__gpio = None
         self.__data_process = None
-        self.__parse_data = None
-        self.__document_parser = None
         self.__channel = None
         self.__history = None
 
@@ -69,12 +64,6 @@ class ProdDtu(Singleton):
             return True
         elif isinstance(module, DtuDataProcess):
             self.__data_process = module
-            return True
-        elif isinstance(module, DTUDocumentData):
-            self.__parse_data = module
-            return True
-        elif isinstance(module, ProdDocumentParse):
-            self.__document_parser = module
             return True
         elif isinstance(module, ChannelTransfer):
             self.__channel = module
@@ -116,14 +105,6 @@ class ProdDtu(Singleton):
         # 检查拨号结果，拨号失败闪烁LED灯
         self.__gpio.LED_blink(dataCall.getInfo(1, 0)[2][0], 10)
 
-    def parse(self): # 更新DTUDocumentData（）
-        self.__document_parser.parse(self.__parse_data)
-        print(self.__parse_data.pins)
-
-    def request(self):
-        print("ota: ", self.__parse_data.ota)
-        return
-
     def data_info(self, version, imei, code, msg):
         data = {
             "version": version,
@@ -137,31 +118,28 @@ class ProdDtu(Singleton):
     def cloud_init(self, serv_list, remote_sub, remote_pub):
         print("serv_list:",serv_list)
 
+        # 首次登陆服务器默认注册信息
         reg_data = {"csq": net.csqQueryPoll(), 
                     "imei": modem.getDevImei(), 
                     "iccid": sim.getIccid(),
-                    "ver": self.__parse_data.version}  # 首次登陆服务器默认注册信息
+                    "ver": PROJECT_VERSION}  
 
         for cid, data in serv_list.items():
             if not data:
                 continue
             protocol = data.get("protocol").lower()
             if protocol == "mqtt":
-                dtu_mq = DtuMqttTransfer(self.__data_process)
-                status = dtu_mq.serialize(data)
-                try:
-                    dtu_mq.connect()
-                    _thread.start_new_thread(dtu_mq.wait, ())
-                except Exception as e:
-                    log.error("{}: {}".format(error_map.get(RET.MQTTERR), e))
-                else:
-                    if status == RET.OK:
-                        self.__channel.cloud_object_dict[cid] = dtu_mq
-                        dtu_mq.channel_id = cid
-                        print("mqtt conn succeed")
-                    else:
-                        log.error(error_map.get(RET.MQTTERR))
-
+                mqtt_iot = MqttIot(data.get("url", None),
+                                    int(data.get("qos", 0)),
+                                    int(data.get("port", 1883)),
+                                    data.get("cleanSession"),
+                                    data.get("clientID"),
+                                    data.get("publish"),
+                                    data.get("subscribe")
+                                    )
+                mqtt_iot.init(enforce=True)
+                mqtt_iot.addObserver(remote_sub)
+                remote_pub.add_cloud(mqtt_iot, cid)
             elif protocol == "aliyun":
                 dtu_ali = AliYunIot(data.get("ProductKey"),
                                     data.get("ProductSecret"),
@@ -221,7 +199,7 @@ class ProdDtu(Singleton):
                                     data.get("DeviceSecret", None),
                                     data.get("url", None),
                                     int(data.get("qos", 0)),
-                                    data.get("port", 1883),
+                                    int(data.get("port", 1883)),
                                     data.get("cleanSession"),
                                     data.get("clientID"),
                                     data.get("publish"),
@@ -291,7 +269,6 @@ class ProdDtu(Singleton):
                     dtu_req.channel_id = cid
                 else:
                     log.error(error_map.get(RET.HTTPERR))
-
             else:
                 continue
 
@@ -301,9 +278,6 @@ class ProdDtu(Singleton):
             try:
                 self.prepare()
                 log.info("prepart ready")
-
-                self.parse()
-                log.info("dialing parse")
 
                 _thread.start_new_thread(self.__data_process.read, ())
             except Exception as e:
@@ -343,6 +317,7 @@ def run():
 
     # 实例化通道数据
     channels = ChannelTransfer(settings.current_settings.get("work_mode"), settings.current_settings.get("conf"))
+
     # 实例化DTU协议数据解析方法
     dtu_protocol_data = DtuProtocolData()
 
@@ -363,15 +338,10 @@ def run():
     if settings.current_settings.get("offline_storage"):
         remote_pub.addObserver(history)
 
-
-    dtu = ProdDtu()
+    dtu = Dtu()
 
     dtu.add_module(ProdGPIO(settings.current_settings.get("pins")))
 
-    dtu.add_module(DTUDocumentData())
-
-    dtu.add_module(ProdDocumentParse())
-    
     dtu.add_module(channels)
 
     dtu.add_module(data_process)

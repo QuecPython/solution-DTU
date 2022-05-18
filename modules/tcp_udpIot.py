@@ -12,6 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""
+@file      :tcp_udpIot.py
+@author    :elian.wang
+@brief     :tcp、upp iot interface
+@version   :0.1
+@date      :2022-05-18 11:54:10
+@copyright :Copyright (c) 2022
+"""
+
+
 import usocket
 import utime
 import ujson
@@ -31,8 +44,6 @@ class DtuSocket(object):
         self.ping = ""
         self.heart = 60
         self.serial = 0
-        # self.code = 0x00
-        # self.control_channel = False
         self.dtu_uart = uart
         self.channel_id = None
         self.conn_type = "socket"
@@ -107,7 +118,7 @@ class DtuSocket(object):
         else:
             return RET.OK
 
-    def check_net(self):
+    def get_status(self):
         return self.cli.getsocketsta()
 
 

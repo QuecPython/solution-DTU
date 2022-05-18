@@ -18,7 +18,6 @@ import utime as time
 class SensorTH:
 
     def __init__(self):
-        # super(SensorTH, self).__init__()
         self.i2cn = I2C.I2C1
         self.i2c_mode = I2C.STANDARD_MODE
         self.i2c = I2C(self.i2cn, self.i2c_mode)

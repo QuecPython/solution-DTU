@@ -117,7 +117,7 @@ class DTUSearchCommand(Singleton):
         conn_status = dict()
         #TODO
         for code, connect in self.__channel.cloud_object_dict.items():
-            conn_status[code] = connect.check_net()
+            conn_status[code] = connect.get_status()
         return {"code": code, "data": conn_status, "status": 1}
 
     def get_cell_status(self, code, data):
