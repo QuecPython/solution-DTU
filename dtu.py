@@ -12,12 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""
+@file      :dtu.py
+@author    :elian.wang
+@brief     :dtu main function
+@version   :0.1
+@date      :2022-05-18 09:12:37
+@copyright :Copyright (c) 2022
+"""
+
 import sim, uos, dataCall, ujson, net, modem, utime, _thread, uhashlib, fota, ure, ubinascii, cellLocator, request
 from usr.modules.common import Singleton
 from usr.modules.aliyunIot import AliYunIot, AliObjectModel
 from usr.modules.quecthing import QuecThing, QuecObjectModel
 from usr.modules.mqttIot import DtuMqttTransfer
-from usr.modules.huawei_cloud import HuaweiCloudTransfer
+from usr.modules.huawei_cloud import HuaweiIot
 from usr.modules.txyunIot import TXYunIot
 from usr.modules.requestIot import DtuRequest
 from usr.modules.tcp_udpIot import TcpSocket
@@ -202,7 +214,27 @@ class ProdDtu(Singleton):
                 dtu_txyun.addObserver(remote_sub)
                 remote_pub.add_cloud(dtu_txyun, cid)
                 self.__channel.cloud_object_dict[cid] = dtu_txyun
-
+            elif protocol == "hwyun":
+                huawei_iot = HuaweiIot(data.get("ProductKey", None),
+                                    data.get("ProductSecret", None),
+                                    data.get("Devicename", None),
+                                    data.get("DeviceSecret", None),
+                                    data.get("url", None),
+                                    int(data.get("qos", 0)),
+                                    data.get("port", 1883),
+                                    data.get("cleanSession"),
+                                    data.get("clientID"),
+                                    data.get("publish"),
+                                    data.get("subscribe"),
+                                    mcu_name=PROJECT_NAME,
+                                    mcu_version=PROJECT_VERSION,
+                                    firmware_name=DEVICE_FIRMWARE_NAME,
+                                    firmware_version=DEVICE_FIRMWARE_VERSION
+                                    )
+                huawei_iot.init(enforce=True)
+                huawei_iot.addObserver(remote_sub)
+                remote_pub.add_cloud(huawei_iot, cid)
+                self.__channel.cloud_object_dict[cid] = huawei_iot
             elif protocol == "tcp":
                 tcp_sock = TcpSocket(self.__data_process)
                 status = tcp_sock.serialize(data)
@@ -260,21 +292,6 @@ class ProdDtu(Singleton):
                 else:
                     log.error(error_map.get(RET.HTTPERR))
 
-            elif protocol.startswith("hwyun"):
-                hw_req = HuaweiCloudTransfer(self.__data_process)
-                status = hw_req.serialize(data)
-                try:
-                    _thread.start_new_thread(hw_req.connect, ())
-                    utime.sleep_ms(100)
-                except Exception as e:
-                    log.error("{}: {}".format(error_map.get(RET.HWYUNERR), e))
-                else:
-                    if status == RET.OK:
-                        self.__channel.cloud_object_dict[cid] = hw_req
-                        hw_req.channel_id = cid
-                        print("hwyun conn succeed")
-                    else:
-                        log.error(error_map.get(RET.HWYUNERR))
             else:
                 continue
 

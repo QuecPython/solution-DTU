@@ -613,6 +613,8 @@ class QuecThing(CloudObservable):
             Ture: Success
             False: Failed
         """
+        print("test124")
+        print("action:", action)
         return quecIot.otaAction(action) if action in (0, 1, 2, 3) else False
 
 

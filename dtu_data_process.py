@@ -63,7 +63,7 @@ class DtuDataProcess(Singleton):
         self.__channel = None
         self.__ota_timer = osTimer()
         # 周期性上传
-        #self.__ota_timer.start(1000 * 60, 1, self.__periodic_ota_check)
+        self.__ota_timer.start(1000 * 7200, 1, self.__periodic_ota_check)
 
         if self.work_mode == "command":
             self.exec_cmd = CommandMode()
@@ -118,6 +118,7 @@ class DtuDataProcess(Singleton):
         return self.__remote_pub.cloud_device_report(channel_id)
 
     def ota_check(self):
+        print("ota_check")
         try:
             if settings.current_settings.get("ota"):
                 for k, v in settings.current_settings.get("conf").items():
@@ -333,17 +334,19 @@ class DtuDataProcess(Singleton):
                     module = args[0][1].get("componentNo")
                     target_version = args[0][1].get("targetVersion")
                     source_version = DEVICE_FIRMWARE_VERSION if module == DEVICE_FIRMWARE_NAME else PROJECT_VERSION
+                    print("module:", module)
+                    print("target_version:", target_version)
+                    print("source_version:", source_version)
                     if target_version != source_version:
+                        print("test123")
                         self.__remote_ota_action(channel_id, action=1, module=module)
         elif cloud.cloud_name == "aliyun":
             if args and args[0]:
                 if args[0][0] == "ota_cfg":
                     module = args[0][1].get("module")
-                    print("test49")
                     target_version = args[0][1].get("version")
                     source_version = DEVICE_FIRMWARE_VERSION if module == DEVICE_FIRMWARE_NAME else PROJECT_VERSION
                     if target_version != source_version:
-                        print("test50")
                         self.__remote_ota_action(channel_id, action=1, module=module)
         else:
             log.error("Current Cloud (0x%X) Not Supported!" % current_settings["sys"]["cloud"])

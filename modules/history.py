@@ -28,7 +28,7 @@ _history_lock = _thread.allocate_lock()
 class History(Singleton):
     """This class is for manage history file."""
 
-    def __init__(self, history_file="/usr/tracker_data.hist", max_hist_num=100):
+    def __init__(self, history_file="/usr/dtu_data.hist", max_hist_num=100):
         """
         Parameter:
             history_file: filename include full path

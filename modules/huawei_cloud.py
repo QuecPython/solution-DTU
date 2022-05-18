@@ -11,34 +11,145 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""
+@file      :huawei_cloud.py
+@author    :elian.wang
+@brief     :This file shows the interface of Huawei cloud
+@version   :0.1
+@date      :2022-05-18 09:14:22
+@copyright :Copyright (c) 2022
+"""
+
+
 import hmac
+import ujson
 import utime
 import ubinascii
 import uhashlib
 import _thread
 
 from umqtt import MQTTClient
-from usr.cloud import AbstractDtuMqttTransfer
-from usr.modules.logging import RET
 from usr.modules.logging import getLogger
-
+from usr.modules.common import CloudObservable
 log = getLogger(__name__)
 
 
-class HuaweiCloudTransfer(AbstractDtuMqttTransfer):
+class HuaweiIot(CloudObservable):
+    """This is a class for huaweiyun iot.
 
-    def __init__(self, uart):
-        super().__init__(uart)
+    This class extend CloudObservable.
+
+    This class has the following functions:
+        1. Cloud connect and disconnect
+
+        2. Publish data to cloud
+        2.1 Publish object module
+        2.2 Publish ota device info, ota upgrade process, ota plain info request
+        2.3 Publish rrpc response
+
+        3. Subscribe data from cloud
+        3.1 Subscribe publish object model result
+        3.2 Subscribe cloud message
+        3.3 Subscribe ota plain
+        3.4 Subscribe rrpc request
+
+    Attribute:
+        pub_topic_dict: topic dict for publish dtu through data
+        sub_topic_dict: topic dict for subscribe cloud through data
+
+    Run step:
+        1. cloud = HuaweiIot(pk, ps, dk, ds, server, client_id)
+        2. cloud.addObserver(RemoteSubscribe)
+        3. cloud.init()
+        4. cloud.post_data(data)
+        5. cloud.close()
+    """
+    def __init__(self, pk, ps, dk, ds, server, qos, port, clean_session, client_id, pub_topic=None, sub_topic=None, life_time=120,
+                 mcu_name="", mcu_version="", firmware_name="", firmware_version="", reconn=True):
+        """
+        1. Init parent class CloudObservable
+        2. Init cloud connect params and topic
+        """
+        super().__init__()
         self.conn_type = "hwyun"
-        self.device_id = ""
-        self.client_id = ""
-        self.user = ""
-        self.password = ""
+        self.__pk = pk
+        self.__ps = ps
+        self.__dk = dk
+        self.__ds = ds
+        self.__server = server
+        self.__qos = qos
+        self.__port = port
+        self.__huaweiyun = None
+        self.__clean_session = clean_session
+        self.__life_time = life_time
+        self.__mcu_name = mcu_name
+        self.__mcu_version = mcu_version
+        self.__firmware_name = firmware_name
+        self.__firmware_version = firmware_version
+        self.__reconn = reconn
+        self.__object_model = None
+        self.__client_id = client_id
+        self.__post_res = {}
+        self.__password = None
 
+        if pub_topic == None:
+            self.pub_topic_dict = {"0": "$oc/devices/%s/sys/messages/up" % (self.__dk)}
+        else:
+            self.pub_topic_dict = pub_topic
+        if sub_topic == None:
+            self.sub_topic_dict = {"0": "$oc/devices/%s/sys/messages/down" % (self.__dk)}
+        else:
+            self.sub_topic_dict = sub_topic
+
+    def __huaweiyun_subscribe_topic(self):
+        for id, usr_sub_topic in self.sub_topic_dict.items():
+            print("usr_sub_topic:", usr_sub_topic)
+            if self.__huaweiyun.subscribe(usr_sub_topic, qos=0) == -1:
+                log.error("Topic [%s] Subscribe Falied." % usr_sub_topic)
+
+
+    def __huaweiyun_sub_cb(self, topic, data):
+        """Huaweiyun subscribe topic callback
+
+        Parameter:
+            topic: topic info
+            data: response dictionary info
+        """
+        topic = topic.decode()
+        try:
+            data = ujson.loads(data)
+            data = data["content"]
+        except:
+            pass
+
+        print("test 61")
+        try:
+            self.notifyObservers(self, *("raw_data", {"topic":topic, "data":data} ) )
+        except Exception as e:
+            log.error("{}".format(e))
+
+    def __listen(self):
+        while True:
+            self.__huaweiyun.wait_msg()
+            utime.sleep_ms(100)
+
+    def __start_listen(self):
+        """Start a new thread to listen to the cloud publish 
+        """
+        _thread.start_new_thread(self.__listen, ())
 
     @staticmethod
-    def hmac_sha256_digest(key_K, data):
+    def __hmac_sha256_digest(key_K, data):
+        """huwei iot generate password
 
+        Args:
+            key_K (_type_): time sign
+            data (_type_): device secret
+        """
         def xor(x, y):
             return bytes(x[i] ^ y[i] for i in range(min(len(x), len(y))))
 
@@ -53,69 +164,86 @@ class HuaweiCloudTransfer(AbstractDtuMqttTransfer):
         h_outer.update(h_inner.digest())
         return ubinascii.hexlify(h_outer.digest()).decode()
 
-    def register(self):
+    def init(self, enforce=False):
+        """Huweiyun connect and subscribe topic
+
+        Parameter:
+            enforce:
+                True: enfore cloud connect and subscribe topic
+                False: check connect status, return True if cloud connected
+
+        Return:
+            Ture: Success
+            False: Failed
+        """
+        log.debug("[init start] enforce: %s" % enforce)
+        if enforce is False and self.__huaweiyun is not None:
+            log.debug("self.get_status(): %s" % self.get_status())
+            if self.get_status():
+                return True
+
+        if self.__huaweiyun is not None:
+            self.close()
+        
         local_time = utime.localtime()
         time_sign = "%s%s%s%s" % (local_time[0], "%02d" % local_time[1], "%02d" % local_time[2], "%02d" % local_time[3])
-        self.client_id = self.device_id + "_0_0_" + time_sign
-        print("client id")
-        print(self.client_id)
-        self.user = self.device_id
-        # self.password = hmac.new(time_sign.encode("utf-8"), self.device_secret.encode("utf-8"), digestmod=uhashlib.sha256).hexdigest()
-        self.password = self.hmac_sha256_digest(time_sign.encode("utf-8"), self.device_secret.encode("utf-8"))
-        print("pw")
-        print(self.password)
+        self.__client_id = self.__dk + "_0_0_" + time_sign
+        self.__password = self.__hmac_sha256_digest(time_sign.encode("utf-8"), self.__ds.encode("utf-8"))
 
-    def serialize(self, data):
-        print("hwy data")
-        print(data)
+        log.debug("HuaweiYun init. self.__client_id: %s, self.__password: %s, self.__dk: %s, self.__ds: %s" % (self.__client_id, self.__password, self.__dk, self.__ds))
+        self.__huaweiyun = MQTTClient(client_id=self.__client_id, server=self.__server, port=self.__port,
+                              user=self.__dk, password=self.__password, keepalive=self.__life_time, ssl=False)
         try:
-            self.url = data.get("url")
-            self.port = data.get("port")
-            self.device_id = data.get("device_id")
-            self.device_secret = data.get("secret")
-            self.keep_alive = int(data.get("keepAlive")) if data.get("keepAlive") else 60
-            clr_ses = data.get("cleanSession")
-            if clr_ses in ["1", 1, True, "true"]:
-                self.clean_session = True
-            else:
-                self.clean_session = False
-            self.sub_topic = data.get("subscribe")
-            self.pub_topic = data.get("publish")
-            self.qos = int(data.get("qos")) if data.get("qos") else 0
-            # self.retain = int(data.get("retain")) if data.get("retain") else 0
-            self.serial = int(data.get("serialID"))
+            self.__huaweiyun.connect(clean_session=self.__clean_session)
         except Exception as e:
-            print("SERIAL ERR")
-            print(e)
-            return RET.PARSEERR
+            log.error("HuaweiYun connect error: %s" % e)
         else:
-            return RET.OK
+            self.__huaweiyun.setCallback(self.__huaweiyun_sub_cb)
+            self.__huaweiyun_subscribe_topic()
+            log.debug("HuaweiYun __huaweiyun_subscribe_topic")
+            self.__start_listen()
+            log.debug("HuaweiYun start.")
 
-    def connect(self):
-        
-        self.register()
-        print("hw connect")
-        print(self.url)
-        print(self.port)
-        print(self.client_id)
-        print(self.user)
-        print(self.password)
-        self.cli = MQTTClient(client_id=self.client_id, server=self.url, port=self.port,
-                              user=self.user, password=self.password, keepalive=self.keep_alive, ssl=False)
-        self.cli.connect(clean_session=self.clean_session)
-        self.cli.set_callback(self.callback)
-        for tid, s_topic in self.sub_topic.items():
-            self.cli.subscribe(s_topic, qos=self.qos)
-        for tid, p_topic in self.pub_topic.items():
-            self.cli.publish(p_topic, "hello world", qos=self.qos)
-        self.start_listen()
-            
-        log.info("hw set successful")
+        log.debug("self.get_status(): %s" % self.get_status())
+        if self.get_status():
+            return True
+        else:
+            return False
 
-    def listen(self):
-        while True:
-            self.cli.wait_msg()
-            utime.sleep_ms(100)
+    def close(self):
+        self.__huaweiyun.disconnect()
 
-    def start_listen(self):
-        _thread.start_new_thread(self.listen, ()) #监听线程
+    def get_status(self):
+        """Get huaweiyun connect status
+
+        Return:
+            True -- connect success
+            False -- connect falied
+        """
+        try:
+            return True if self.__huaweiyun.get_mqttsta() == 0 else False
+        except:
+            return False
+    
+    def through_post_data(self, data, topic_id):
+        print("test56")
+        print("topic_id type:", type(self.pub_topic_dict))
+        print("self.pub_topic_dict:", self.pub_topic_dict)
+        print("self.pub_topic_dict[topic_id]:", self.pub_topic_dict[topic_id])
+        print("data:", data)
+        try:
+            self.__huaweiyun.publish(self.pub_topic_dict[topic_id], data, self.__qos)
+        except Exception:
+            log.error("Huaweiyun publish topic %s failed. data: %s" % (self.pub_topic_dict[topic_id], data))
+            return False
+        else:
+            return True
+
+    def post_data(self, data):
+        pass
+
+    def ota_request(self):
+        pass
+
+    def ota_action(self, action, module=None):
+        pass
