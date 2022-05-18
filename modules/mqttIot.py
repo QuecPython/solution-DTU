@@ -118,7 +118,7 @@ class MqttIot(CloudObservable):
 
     def __listen(self):
         while True:
-            self.__huaweiyun.wait_msg()
+            self.__mqtt.wait_msg()
             utime.sleep_ms(100)
 
     def __start_listen(self):
@@ -191,7 +191,7 @@ class MqttIot(CloudObservable):
         try:
             self.__mqtt.publish(self.pub_topic_dict[topic_id], data, self.__qos)
         except Exception:
-            log.error("Huaweiyun publish topic %s failed. data: %s" % (self.pub_topic_dict[topic_id], data))
+            log.error("mqtt publish topic %s failed. data: %s" % (self.pub_topic_dict[topic_id], data))
             return False
         else:
             return True

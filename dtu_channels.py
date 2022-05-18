@@ -12,6 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""
+@file      :dtu_channels.py
+@author    :elian.wang
+@brief     :get customer cloud channel config
+@version   :0.1
+@date      :2022-05-18 16:30:13
+@copyright :Copyright (c) 2022
+"""
+
 from usr.modules.common import Singleton
 
 class ChannelTransfer(Singleton):

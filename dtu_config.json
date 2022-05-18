@@ -3,17 +3,17 @@
   "password": "123",
   "conf": {
     "3": {
-      "protocol": "hwyun",
-      "url": "a15fbbd7ce.iot-mqtts.cn-north-4.myhuaweicloud.com",
+      "protocol": "mqtt",
+      "clientID": "test_mqtt",
+      "keepAlive": 0,
+      "url": "broker-cn.emqx.io",
       "port": "1883",
-      "Devicename": "625132b420cfa22b94c54613_dtu_device1_id",
-      "DeviceSecret": "a306255686a71e56ad53965fc2771bf8",
-      "keep_alive": 10,
       "cleanSession": true,
-      "subscribe": {"0": "$oc/devices/625132b420cfa22b94c54613_dtu_device1_id/sys/messages/down"},
-      "publish": {"0": "$oc/devices/625132b420cfa22b94c54613_dtu_device1_id/sys/messages/up"},
-      "qos": 0,
-      "serialID": 2
+      "subscribe": {"0": "/python_a306255686a71e56ad53965fc2771bf8/mqtt"},
+      "publish": {"0": "/python_a306255686a71e56ad53965fc2771bf8/mqtt"},
+      "qos": "0",
+      "retain": "1",
+      "serialID": "2"
     }
   },
   "reg": 0,

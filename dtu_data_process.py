@@ -28,7 +28,6 @@ from usr.modules.logging import getLogger
 from usr.settings import settings
 from usr.settings import PROJECT_NAME, PROJECT_VERSION, DEVICE_FIRMWARE_NAME, DEVICE_FIRMWARE_VERSION
 
-SERIAL_MAP = dict()
 log = getLogger(__name__)
 
 class DtuDataProcess(Singleton):
@@ -36,7 +35,7 @@ class DtuDataProcess(Singleton):
     def __init__(self, settings):
         # 配置uart
         uconf = settings.get("uconf")
-        self.serial_map = SERIAL_MAP
+        self.serial_map = dict()
         for sid, conf in uconf.items():
             uart_conn = UART(getattr(UART, "UART%d" % int(sid)),
                              int(conf.get("baudrate")),
@@ -226,13 +225,12 @@ class DtuDataProcess(Singleton):
         for k, v in self.__channel.cloud_object_dict.items():
             if cloud == v:
                 channel_id = k
-        
+     
         for sid, cid in self.__channel.serial_channel_dict.items():
             if channel_id in cid:
                 serial_id = sid
 
         data = kwargs["data"].decode() if isinstance(kwargs["data"], bytes) else kwargs["data"]
-        print("test68")
         ret_data = self.cloud_data_parse(data, topic_id, channel_id)
 
         # reply cloud query command
@@ -299,8 +297,8 @@ class DtuDataProcess(Singleton):
                     utime.sleep_ms(100)
                     continue
 
-    def post_hist_data(self, data):
-        log.info("post_hist_data")
+    def post_history_data(self, data):
+        log.info("post_history_data")
         # 获取云端通道配置任意一个通道的channel_id发送历史数据
         channel_id = list(self.__channel.cloud_channel_dict.keys())[0]
         cloud_channel_config = self.__channel.cloud_channel_dict[channel_id]

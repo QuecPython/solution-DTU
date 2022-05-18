@@ -140,6 +140,7 @@ class Dtu(Singleton):
                 mqtt_iot.init(enforce=True)
                 mqtt_iot.addObserver(remote_sub)
                 remote_pub.add_cloud(mqtt_iot, cid)
+                self.__channel.cloud_object_dict[cid] = mqtt_iot
             elif protocol == "aliyun":
                 dtu_ali = AliYunIot(data.get("ProductKey"),
                                     data.get("ProductSecret"),
@@ -274,17 +275,14 @@ class Dtu(Singleton):
 
     def refresh(self):
         log.info("refresh start")
-        if self.__parse_data.auto_connect:
-            try:
-                self.prepare()
-                log.info("prepart ready")
+        # TODO 判断 auto_connect 
+        try:
+            self.prepare()
+            log.info("prepart ready")
 
-                _thread.start_new_thread(self.__data_process.read, ())
-            except Exception as e:
-                pass
-                
-        # else:
-        #     pass
+            _thread.start_new_thread(self.__data_process.read, ())
+        except Exception as e:
+            pass
 
     def report_history(self):
         if not self.__history:
@@ -300,7 +298,7 @@ class Dtu(Singleton):
             pt_count = 0
             for i, data in enumerate(hist["data"]):
                 pt_count += 1
-                if not self.__data_process.post_hist_data(data):
+                if not self.__data_process.post_history_data(data):
                     res = False
                     break
 
