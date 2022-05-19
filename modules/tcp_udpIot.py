@@ -24,7 +24,6 @@
 @copyright :Copyright (c) 2022
 """
 
-
 import usocket
 import utime
 import ujson
@@ -32,26 +31,37 @@ import ujson
 from usr.modules.logging import RET
 from usr.modules.logging import error_map
 from usr.modules.logging import getLogger
+from usr.modules.common import CloudObservable
 
 log = getLogger(__name__)
 
-class DtuSocket(object):
-    def __init__(self, uart):
-        self.cli = None
-        self.url = ""
-        self.port = ""
-        self.keep_alive = 300
-        self.ping = ""
-        self.heart = 60
-        self.serial = 0
-        self.dtu_uart = uart
-        self.channel_id = None
+class SocketIot(CloudObservable):
+    """This is a class for tcp udp iot
+
+    Args:
+        object (_type_): _description_
+    """
+    def __init__(self, server, port, heartbeat_time, ping="", life_time=120):
+        self.__cli = None
+        self.__server = server
+        self.__port = port
+        self.__life_time = life_time
+        self.__ping = ping
+        self.__heartbeat_time = heartbeat_time
         self.conn_type = "socket"
 
-    def connect(self):
+    def __first_reg(self, reg_data):  # 发送注册信息
+        try:
+            self.__cli.send(str(reg_data).encode("utf-8"))
+            # log.info("Send first login information {}".format(reg_data))
+        except Exception as e:
+            log.info("send first login information failed !{}".format(e))
+
+    def init(self, enforce=False):
         sock_addr = usocket.getaddrinfo(self.url, int(self.port))[0][-1]
         log.info("sock_addr = {}".format(sock_addr))
-        self.cli.connect(sock_addr)
+        self.__cli.connect(sock_addr)
+        self.__first_reg()
 
     def send(self, data, *args):
         try:
@@ -60,14 +70,14 @@ class DtuSocket(object):
                 send_data = data
             else:
                 send_data = ujson.dumps(data)
-            self.cli.send(send_data.encode("utf-8"))
+            self.__cli.send(send_data.encode("utf-8"))
         except Exception as e:
             log.error("{}: {}".format(error_map.get(RET.DATAPARSEERR), e))
 
     def recv(self):
         while True:
             try:
-                data = self.cli.recv(1024)
+                data = self.__cli.recv(1024)
             except Exception as e:
                 print(e)
                 utime.sleep_ms(50)
@@ -75,51 +85,33 @@ class DtuSocket(object):
             else:
                 if data != b"":
                     print("socket data:", data)
-                    """
+                    
                     rec = self.dtu_uart.output(data.decode(), self.serial, request_id=self.channel_id)
                     if isinstance(rec, dict):
                         self.send(rec)
-                    """
+                    
                 else:
                     utime.sleep_ms(50)
                     continue
 
-    def Heartbeat(self):  # 发送心跳包
+    def heartbeat(self):  # 发送心跳包
         while True:
             log.info("send heartbeats")
             try:
-                self.cli.send(self.ping.encode("utf-8"))
+                self.__cli.send(self.ping.encode("utf-8"))
                 log.info("Send a heartbeat: {}".format(self.ping))
             except Exception as e:
                 log.info("send heartbeat failed !")
             print("heart time", self.heart)
             utime.sleep(self.heart)
 
-    def first_reg(self, reg_data):  # 发送注册信息
-        try:
-            self.cli.send(str(reg_data).encode("utf-8"))
-            # log.info("Send first login information {}".format(reg_data))
-        except Exception as e:
-            log.info("send first login information failed !{}".format(e))
+    
 
-    def disconnect(self):
-        self.cli.close()
-
-    def serialize(self, data):
-        try:
-            self.ping = data.get("ping")
-            self.heart = data.get("heartbeat")
-            self.url = data.get("url")
-            self.port = data.get("port")
-            self.keep_alive = data.get("keepAlive", 300)
-            self.serial = data.get("serialID")
-        except Exception as e:
-            return RET.PARSEERR
-        else:
-            return RET.OK
+    def close(self):
+        self.__cli.close()
 
     def get_status(self):
-        return self.cli.getsocketsta()
+        return self.__cli.getsocketsta()
 
 
 class TcpSocket(DtuSocket):

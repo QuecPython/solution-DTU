@@ -12,6 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""
+@file      :requestIot.py
+@author    :elian.wang
+@brief     :<description>
+@version   :0.1
+@date      :2022-05-19 10:49:01
+@copyright :Copyright (c) 2022
+"""
+
 import request
 import ujson
 
@@ -22,32 +34,29 @@ from usr.modules.logging import getLogger
 
 log = getLogger(__name__)
 class DtuRequest(CloudObservable):
-    _data_methods = ("PUT", "POST", "DELETE", "HEAD")
 
-    def __init__(self):
-        # self.code = code
-        self.url = ""
-        self.port = ""
-        self.method = ""
-        self.data = None
-        self.serial = 0
-        self.channel_id = None
-        # 用于识别连接类型
+    def __init__(self, server, method, reg_data, timeout):
         self.conn_type = "http"
+        self.__server = server
+        self.__port = None
+        self.__method = method
+        self.__data = None
+        self.__reg_data = reg_data
+        self.__timeout = timeout
+        self.__http = None
+        
+    def init(self, enforce=False):
+        log.debug("[init start] enforce: %s" % enforce)
+        if enforce is False and self.__http is not None:
+            log.debug("self.get_status(): %s" % self.get_status())
+            if self.get_status():
+                return True
 
-    def serialize(self, data):
-        try:
-            self.method = data.get("method")
-            self.url = data.get("url")
-            self.data = data.get("reg_data")
-            self.timeout = data.get("reg_datatimeout")
-            self.serial = data.get("serialID")
-            if self.method.upper() not in ["GET", "POST", "PUT", "DELETE", "HEAD"]:
+        if self.method.upper() not in ["GET", "POST", "PUT", "DELETE", "HEAD"]:
                 return RET.HTTPCHANNELPARSEERR
-        except Exception as e:
-            return RET.HTTPCHANNELPARSEERR
-        else:
-            return RET.OK
+
+        if self.__http is not None:
+            self.close()
 
     # http发送的数据为json类型
     def send(self, data, *args):
@@ -66,7 +75,7 @@ class DtuRequest(CloudObservable):
         if self.port:
             uri += self.port
         try:
-            if self.method.upper() in self._data_methods:
+            if self.method.upper() in self.__data_methods:
                 func = getattr(request, self.method.lower())
                 resp = func(uri, data=self.data)
             else:
@@ -86,11 +95,11 @@ class DtuRequest(CloudObservable):
                 print("HTTP RESP")
                 print(resp)
                 # TODO HTTP data Parse func
-                #rec = self.uart.output(resp.status_code, self.serial, request_id=self.channel_id)
-                #if isinstance(rec, dict):
-                 #   self.send(rec)
+                rec = self.uart.output(resp.status_code, self.serial, request_id=self.channel_id)
+                if isinstance(rec, dict):
+                   self.send(rec)
             return resp.content
 
-    def check_net(self):
+    def get_status(self):
         resp = request.get(self.url)
         return resp.status_code

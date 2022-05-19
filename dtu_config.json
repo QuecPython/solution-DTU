@@ -31,7 +31,7 @@
     }
   },
   "fota": 1,
-  "ota": true,
+  "ota": 1,
   "pins": [
     "1",
     "2",
@@ -46,7 +46,7 @@
   "service_acquire": 0,
   "work_mode": "through",
   "auto_connect": 1,
-  "offline_storage": true,
+  "offline_storage": 1,
   "modbus":{
   }
   

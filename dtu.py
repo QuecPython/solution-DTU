@@ -39,7 +39,7 @@ from usr.dtu_data_process import DtuDataProcess
 from usr.dtu_channels import ChannelTransfer
 from usr.modules.logging import RET
 from usr.modules.logging import error_map
-from usr.dtu_gpio import ProdGPIO
+from usr.dtu_gpio import Gpio
 from usr.modules.remote import RemotePublish, RemoteSubscribe
 from usr.modules.logging import getLogger
 from usr.settings import PROJECT_NAME, PROJECT_VERSION, DEVICE_FIRMWARE_NAME, DEVICE_FIRMWARE_VERSION
@@ -59,7 +59,7 @@ class Dtu(Singleton):
         self.__history = None
 
     def add_module(self, module):
-        if isinstance(module, ProdGPIO):
+        if isinstance(module, Gpio):
             self.__gpio = module
             return True
         elif isinstance(module, DtuDataProcess):
@@ -338,7 +338,7 @@ def run():
 
     dtu = Dtu()
 
-    dtu.add_module(ProdGPIO(settings.current_settings.get("pins")))
+    dtu.add_module(Gpio(settings.current_settings.get("pins")))
 
     dtu.add_module(channels)
 

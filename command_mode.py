@@ -27,11 +27,13 @@ from misc import Power, ADC
 from usr.t_h import SensorTH
 from usr.settings import DTUDocumentData
 from usr.settings import CONFIG
-from usr.dtu_gpio import ProdGPIO
+from usr.dtu_gpio import Gpio
 from usr.modules.logging import getLogger
 from usr.modules.logging import RET
 from usr.modules.logging import error_map
 from usr.modules.logging import DTUException
+from usr.settings import PROJECT_NAME, PROJECT_VERSION, DEVICE_FIRMWARE_NAME, DEVICE_FIRMWARE_VERSION
+from usr.settings import settings
 
 log = getLogger(__name__)
 
@@ -40,7 +42,6 @@ HISTORY_ERROR = []
 
 class DTUSearchCommand(Singleton):
     def __init__(self):
-        self.dtu_c = DTUDocumentData()
         self.__channel = None
 
     def set_channel(self, channel):
@@ -54,15 +55,16 @@ class DTUSearchCommand(Singleton):
         return {"code": code, "data": sim.getPhoneNumber(), "status": 1}
 
     def get_version(self, code, data):
-        log.info(self.dtu_c.version)
-        return {"code": code, "data": self.dtu_c.version, "status": 1}
+        log.info(PROJECT_VERSION)
+        return {"code": code, "data": PROJECT_VERSION, "status": 1}
 
     def get_csq(self, code, data):
         return {"code": code, "data": net.csqQueryPoll(), "status": 1}
 
     def get_cur_config(self, code, data):
         log.info("get_cur_config")
-        return {"code": code, "data": self.dtu_c.json_info(need=False), "status": 1}
+        current_settings = settings.get()
+        return {"code": code, "data": current_settings, "status": 1}
 
     def get_diagnostic_info(self, code, data):
         log.info("get_diagnostic_message")
@@ -90,7 +92,7 @@ class DTUSearchCommand(Singleton):
         log.info("get_gpio")
         try:
             pins = data["pins"]
-            prod_gpio = ProdGPIO()
+            prod_gpio = Gpio()
             gpio_get = getattr(prod_gpio, "gpio%s" % pins)
             gpor_read = gpio_get.read()
         except DTUException as e:
@@ -115,7 +117,6 @@ class DTUSearchCommand(Singleton):
     def get_network_connect(self, code, data):
         log.info("get_network_connect")
         conn_status = dict()
-        #TODO
         for code, connect in self.__channel.cloud_object_dict.items():
             conn_status[code] = connect.get_status()
         return {"code": code, "data": conn_status, "status": 1}
@@ -140,177 +141,163 @@ class DTUSearchCommand(Singleton):
 
 
 class BasicSettingCommand(Singleton):
-
-    def __init__(self):
-        self.dtu_c = DTUDocumentData()
-
     def restart(self, code, data):
         log.info("Restarting...")
         Power.powerRestart()
 
-    def set_int_data(self, code, data, sign):
-        log.info("data: %s" % data)
+    def set_plate(self, code, data):
         try:
-            number = data[sign]
-            number = int(number)
+            settings.set("plate", data["plate"])
+            settings.save()
+            return {"code": code, "status": 1}
         except Exception as e:
             log.error("e = {}".format(e))
             return {"code": code, "status": 0}
-        else:
-            setattr(self.dtu_c, sign, number)
-            self.dtu_c.reload_file()
-            return {"code": code, "status": 1}
-
-    def set_plate(self, code, data):
-        return self.set_int_data(code, data, "plate")
 
     def set_reg(self, code, data):
-        return self.set_int_data(code, data, "reg")
+        try:
+            settings.set("reg", data["reg"])
+            settings.save()
+            return {"code": code, "status": 1}
+        except Exception as e:
+            log.error("e = {}".format(e))
+            return {"code": code, "status": 0}
 
     def set_version(self, code, data):
-        return self.set_int_data(code, data, "version")
+        try:
+            settings.set("version", data["version"])
+            settings.save()
+            return {"code": code, "status": 1}
+        except Exception as e:
+            log.error("e = {}".format(e))
+            return {"code": code, "status": 0}
 
     def set_passwd(self, code, data):
         try:
-            passwd = str(data["new_password"])
+            settings.set("password", str(data["new_password"]))
+            settings.save()
+            return {"code": code, "status": 1}
         except Exception as e:
             log.error("e = {}".format(e))
             return {"code": code, "status": 0}
-        else:
-            setattr(self.dtu_c, "password", passwd)
-            self.dtu_c.reload_file()
-            return {"code": code, "status": 1}
 
     def set_fota(self, code, data):
-        return self.set_int_data(code, data, "fota")
+        try:
+            settings.set("fota", data["fota"])
+            settings.save()
+            return {"code": code, "status": 1}
+        except Exception as e:
+            log.error("e = {}".format(e))
+            return {"code": code, "status": 0}
 
     def set_ota(self, code, data):
-        print("set_ota: ", code, data)
         try:
-            ota = data["ota"]
-            if not isinstance(ota, list):
-                raise DTUException(RET.DATATYPEERR)
-            if len(ota) != 3:
-                raise DTUException(RET.NUMBERERR)
-        except DTUException as e:
-            log.error(e)
-            return {"code": code, "status": 0}
-        except Exception as e:
-            log.error(e)
-            return {"code": code, "status": 0}
-        else:
-            setattr(self.dtu_c, "ota", ota)
-            self.dtu_c.reload_file()
+            settings.set("ota", data["ota"])
+            settings.save()
             return {"code": code, "status": 1}
+        except Exception as e:
+            log.error("e = {}".format(e))
+            return {"code": code, "status": 0}
 
     def set_nolog(self, code, data):
-        return self.set_int_data(code, data, "nolog")
+        try:
+            settings.set("nolog", data["nolog"])
+            settings.save()
+            return {"code": code, "status": 1}
+        except Exception as e:
+            log.error("e = {}".format(e))
+            return {"code": code, "status": 0}
 
     def set_service_acquire(self, code, data):
-        return self.set_int_data(code, data, "service_acquire")
+        try:
+            settings.set("service_acquire", data["service_acquire"])
+            settings.save()
+            return {"code": code, "status": 1}
+        except Exception as e:
+            log.error("e = {}".format(e))
+            return {"code": code, "status": 0}
 
     def set_uconf(self, code, data):
-        # 透传模式不能配置
-        if self.dtu_c.work_mode == "through":
-            return {"code": code, "status": 0}
         try:
             uconf = data["uconf"]
             if not isinstance(uconf, dict):
                 raise DTUException(RET.DATATYPEERR)
+            settings.set("uconf", uconf)
+            settings.save()
+            return {"code": code, "status": 1}
         except DTUException as e:
             log.error(e)
             return {"code": code, "status": 0}
         except Exception as e:
-            log.error(e)
+            log.error("e = {}".format(e))
             return {"code": code, "status": 0}
-        else:
-            setattr(self.dtu_c, "uconf", uconf)
-            self.dtu_c.reload_file()
-            return {"code": code, "status": 1}
 
     def set_dtu_conf(self, code, data):
-        # 透传模式不能配置
-        if self.dtu_c.work_mode == "through":
-            return {"code": code, "status": 0}
         try:
             conf = data["conf"]
             if not isinstance(conf, dict):
                 raise DTUException(RET.DATATYPEERR)
+            settings.set("conf", conf)
+            settings.save()
+            return {"code": code, "status": 1}
         except DTUException as e:
             log.error(e)
             return {"code": code, "status": 0}
         except Exception as e:
             log.error(e)
             return {"code": code, "status": 0}
-        else:
-            setattr(self.dtu_c, "conf", conf)
-            self.dtu_c.reload_file()
-            return {"code": code, "status": 1}
+            
 
     def set_apns(self, code, data):
-        # 透传模式不能配置
-        if self.dtu_c.work_mode == "through":
-            return {"code": code, "status": 0}
         print("apn_code_data: ", code, data)
-        self.dtu_c.apn = data
         try:
             apn = data["apn"]
             if not isinstance(apn, list):
                 raise DTUException(RET.DATATYPEERR)
             if len(apn) != 3:
                 raise DTUException(RET.NUMBERERR)
+            settings.set("apn", apn)
+            settings.save()
+            return {"code": code, "status": 1}
         except DTUException as e:
             log.error(e)
             return {"code": code, "status": 0}
         except Exception as e:
             log.error(e)
             return {"code": code, "status": 0}
-        else:
-            setattr(self.dtu_c, "apn", apn)
-            self.dtu_c.reload_file()
-            return {"code": code, "status": 1}
+            
 
     def set_pins(self, code, data):
-        # 透传模式不能配置
-        if self.dtu_c.work_mode == "through":
-            return {"code": code, "status": 0}
         print("pins_code_data: ", code, data)
         try:
             pins = data["pins"]
             if not isinstance(pins, list):
                 raise DTUException(RET.DATATYPEERR)
-            # if len(pins) != 3:
-            #     raise DTUException(RET.NUMBERERR)
+            settings.set("pins", pins)
+            settings.save()
+            return {"code": code, "status": 1}
         except DTUException as e:
             log.error(e)
             return {"code": code, "status": 0}
         except Exception as e:
             log.error(e)
             return {"code": code, "status": 0}
-        else:
-            setattr(self.dtu_c, "pins", pins)
-            self.dtu_c.reload_file()
-            return {"code": code, "status": 1}
 
     def set_params(self, code, data):
-        # 透传模式不能配置
-        if self.dtu_c.work_mode == "through":
-            return {"code": code, "status": 0}
         try:
             conf = data["dtu_config"]
             if not isinstance(conf, dict):
                 raise DTUException(RET.DATATYPEERR)
-            self.dtu_c.backup_file()
-            with open(CONFIG["config_path"], mode="w") as f:
-                ujson.dump(conf, f)
+            if settings.set_multi(conf):
+                return {"code": code, "status": 1}
+            else:
+                return {"code": code, "status": 0}
         except DTUException as e:
             log.error(e)
             return {"code": code, "status": 0}
         except Exception as e:
             log.error(e)
             return {"code": code, "status": 0}
-        else:
-            return {"code": code, "status": 1}
 
     def set_tts(self, code, data):
         print("tts_code_data: ", code, data)
@@ -353,7 +340,7 @@ class BasicSettingCommand(Singleton):
 class CommandMode(Singleton):
 
     def __init__(self):
-        self.not_need_password_verify_code = [0x00, 0x01, 0x02, 0x03, 0x05]
+        self.__not_need_password_verify_code = [0x00, 0x01, 0x02, 0x03, 0x05]
         self.search_command = {
             0: "get_imei",
             1: "get_number",
@@ -391,7 +378,6 @@ class CommandMode(Singleton):
         }
         self.search_command_func_code_list = self.search_command.keys()
         self.basic_setting_command_list = self.basic_setting_command.keys()
-        self.dtu_d = DTUDocumentData()
         self.__protocol = None
         self.search_cmd = DTUSearchCommand()
         self.setting_cmd = BasicSettingCommand()
@@ -415,37 +401,31 @@ class CommandMode(Singleton):
         except Exception as e:
                 log.info(e)
 
-        print("test72")
         cmd_code = msg_data.get("cmd_code", None)
         msg_id = msg_data.get("msg_id")
         password = msg_data.get("password", None)
         cloud_request_topic = msg_data.get("topic_id", None)
         data = msg_data.get("data", None)
-        print("test73")
 
         if cmd_code is not None:
-            if cmd_code not in self.not_need_password_verify_code:
-                if password != self.dtu_d.password:
+            if cmd_code not in self.__not_need_password_verify_code:
+                if password != settings.current_settings.get("password"):
                     log.error(error_map.get(RET.PASSWDVERIFYERR))
                     ret_data["cloud_data"] = {"code": cmd_code, "status": 0, "error": error_map.get(RET.PASSWDVERIFYERR)}
 
             print("cmd_code", cmd_code)
             if cmd_code in self.search_command_func_code_list:
                 try:
-                    print("test74")
                     cmd_str = self.search_command.get(cmd_code)
-                    print("test75")
                     func = getattr(self.search_cmd, cmd_str)
-                    print("test76")
                     ret_data["cloud_data"] = func(cmd_code, msg_data)
-                    print("ret_data:", ret_data["cloud_data"])
                 except Exception as e:
                     log.error("search_command_func_code_list:", e)
             elif cmd_code in self.basic_setting_command_list:
                 try:
                     cmd_str = self.basic_setting_command.get(cmd_code)
                     func = getattr(self.setting_cmd, cmd_str)
-                    ret_data["cloud_data"] = func(cmd_code, msg_data)
+                    ret_data["cloud_data"] = func(cmd_code, data)
                 except Exception as e:
                     log.error("basic_setting_command_list:", e)
             else:

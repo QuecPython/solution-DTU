@@ -19,7 +19,7 @@ from usr.modules.common import Singleton
 
 log = getLogger(__name__)
 
-class ProdGPIO(Singleton):
+class Gpio(Singleton):
     def __init__(self, pins):
         # self.gpio1 = Pin(Pin.GPIO1, Pin.OUT, Pin.PULL_DISABLE, 0)
         set_gpio = False
