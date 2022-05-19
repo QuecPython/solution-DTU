@@ -114,7 +114,7 @@ class SocketIot(CloudObservable):
         return self.__cli.getsocketsta()
 
 
-class TcpSocket(DtuSocket):
+class TcpSocket(SocketIot):
 
     def __init__(self):
         super(TcpSocket, self).__init__()
@@ -124,7 +124,7 @@ class TcpSocket(DtuSocket):
         self.conn_type = "tcp"
 
 
-class UdpSocket(DtuSocket):
+class UdpSocket(SocketIot):
 
     def __init__(self):
         super(UdpSocket, self).__init__()

@@ -127,7 +127,7 @@ class MqttIot(CloudObservable):
         _thread.start_new_thread(self.__listen, ())
 
     def init(self, enforce=False):
-        """Huweiyun connect and subscribe topic
+        """mqtt connect and subscribe topic
 
         Parameter:
             enforce:
@@ -183,11 +183,6 @@ class MqttIot(CloudObservable):
             return False
     
     def through_post_data(self, data, topic_id):
-        print("test56")
-        print("topic_id type:", type(self.pub_topic_dict))
-        print("self.pub_topic_dict:", self.pub_topic_dict)
-        print("self.pub_topic_dict[topic_id]:", self.pub_topic_dict[topic_id])
-        print("data:", data)
         try:
             self.__mqtt.publish(self.pub_topic_dict[topic_id], data, self.__qos)
         except Exception:

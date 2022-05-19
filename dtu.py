@@ -84,9 +84,9 @@ class Dtu(Singleton):
                 break
 
     def dialing(self, apn):
-        # 文件备份
-        call_count = 0
+        log.info("apn", apn)
         if apn[0] != "" and apn[1] != "" and apn[2] != "":
+            call_count = 0
             while True:
                 res = dataCall.setApn(1, 0, apn[0], apn[1], apn[2], 0)
                 if res == 0:
@@ -104,16 +104,6 @@ class Dtu(Singleton):
 
         # 检查拨号结果，拨号失败闪烁LED灯
         self.__gpio.LED_blink(dataCall.getInfo(1, 0)[2][0], 10)
-
-    def data_info(self, version, imei, code, msg):
-        data = {
-            "version": version,
-            "ver": "v1.0",
-            "imei": imei,
-            "code": code,
-            "msg": msg
-        }
-        return data
 
     def cloud_init(self, serv_list, remote_sub, remote_pub):
         print("serv_list:",serv_list)
@@ -224,7 +214,7 @@ class Dtu(Singleton):
                     log.error("{}: {}".format(error_map.get(RET.TCPERR), e))
                 else:
                     if status == RET.OK:
-                        if self.__parse_data.reg == 1:
+                        if settings.current_settings.get("reg") == 1:
                             tcp_sock.first_reg(reg_data)
                             log.info("TCP send first login information {}".format(reg_data))
                         if data.get("ping"):
@@ -245,7 +235,7 @@ class Dtu(Singleton):
                     log.error("{}: {}".format(error_map.get(RET.UDPERR), e))
                 else:
                     if status == RET.OK:
-                        if self.__parse_data.reg == 1:
+                        if settings.current_settings.get("reg") == 1:
                             udp_sock.first_reg(reg_data)
                             log.info("UDP send first login information {}".format(reg_data))
                         if data.get("ping"):

@@ -12,21 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import ujson
-import ntptime
+
 import net
 import sim
 import sms
-import audio
 import log
+import ujson
+import audio
 import modem
+import ntptime
 import cellLocator
-import utime
 from usr.modules.common import Singleton
 from misc import Power, ADC
 from usr.t_h import SensorTH
-from usr.settings import DTUDocumentData
-from usr.settings import CONFIG
 from usr.dtu_gpio import Gpio
 from usr.modules.logging import getLogger
 from usr.modules.logging import RET

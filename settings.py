@@ -21,10 +21,7 @@ import _thread
 
 from usr.modules.common import Singleton
 from usr.modules.common import option_lock
-from usr.settings_sys import SYSConfig
 from usr.settings_user import UserConfig
-from usr.modules.logging import RET
-from usr.modules.logging import error_map
 from usr.modules.logging import getLogger
 
 log = getLogger(__name__)
