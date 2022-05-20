@@ -17,7 +17,7 @@
 
 """
 @file      :tcp_udpIot.py
-@author    :elian.wang
+@author    :elian.wang@quectel.com
 @brief     :tcp、upp iot interface
 @version   :0.1
 @date      :2022-05-18 11:54:10

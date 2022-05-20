@@ -204,6 +204,12 @@ class DtuDataProcess(Singleton):
 
 
     def cloud_read_data_parse_main(self, cloud, *args, **kwargs):
+        """Parsing cloud data, Answer cloud data or send to serial port
+
+        Args:
+            cloud (cloud object): different cloud object,such as:AliYunIot、TXYunIot、QuecThing、HuaweiIot
+            kwargs (dict): The data received by the cloud,contains topic and data
+        """
         print("test67")
         print("kwargs:{}".format(kwargs))
         print("kwargs type:{}".format(type(kwargs)))

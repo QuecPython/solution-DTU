@@ -51,7 +51,7 @@ class UserConfig(object):
     pins = ["1", "2", "3"]
     direction_pin = {}
     apn = ["", "", ""]
-    work_mode = "through"
+    work_mode = "command"
     auto_connect = 1
     offline_storage = True
     modbus = {}

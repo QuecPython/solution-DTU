@@ -17,8 +17,8 @@
 
 """
 @file      :requestIot.py
-@author    :elian.wang
-@brief     :<description>
+@author    :elian.wang@quectel.com
+@brief     :cloud that communicate using HTTP,Dtu communicate interface
 @version   :0.1
 @date      :2022-05-19 10:49:01
 @copyright :Copyright (c) 2022

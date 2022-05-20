@@ -17,7 +17,7 @@
 
 """
 @file      :mqttIot.py
-@author    :elian.wang
+@author    :elian.wang@quectel.com
 @brief     :universal mqtt iot inferface
 @version   :0.1
 @date      :2022-05-18 13:28:53

@@ -17,7 +17,7 @@
 
 """
 @file      :huawei_cloud.py
-@author    :elian.wang
+@author    :elian.wang@quectel.com
 @brief     :This file shows the interface of Huawei cloud
 @version   :0.1
 @date      :2022-05-18 09:14:22

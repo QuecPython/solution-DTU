@@ -12,6 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""
+@file      :command_mode.py
+@author    :elian.wang@quectel.com
+@brief     :<description>
+@version   :0.1
+@date      :2022-05-20 16:32:51
+@copyright :Copyright (c) 2022
+"""
+
+
 
 import net
 import sim
@@ -24,13 +37,13 @@ import ntptime
 import cellLocator
 from usr.modules.common import Singleton
 from misc import Power, ADC
-from usr.t_h import SensorTH
 from usr.dtu_gpio import Gpio
 from usr.modules.logging import getLogger
 from usr.modules.logging import RET
 from usr.modules.logging import error_map
 from usr.modules.logging import DTUException
-from usr.settings import PROJECT_NAME, PROJECT_VERSION, DEVICE_FIRMWARE_NAME, DEVICE_FIRMWARE_VERSION
+from usr.modules.temp_humidity_sensor import TempHumiditySensor
+from usr.settings import PROJECT_VERSION
 from usr.settings import settings
 
 log = getLogger(__name__)
@@ -108,7 +121,7 @@ class DTUSearchCommand(Singleton):
 
     def get_temp_humid(self, code, data):
         log.info("get_temp_humid")
-        sensor_th = SensorTH()
+        sensor_th = TempHumiditySensor()
         temp, humid = sensor_th.read()
         return {"code": code, "data": {"temperature": temp, "humidity": humid}, "status": 1}
 
@@ -336,7 +349,8 @@ class BasicSettingCommand(Singleton):
         return {"code": code, "status": 1}
 
 class CommandMode(Singleton):
-
+    """When working in command mode, the DTU receives cloud data and serial port data
+    """
     def __init__(self):
         self.__not_need_password_verify_code = [0x00, 0x01, 0x02, 0x03, 0x05]
         self.search_command = {
@@ -384,6 +398,19 @@ class CommandMode(Singleton):
         self.__protocol = protocol
 
     def cloud_data_parse(self, data, topic_id, channel_id):
+        """Dtu parse cloud data,return cloud data or serial data
+
+        Args:
+            data (_type_): _description_
+            topic_id (_type_): _description_
+            channel_id (_type_): _description_
+
+        Raises:
+            error_map.get: _description_
+
+        Returns:
+            _type_: _description_
+        """
         ret_data = {"cloud_data":None, "uart_data":None}
         print("data:", data)
         print("type data:", type(data))
@@ -410,6 +437,7 @@ class CommandMode(Singleton):
                 if password != settings.current_settings.get("password"):
                     log.error(error_map.get(RET.PASSWDVERIFYERR))
                     ret_data["cloud_data"] = {"code": cmd_code, "status": 0, "error": error_map.get(RET.PASSWDVERIFYERR)}
+                    return ret_data
 
             print("cmd_code", cmd_code)
             if cmd_code in self.search_command_func_code_list:

@@ -12,6 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""
+@file      :history.py
+@author    :elian.wang@quectel.com
+@brief     :Store data that fails to be sent, and send when communication is normal
+@version   :0.1
+@date      :2022-05-20 16:25:07
+@copyright :Copyright (c) 2022
+"""
+
+
 import uos
 import ql_fs
 import ujson

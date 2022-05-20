@@ -12,6 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""
+@file      :txyunIot.py
+@author    :elian.wang@quectel.com
+@brief     :DTU and Tencent cloud communication interface
+@version   :0.1
+@date      :2022-05-20 16:35:43
+@copyright :Copyright (c) 2022
+"""
+
+
 import uos
 import log
 import ujson
@@ -189,10 +202,8 @@ class TXYunIot(CloudObservable):
         try:
             pub_res = self.__txyun.publish(self.pub_topic_dict[topic_id], data, qos=0)
             print("pub_res:", pub_res)
-            if pub_res == 0:
-                return True
-            else:
-                return False
+            return pub_res
+            
         except Exception:
             log.error("Txyun publish topic %s failed. data: %s" % (self.pub_topic_dict[topic_id], data))
         return False
