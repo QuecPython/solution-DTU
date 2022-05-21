@@ -41,7 +41,6 @@ import app_fota_download
 from misc import Power
 from queue import Queue
 from aLiYun import aLiYun
-
 from usr.modules.logging import getLogger
 from usr.modules.common import numiter, option_lock, CloudObservable, CloudObjectModel
 
@@ -385,6 +384,7 @@ class AliYunIot(CloudObservable):
                 self.notifyObservers(self, *("raw_data", {"topic":topic, "data":data} ) )
             except Exception as e:
                 log.error("{}".format(e))
+    
 
     def __data_format(self, data):
         """Publish data format by AliObjectModel
@@ -522,10 +522,10 @@ class AliYunIot(CloudObservable):
             log.debug("self.get_status(): %s" % self.get_status())
             if self.get_status():
                 return True
-        print("test11")
+
         if self.__ali is not None:
             self.close()
-        print("test12")
+
         if self.__burning_method == 0:
             self.__dk = None
         elif self.__burning_method == 1:
@@ -533,7 +533,6 @@ class AliYunIot(CloudObservable):
 
         log.debug("aLiYun init. self.__pk: %s, self.__ps: %s, self.__dk: %s, self.__ds: %s, self.__server: %s" % (self.__pk, self.__ps, self.__dk, self.__ds, self.__server))
         self.__ali = aLiYun(self.__pk, self.__ps, self.__dk, self.__ds, self.__server)
-        print("test13")
         log.debug("aLiYun setMqtt.")
         setMqttres = self.__ali.setMqtt(self.__client_id, clean_session=False, keepAlive=self.__life_time, reconn=True)
         log.debug("aLiYun setMqttres: %s" % setMqttres)
@@ -565,9 +564,7 @@ class AliYunIot(CloudObservable):
     def close(self):
         """Aliyun disconnect"""
         try:
-            print("test111")
             self.__ali.disconnect()
-            print("test112")
         except Exception as e:
             log.error("Ali disconnect falied. %s" % e)
         return True
@@ -646,11 +643,14 @@ class AliYunIot(CloudObservable):
             Ture: Success
             False: Failed
         """
+        log.debug("rrpc_response message_id: %s" % message_id)
         topic = self.rrpc_topic_response.format(message_id)
+        log.debug("rrpc_response topic: %s" % topic)
         pub_data = ujson.dumps(data) if isinstance(data, dict) else data
-        if self.__ali.publish(topic, pub_data, qos=0) == 0:
-            return True
-        return False
+        log.debug("rrpc_response pub_data: %s" % pub_data)
+        res = self.__ali.publish(topic, pub_data, qos=0)
+        log.debug("rrpc_response res: %s" % res)
+        return res
 
     def device_report(self):
         """Publish mcu and firmware name, version
@@ -689,7 +689,6 @@ class AliYunIot(CloudObservable):
             Ture: Success
             False: Failed
         """
-        print("aliyun ota_action action:%s,module:%s" % (action, module))
         if not module:
             log.error("Params[module] Is Empty.")
             return False
@@ -699,13 +698,11 @@ class AliYunIot(CloudObservable):
 
         if action == 1:
             # if self.ota_device_progress(step=1, module=module):
-            print("test42")
             return self.__ota.start_ota()
         else:
             self.__ota.set_ota_info("", "", [])
             return self.ota_device_progress(step=-1, desc="User cancels upgrade.", module=module)
 
-        return False
 
     def ota_device_inform(self, version, module="default"):
         """Publish device information
@@ -731,7 +728,7 @@ class AliYunIot(CloudObservable):
         }
         publish_res = self.__ali.publish(self.ota_topic_device_inform, ujson.dumps(publish_data), qos=0)
         log.debug("version: %s, module: %s, publish_res: %s" % (version, module, publish_res))
-        return True if publish_res == 0 else False
+        return publish_res
 
     def ota_device_progress(self, step, desc, module="default"):
         """Publish ota upgrade process

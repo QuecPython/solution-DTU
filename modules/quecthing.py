@@ -378,8 +378,6 @@ class QuecThing(CloudObservable):
         elif event == 5:
             if errcode == 10200:
                 # TODO: Data Type Passthrough (Not Support Now).
-                print("test quecthing")
-                print("eventdata:", eventdata)
                 res_data = ("raw_data", {"pkgid":0, "data":eventdata})
                 res_datas.append(res_data)
             elif errcode == 10210:
@@ -445,7 +443,6 @@ class QuecThing(CloudObservable):
                 res_datas.append(res_data)
 
         if res_datas:
-            print("test 61")
             try:
                 for res_data in res_datas:
                     self.notifyObservers(self, *res_data)
@@ -626,8 +623,6 @@ class QuecThing(CloudObservable):
             Ture: Success
             False: Failed
         """
-        print("test124")
-        print("action:", action)
         return quecIot.otaAction(action) if action in (0, 1, 2, 3) else False
 
 

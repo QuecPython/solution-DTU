@@ -134,7 +134,6 @@ class CloudObservable(Singleton):
         self.__observers.remove(observer)
 
     def notifyObservers(self, *args, **kwargs):
-        print("test62")
         """Notify observer"""
         for o in self.__observers:
             o.execute(self, *args, **kwargs)
