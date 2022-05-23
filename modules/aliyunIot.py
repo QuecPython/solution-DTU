@@ -617,13 +617,6 @@ class AliYunIot(CloudObservable):
         return False
 
     def through_post_data(self, data, topic_id):
-        print("test56")
-        print("topic_id type:", type(self.pub_topic_dict[topic_id]))
-        print("self.pub_topic_dict[topic_id]:", self.pub_topic_dict[topic_id])
-        print("data:", data)
-        print("type data:", type(data))
-        print("self.__qos:", self.__qos)
-        print("type self.__qos:", type(self.__qos))
         try:
             res = self.__ali.publish(self.pub_topic_dict[topic_id], data, qos=self.__qos)
             print("res:", res)

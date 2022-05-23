@@ -12,6 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""
+@file      :modbus_mode.py
+@author    :elian.wang@quectel.com
+@brief     :Dtu function interface that works in Modbus mode
+@version   :0.1
+@date      :2022-05-23 09:04:00
+@copyright :Copyright (c) 2022
+"""
+
+
 import ujson
 import utime
 import ubinascii

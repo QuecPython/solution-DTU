@@ -42,9 +42,6 @@ class DtuProtocolData(Singleton):
         return crc_value
 
     def package_datas(self, msg_data, topic_id=None, channel_id=None):
-        print(msg_data)
-        print("test691")
-
         data = []
         msg_length = len(str(msg_data))
         if channel_id is not None:
@@ -52,8 +49,6 @@ class DtuProtocolData(Singleton):
         if topic_id is not None:
             data.append(str(topic_id))
         data.append(str(msg_length))
-        print("test692")
-        print("data array:", data)
 
         if len(msg_data) != 0:
             crc32_val = self.crc32(str(msg_data))
@@ -65,20 +60,4 @@ class DtuProtocolData(Singleton):
         print("ret_bytes:", ret_bytes)
             
         return ret_bytes
-
-    def validate_length(self, data_len, msg_data, str_msg):
-        if len(msg_data) < data_len:
-            self.concat_buffer = str_msg
-            self.wait_length = data_len - len(msg_data)
-            print("wait length")
-            print(self.wait_length)
-            return False
-        elif len(msg_data) > data_len:
-            self.concat_buffer = ""
-            self.wait_length = 0
-            return False
-        else:
-            self.concat_buffer = ""
-            self.wait_length = 0
-            return True
 

@@ -24,9 +24,11 @@
 @copyright :Copyright (c) 2022
 """
 
-import usocket
+
 import utime
 import ujson
+import _thread
+import usocket
 
 from usr.modules.logging import RET
 from usr.modules.logging import error_map
@@ -37,44 +39,29 @@ log = getLogger(__name__)
 
 class SocketIot(CloudObservable):
     """This is a class for tcp udp iot
-
-    Args:
-        object (_type_): _description_
     """
-    def __init__(self, server, port, heartbeat_time, ping="", life_time=120):
+    def __init__(self, server, port, reg_data, heartbeat_time, ping=""):
+        super().__init__()
         self.__cli = None
         self.__server = server
         self.__port = port
-        self.__life_time = life_time
+        self.__reg_data = reg_data
         self.__ping = ping
         self.__heartbeat_time = heartbeat_time
-        self.conn_type = "socket"
+        self.cloud_name = "socket"
 
-    def __first_reg(self, reg_data):  # 发送注册信息
+    def __first_reg(self):
+        """Send registration Information
+        """
         try:
-            self.__cli.send(str(reg_data).encode("utf-8"))
-            # log.info("Send first login information {}".format(reg_data))
+            self.__cli.send(str(self.__reg_data).encode("utf-8"))
         except Exception as e:
             log.info("send first login information failed !{}".format(e))
 
     def init(self, enforce=False):
-        sock_addr = usocket.getaddrinfo(self.url, int(self.port))[0][-1]
-        log.info("sock_addr = {}".format(sock_addr))
-        self.__cli.connect(sock_addr)
-        self.__first_reg()
+        pass
 
-    def send(self, data, *args):
-        try:
-            print("send data:", data)
-            if isinstance(data, str):
-                send_data = data
-            else:
-                send_data = ujson.dumps(data)
-            self.__cli.send(send_data.encode("utf-8"))
-        except Exception as e:
-            log.error("{}: {}".format(error_map.get(RET.DATAPARSEERR), e))
-
-    def recv(self):
+    def __recv(self):
         while True:
             try:
                 data = self.__cli.recv(1024)
@@ -85,50 +72,136 @@ class SocketIot(CloudObservable):
             else:
                 if data != b"":
                     print("socket data:", data)
-                    
-                    rec = self.dtu_uart.output(data.decode(), self.serial, request_id=self.channel_id)
-                    if isinstance(rec, dict):
-                        self.send(rec)
-                    
+                    try:
+                        self.notifyObservers(self, *("raw_data", {"topic":None, "data":data} ) )
+                    except Exception as e:
+                        log.error("{}".format(e))
                 else:
                     utime.sleep_ms(50)
                     continue
 
-    def heartbeat(self):  # 发送心跳包
+    def __heartbeat(self):
         while True:
             log.info("send heartbeats")
             try:
-                self.__cli.send(self.ping.encode("utf-8"))
-                log.info("Send a heartbeat: {}".format(self.ping))
+                self.__cli.send(self.__ping.encode("utf-8"))
+                log.info("Send a heartbeat: {}".format(self.__ping))
             except Exception as e:
                 log.info("send heartbeat failed !")
-            print("heart time", self.heart)
-            utime.sleep(self.heart)
+            utime.sleep(self.__heartbeat_time)
 
+    def __send(self, data):
+        try:
+            if isinstance(data, str):
+                send_data = data
+            elif isinstance(data, dict):
+                send_data = ujson.dumps(data)
+            else:
+                send_data = str(data)
+            res = self.__cli.send(send_data.encode("utf-8"))
+            if res > 0:
+                return True
+            else:
+                return False
+        except Exception as e:
+            log.error("{}: {}".format(error_map.get(RET.DATAPARSEERR), e))
+            return False
     
+    def through_post_data(self, data, topic_id):
+        print("test56")
+        print("data:", data)
+        print("type data:", type(data))
+        return self.__send(data)
 
     def close(self):
-        self.__cli.close()
+        try:
+            self.__cli.close()
+        except Exception as e:
+            log.error("SocketIot close err:", e)
 
     def get_status(self):
-        return self.__cli.getsocketsta()
+        """Get mqtt connect status
+
+        Return:
+            True -- connect success
+            False -- connect falied
+        """
+        try:
+            return True if self.__cli.getsocketsta() > 0 else False
+        except:
+            return False
+            
+    def start_recv_and_ping(self):
+        # if ping and heartbeat time configed,call heartbeat
+        if self.__ping and self.__heartbeat_time and self.__heartbeat_time != 0 and self.__ping is not "":
+            _thread.start_new_thread(self.__heartbeat, ())
+        # call receive socket data
+        _thread.start_new_thread(self.__recv, ())
+
+    def post_data(self, data):
+        pass
+
+    def ota_request(self):
+        pass
+
+    def ota_action(self, action, module=None):
+        pass
+
+    def device_report(self):
+        pass
 
 
-class TcpSocket(SocketIot):
+class TcpSocketIot(SocketIot):
+    """TCP Communication type Iot
+    """
+    def __init__(self, server, port, reg_data, heartbeat_time, ping="", life_time=120):
+        super().__init__(server, port, reg_data, heartbeat_time, ping="")
+        self.__life_time = life_time
+        self.cloud_name = "tcp"
+        
+    def init(self, enforce=False):
+        log.debug("[init start] enforce: %s" % enforce)
+        if enforce is False and self.__cli is not None:
+            log.debug("self.get_status(): %s" % self.get_status())
+            if self.get_status():
+                return True
 
-    def __init__(self):
-        super(TcpSocket, self).__init__()
-        # self.code = code
-        self.cli = usocket.socket(usocket.AF_INET, usocket.SOCK_STREAM)
-        self.cli.settimeout(self.keep_alive)  # 链接超时最大时间
-        self.conn_type = "tcp"
+        if self.__cli is not None:
+            self.close()
+
+        sock_addr = usocket.getaddrinfo(self.__server, int(self.__port))[0][-1]
+        log.info("sock_addr = {}".format(sock_addr))
+        self.__cli = usocket.socket(usocket.AF_INET, usocket.SOCK_STREAM)
+        self.__cli.settimeout(self.__life_time)
+        self.__cli.connect(sock_addr)
+        self.__first_reg()
 
 
-class UdpSocket(SocketIot):
+class UdpSocketIot(SocketIot):
+    """UDP Communication type Iot
+    """
+    def __init__(self, server, port, reg_data, heartbeat_time, ping="", life_time=120):
+        super().__init__(server, port, reg_data, heartbeat_time, ping="")
+        self.__life_time = life_time
+        self.cloud_name = "udp"
+    
+    def init(self, enforce=False):
+        log.debug("[init start] enforce: %s" % enforce)
+        if enforce is False and self.__cli is not None:
+            log.debug("self.get_status(): %s" % self.get_status())
+            if self.get_status():
+                return True
 
-    def __init__(self):
-        super(UdpSocket, self).__init__()
-        # self.code = code
-        self.cli = usocket.socket(usocket.AF_INET, usocket.SOCK_DGRAM)
-        self.cli.settimeout(self.keep_alive)
-        self.conn_type = "udp"
+        if self.__cli is not None:
+            self.close()
+
+        sock_addr = usocket.getaddrinfo(self.__server, int(self.__port))[0][-1]
+        log.info("sock_addr = {}".format(sock_addr))
+        self.__cli = usocket.socket(usocket.AF_INET, usocket.SOCK_DGRAM)
+        self.__cli.settimeout(self.__life_time)
+        self.__cli.connect(sock_addr)
+        self.__first_reg()
+
+    def get_status(self):
+        return True
+    

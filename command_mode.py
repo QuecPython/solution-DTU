@@ -18,7 +18,7 @@
 """
 @file      :command_mode.py
 @author    :elian.wang@quectel.com
-@brief     :<description>
+@brief     :Dtu function interface that works in command mode
 @version   :0.1
 @date      :2022-05-20 16:32:51
 @copyright :Copyright (c) 2022
@@ -424,7 +424,8 @@ class CommandMode(Singleton):
             else:
                 raise error_map.get(RET.CMDPARSEERR)
         except Exception as e:
-                log.info(e)
+            log.info(e)
+            return ret_data
 
         cmd_code = msg_data.get("cmd_code", None)
         msg_id = msg_data.get("msg_id")
@@ -501,8 +502,8 @@ class CommandMode(Singleton):
                 except:
                     log.error("data parse error")
                     return False, []
-                valid_rec = self.__protocol.validate_length(msg_len_int, msg_data, str_msg)
-                if not valid_rec:
+                # Message length check
+                if msg_len_int != len(msg_data):
                     return False, []
                 cal_crc32 = self.__protocol.crc32(msg_data)
                 if cal_crc32 == crc32:
@@ -520,9 +521,8 @@ class CommandMode(Singleton):
             except:
                 log.error("data parse error")
                 return False, []
-            # 加入buffer
-            valid_rec = self.__protocol.validate_length(msg_len_int, msg_data, str_msg)
-            if not valid_rec:
+            # Message length check
+            if msg_len_int != len(msg_data):
                 return False, []
             cal_crc32 = self.__protocol.crc32(msg_data)
             if crc32 == cal_crc32:

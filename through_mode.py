@@ -12,9 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+@file      :through_mode.py
+@author    :elian.wang@quectel.com
+@brief     :Dtu function interface that works in through mode
+@version   :0.1
+@date      :2022-05-23 09:04:00
+@copyright :Copyright (c) 2022
+"""
+
 from usr.modules.common import Singleton
-from usr.modules.logging import error_map
-from usr.modules.logging import RET
 from usr.modules.logging import getLogger
 
 log = getLogger(__name__)
@@ -61,8 +68,8 @@ class ThroughMode(Singleton):
                 except:
                     log.error("data parse error")
                     return False, []
-                valid_rec = self.__protocol.validate_length(msg_len_int, msg_data, str_msg)
-                if not valid_rec:
+                # Message length check
+                if msg_len_int != len(msg_data):
                     return False, []
                 cal_crc32 = self.__protocol.crc32(msg_data)
                 if cal_crc32 == crc32:
@@ -80,9 +87,8 @@ class ThroughMode(Singleton):
             except:
                 log.error("data parse error")
                 return False, []
-            # 加入buffer
-            valid_rec = self.__protocol.validate_length(msg_len_int, msg_data, str_msg)
-            if not valid_rec:
+            # Message length check
+            if msg_len_int != len(msg_data):
                 return False, []
             cal_crc32 = self.__protocol.crc32(msg_data)
             if crc32 == cal_crc32:

@@ -12,6 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""
+@file      :dtu_data_process.py
+@author    :elian.wang@quectel.com
+@brief     :Dtu parses and processes cloud and serial port data
+@version   :0.1
+@date      :2022-05-23 09:33:41
+@copyright :Copyright (c) 2022
+"""
+
+
 import log
 import utime
 import ujson
@@ -46,50 +59,45 @@ class DtuDataProcess(Singleton):
             self.serial_map[sid] = uart_conn
         # 初始化方向gpio
         self.__direction_pin(settings.get("direction_pin"))
-        self.cloud_conf = settings.get("conf")
-        self.work_mode = settings.get("work_mode")
-        self.exec_cmd = None
-        self.exec_modbus = None
-        self.cloud_data_parse = None
-        self.uart_data_parse = None
-        self.concat_buffer = ""
-        self.wait_length = 0
+        self.__work_mode = settings.get("work_mode")
+        self.__command_mode = None
+        self.__modbus_mode = None
+        self.__through_mode = None
+        self.__cloud_data_parse = None
+        self.__uart_data_parse = None
         self.wait_retry_count = 0
         self.sub_topic_id = None
         self.cloud_protocol = None
         self.__remote_pub = None
-        self.through_mode = None
+        
         self.__channel = None
-        self.__ota_timer = osTimer()
-        # 周期性上传
-        self.__ota_timer.start(1000 * 7200, 1, self.__periodic_ota_check)
 
-        if self.work_mode == "command":
-            self.exec_cmd = CommandMode()
-            self.cloud_data_parse = self.exec_cmd.cloud_data_parse
-            self.uart_data_parse = self.exec_cmd.uart_data_parse
-        elif self.work_mode == "modbus":
-            self.exec_modbus = ModbusMode(self.work_mode, settings.get("modbus"))
-            self.cloud_data_parse = self.exec_modbus.cloud_data_parse
-            self.uart_data_parse = self.exec_modbus.uart_data_parse
+        if self.__work_mode == "command":
+            self.__command_mode = CommandMode()
+            self.__cloud_data_parse = self.__command_mode.cloud_data_parse
+            self.__uart_data_parse = self.__command_mode.uart_data_parse
+        elif self.__work_mode == "modbus":
+            self.__modbus_mode = ModbusMode(self.__work_mode, settings.get("modbus"))
+            self.__cloud_data_parse = self.__modbus_mode.cloud_data_parse
+            self.__uart_data_parse = self.__modbus_mode.uart_data_parse
         else:
-            self.through_mode = ThroughMode()
-            self.cloud_data_parse = self.through_mode.cloud_data_parse
-            self.uart_data_parse = self.through_mode.uart_data_parse
+            self.__through_mode = ThroughMode()
+            self.__cloud_data_parse = self.__through_mode.cloud_data_parse
+            self.__uart_data_parse = self.__through_mode.uart_data_parse
 
     def set_channel(self, channel):
         log.info("set channel")
         self.__channel = channel
-        if isinstance(self.exec_cmd, CommandMode):
-            self.exec_cmd.search_cmd.set_channel(channel)
+        if isinstance(self.__command_mode, CommandMode):
+            self.__command_mode.search_cmd.set_channel(channel)
 
     def set_procotol_data(self, procotol):
-        if self.exec_cmd is not None:
-            self.exec_cmd.__protocol = procotol
-        elif self.exec_modbus is not None:
-            self.exec_modbus.__protocol = procotol
-        elif self.through_mode is not None:
-            self.through_mode.__protocol = procotol
+        if self.__command_mode is not None:
+            self.__command_mode.__protocol = procotol
+        elif self.__modbus_mode is not None:
+            self.__modbus_mode.__protocol = procotol
+        elif self.__through_mode is not None:
+            self.__through_mode.__protocol = procotol
 
     def add_module(self, module, callback=None):
         if isinstance(module, RemotePublish):
@@ -128,9 +136,6 @@ class DtuDataProcess(Singleton):
         except Exception as e:
             log.error("periodic_ota_check fault", e)
 
-    def __periodic_ota_check(self, args):
-        self.ota_check()
-
     def __direction_pin(self, direction_pin=None):
         if direction_pin == None:
             return
@@ -164,14 +169,10 @@ class DtuDataProcess(Singleton):
             return False
         if len(msg_data) > data_len_int:
             log.error("DTU CMD length validate failed.")
-            self.concat_buffer = ""
-            self.wait_length = 0
             return False
         # 更改数据不完整,存入buffer,尝试继续读取
         elif len(msg_data) < data_len_int:
             log.info("Msg length shorter than length")
-            self.concat_buffer = gui_data
-            self.wait_length = data_len_int - int(msg_data)
             return True
         data_crc = self.protocol.crc32(msg_data)
         if crc32_val != data_crc:
@@ -183,18 +184,18 @@ class DtuDataProcess(Singleton):
             log.error(e)
             return False
         cmd_code = data.get("cmd_code")
-        # 未获得命令码
+        # No command code was obtained
         if cmd_code is None:
             return False
         params_data = data.get("data")
         password = data.get("password", None)
-        rec = self.exec_cmd.exec_command_code(int(cmd_code), data=params_data, password=password)
+        rec = self.__command_mode.exec_command_code(int(cmd_code), data=params_data, password=password)
         rec_str = ujson.dumps(rec)
         print(rec_str)
         print(len(rec_str))
         rec_crc_val = self.protocol.crc32(rec_str)
         rec_format = "{},{},{}".format(len(rec_str), rec_crc_val, rec_str)
-        # 获取需要返回数据的serialID
+        # Gets the serialID of the data to be returned
         uart = self.serial_map.get(str(sid))
         print(uart)
         uart.write(rec_format.encode("utf-8"))
@@ -237,7 +238,7 @@ class DtuDataProcess(Singleton):
                 serial_id = sid
 
         data = kwargs["data"].decode() if isinstance(kwargs["data"], bytes) else kwargs["data"]
-        ret_data = self.cloud_data_parse(data, topic_id, channel_id)
+        ret_data = self.__cloud_data_parse(data, topic_id, channel_id)
 
         # reply cloud query command
         if ret_data["cloud_data"] is not None:
@@ -261,8 +262,6 @@ class DtuDataProcess(Singleton):
 
     # to online
     def uart_read_data_parse_main(self, data, sid):
-        print("sid:", sid)
-        print("__channel.serial_channel_dict:", self.__channel.serial_channel_dict)
         cloud_channel_array = self.__channel.serial_channel_dict.get(int(sid))
         if not cloud_channel_array:
             log.error("Serial Config not exist!")
@@ -271,7 +270,9 @@ class DtuDataProcess(Singleton):
         gui_flag = self.__gui_tools_parse(data, sid)
         if gui_flag:
             return False
-        read_msg, send_params = self.uart_data_parse(data, self.__channel.cloud_channel_dict, cloud_channel_array)
+        
+        read_msg, send_params = self.__uart_data_parse(data, self.__channel.cloud_channel_dict, cloud_channel_array)
+        print("[elian]read_msg:%s, send_params:%s" % (read_msg, send_params))
         if read_msg is False:
             return False
 
@@ -291,7 +292,6 @@ class DtuDataProcess(Singleton):
                 # 当有数据时进行读取
                 if msgLen:
                     msg = uart.read(msgLen)
-                    print(msg)
                     try:
                         # 初始数据是字节类型（bytes）,将字节类型数据进行编码
                         self.uart_read_data_parse_main(msg, sid)
@@ -325,9 +325,6 @@ class DtuDataProcess(Singleton):
         log.debug("ota_plain args: %s, kwargs: %s" % (str(args), str(kwargs)))
         current_settings = settings.get()
 
-        if current_settings["ota"] is not True:
-            return
-        
         for k, v in self.__channel.cloud_object_dict.items():
             if cloud == v:
                 channel_id = k
@@ -337,19 +334,28 @@ class DtuDataProcess(Singleton):
                 if args[0][0] == "ota_cfg":
                     module = args[0][1].get("componentNo")
                     target_version = args[0][1].get("targetVersion")
-                    source_version = DEVICE_FIRMWARE_VERSION if module == DEVICE_FIRMWARE_NAME else PROJECT_VERSION
+                    if module == DEVICE_FIRMWARE_NAME and current_settings["ota"] == 1:
+                        source_version = DEVICE_FIRMWARE_VERSION
+                    elif module == PROJECT_NAME and current_settings["fota"] == 1:
+                        source_version = PROJECT_VERSION
+                    else:
+                        return 
                     print("module:", module)
                     print("target_version:", target_version)
                     print("source_version:", source_version)
                     if target_version != source_version:
-                        print("test123")
                         self.__remote_ota_action(channel_id, action=1, module=module)
         elif cloud.cloud_name == "aliyun":
             if args and args[0]:
                 if args[0][0] == "ota_cfg":
                     module = args[0][1].get("module")
                     target_version = args[0][1].get("version")
-                    source_version = DEVICE_FIRMWARE_VERSION if module == DEVICE_FIRMWARE_NAME else PROJECT_VERSION
+                    if module == DEVICE_FIRMWARE_NAME and current_settings["ota"] == 1:
+                        source_version = DEVICE_FIRMWARE_VERSION
+                    elif module == PROJECT_NAME and current_settings["fota"] == 1:
+                        source_version = PROJECT_VERSION
+                    else:
+                        return
                     if target_version != source_version:
                         self.__remote_ota_action(channel_id, action=1, module=module)
         else:

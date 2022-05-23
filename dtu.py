@@ -32,8 +32,8 @@ from usr.modules.mqttIot import MqttIot
 from usr.modules.huawei_cloud import HuaweiIot
 from usr.modules.txyunIot import TXYunIot
 from usr.modules.requestIot import DtuRequest
-from usr.modules.tcp_udpIot import TcpSocket
-from usr.modules.tcp_udpIot import UdpSocket
+from usr.modules.tcp_udpIot import TcpSocketIot
+from usr.modules.tcp_udpIot import UdpSocketIot
 
 from usr.dtu_data_process import DtuDataProcess
 from usr.dtu_channels import ChannelTransfer
@@ -205,47 +205,31 @@ class Dtu(Singleton):
                 remote_pub.add_cloud(huawei_iot, cid)
                 self.__channel.cloud_object_dict[cid] = huawei_iot
             elif protocol == "tcp":
-                tcp_sock = TcpSocket(self.__data_process)
-                status = tcp_sock.serialize(data)
-                try:
-                    tcp_sock.connect()
-                    _thread.start_new_thread(tcp_sock.recv, ())
-                except Exception as e:
-                    log.error("{}: {}".format(error_map.get(RET.TCPERR), e))
-                else:
-                    if status == RET.OK:
-                        if settings.current_settings.get("reg") == 1:
-                            tcp_sock.first_reg(reg_data)
-                            log.info("TCP send first login information {}".format(reg_data))
-                        if data.get("ping"):
-                            if int(data.get("heartbeat")) != 0:
-                                _thread.start_new_thread(tcp_sock.Heartbeat, ())
-                        self.__channel.cloud_object_dict[cid] = tcp_sock
-                        tcp_sock.channel_id = cid
-                    else:
-                        log.error(error_map.get(RET.TCPERR))
-
+                tcp_iot = TcpSocketIot(data.get("url", None),
+                                    int(data.get("port")),
+                                    reg_data,
+                                    data.get("heartbeat"),
+                                    data.get("ping"),
+                                    data.get("keepAlive"),
+                                    )
+                tcp_iot.init(enforce=True)
+                tcp_iot.start_recv_and_ping()
+                tcp_iot.addObserver(remote_sub)
+                remote_pub.add_cloud(tcp_iot, cid)
+                self.__channel.cloud_object_dict[cid] = tcp_iot
             elif protocol == "udp":
-                udp_sock = UdpSocket()
-                status = udp_sock.serialize(data)
-                try:
-                    udp_sock.connect(self.__data_process)
-                    _thread.start_new_thread(udp_sock.recv, ())
-                except Exception as e:
-                    log.error("{}: {}".format(error_map.get(RET.UDPERR), e))
-                else:
-                    if status == RET.OK:
-                        if settings.current_settings.get("reg") == 1:
-                            udp_sock.first_reg(reg_data)
-                            log.info("UDP send first login information {}".format(reg_data))
-                        if data.get("ping"):
-                            if int(data.get("heartbeat")) != 0:
-                                _thread.start_new_thread(udp_sock.Heartbeat, ())
-                        self.__channel.cloud_object_dict[cid] = udp_sock
-                        udp_sock.channel_id = cid
-                    else:
-                        log.error(error_map.get(RET.UDPERR))
-
+                udp_iot = UdpSocketIot(data.get("url", None),
+                                    int(data.get("port")),
+                                    reg_data,
+                                    data.get("heartbeat"),
+                                    data.get("ping"),
+                                    data.get("keepAlive"),
+                                    )
+                udp_iot.init(enforce=True)
+                udp_iot.start_recv_and_ping()
+                udp_iot.addObserver(remote_sub)
+                remote_pub.add_cloud(udp_iot, cid)
+                self.__channel.cloud_object_dict[cid] = udp_iot
             elif protocol.startswith("http"):
                 dtu_req = DtuRequest()
                 dtu_req.addObserver(self.__remote_sub)
