@@ -155,7 +155,7 @@ class TcpSocketIot(SocketIot):
     """TCP Communication type Iot
     """
     def __init__(self, server, port, reg_data, heartbeat_time, ping="", life_time=120):
-        super().__init__(server, port, reg_data, heartbeat_time, ping="")
+        super().__init__(server, port, reg_data, heartbeat_time, ping=ping)
         self.__life_time = life_time
         self.cloud_name = "tcp"
         
@@ -181,7 +181,7 @@ class UdpSocketIot(SocketIot):
     """UDP Communication type Iot
     """
     def __init__(self, server, port, reg_data, heartbeat_time, ping="", life_time=120):
-        super().__init__(server, port, reg_data, heartbeat_time, ping="")
+        super().__init__(server, port, reg_data, heartbeat_time, ping=ping)
         self.__life_time = life_time
         self.cloud_name = "udp"
     
@@ -204,4 +204,7 @@ class UdpSocketIot(SocketIot):
 
     def get_status(self):
         return True
+
+    def close(self):
+        pass
     

@@ -129,6 +129,7 @@ class ModbusMode(Singleton):
             return ret_data
         except Exception as e:
                 log.info("{}: {}".format(error_map.get(RET.CMDPARSEERR), e))
+                return ret_data
 
     def uart_data_parse(self, data, cloud_channel_dict, cloud_channel_array=None):
         str_msg = ubinascii.hexlify(data, ",").decode()

@@ -20,13 +20,11 @@ class UserConfig(object):
 
     conf = {"1": 
                 {
-                "protocol": "udp",
-                "ping": "",
-                "heartbeat": 30,
-                "url": "220.180.239.212",
-                "port": "8305",
-                "keepAlive": 300,
-                "serialID": 2
+                "protocol": "http",
+                "request": {"1":{"method":"get", "url":"220.180.239.212:18011/get"}},
+                "reg_data": "",
+                "timeout": "",
+                "serialID": 1
                 }
             }
     reg = 0
@@ -46,8 +44,9 @@ class UserConfig(object):
     pins = ["1", "2", "3"]
     direction_pin = {}
     apn = ["", "", ""]
-    work_mode = "command"
+    work_mode = "through"
     auto_connect = 1
     offline_storage = True
-    modbus = {}
+    modbus = {
+    }
     

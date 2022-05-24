@@ -35,71 +35,81 @@ from usr.modules.logging import getLogger
 log = getLogger(__name__)
 class DtuRequest(CloudObservable):
 
-    def __init__(self, server, method, reg_data, timeout):
+    def __init__(self, request_id_dict, reg_data="", timeout=120):
         self.conn_type = "http"
-        self.__server = server
-        self.__port = None
-        self.__method = method
-        self.__data = None
         self.__reg_data = reg_data
         self.__timeout = timeout
-        self.__http = None
-        
-    def init(self, enforce=False):
-        log.debug("[init start] enforce: %s" % enforce)
-        if enforce is False and self.__http is not None:
-            log.debug("self.get_status(): %s" % self.get_status())
-            if self.get_status():
-                return True
-
-        if self.method.upper() not in ["GET", "POST", "PUT", "DELETE", "HEAD"]:
-                return RET.HTTPCHANNELPARSEERR
-
-        if self.__http is not None:
-            self.close()
-
-    # http发送的数据为json类型
-    def send(self, data, *args):
-        print("send data:", data)
-        if isinstance(data, str):
-            self.data = data
-        else:
-            self.data = ujson.dumps(data)
-        resp_content = self.req()
-        for i in resp_content:
-            print(i)
-
-    def req(self):
-        global resp
-        uri = self.url
-        if self.port:
-            uri += self.port
+        self.__request_id_dict = request_id_dict
+        self.__url = None
+        self.__method = None
+        self.__data_methods = ("PUT", "POST", "DELETE", "HEAD")
         try:
-            if self.method.upper() in self.__data_methods:
-                func = getattr(request, self.method.lower())
-                resp = func(uri, data=self.data)
-            else:
-                resp = request.get(uri, data=self.data)
+            for k,v in self.__request_id_dict.items():
+                if v.get("method").upper() in ["GET", "POST", "PUT", "DELETE", "HEAD"]:
+                    self.__method = v.get("method").upper()
+                    self.__url = v.get("url").upper()
+                else:
+                    return RET.HTTPCHANNELPARSEERR
         except Exception as e:
-            # log.info(e)
+            log.error("request id dict error:", e)
+    
+    def init(self,  enforce=False):
+        return True
+
+    def __req(self, data):
+        global resp
+        print("url", self.__url)
+        print("method", self.__method)
+        uri = self.__url
+        try:
+            if self.__method in self.__data_methods:
+                func = getattr(request, self.__method.lower())
+                resp = func(uri, data=data)
+            else:
+                resp = request.get(uri, data=data)
+        except Exception as e:
             log.error("{}: {}".format(error_map.get(RET.HTTPERR), e))
-            return RET.HTTPERR
+            return False
         else:
             if resp.status_code == 302:
                 log.error(error_map.get(RET.REQERR1))
+                return False
             if resp.status_code == 404:
                 log.error(error_map.get(RET.REQERR2))
+                return False
             if resp.status_code == 500:
                 log.error(error_map.get(RET.REQERR))
+                return False
             if resp.status_code == 200:
                 print("HTTP RESP")
                 print(resp)
-                # TODO HTTP data Parse func
-                rec = self.uart.output(resp.status_code, self.serial, request_id=self.channel_id)
-                if isinstance(rec, dict):
-                   self.send(rec)
-            return resp.content
+                try:
+                    self.notifyObservers(self, *("raw_data", {"request":"0", "data":data}))
+                except Exception as e:
+                    log.error("{}".format(e))
+                return True
 
+        
+    # http发送的数据为json类型
+    def send(self, data, request_id):
+        print("send data:", data)
+        print("request_id:", request_id)
+        if isinstance(data, str):
+            data = data
+        else:
+            data = ujson.dumps(data)
+        try:
+            for k,v in self.__request_id_dict.items():
+                if k == request_id:
+                    self.__method = v.get("method").upper()
+                    self.__url = v.get("url").upper()
+        except Exception as e:
+            log.error("request id dict error:", e)
+        return self.__req(data)
+    
     def get_status(self):
-        resp = request.get(self.url)
-        return resp.status_code
+        resp = request.get(self.__url)
+        if resp.status_code == 200:
+            return True 
+        else:
+            return False

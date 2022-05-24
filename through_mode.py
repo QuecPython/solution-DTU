@@ -46,7 +46,7 @@ class ThroughMode(Singleton):
     def uart_data_parse(self, data, cloud_channel_dict, cloud_channel_array=None):
         str_msg = data.decode()
         params_list = str_msg.split(",")
-        if len(params_list) not in [2, 4, 5]:
+        if len(params_list) not in [2, 3, 4]:
             log.error("param length error")
             return False, []
         # Modbus模式和透传模式 下一个串口通道只能绑定一个云端口
@@ -56,8 +56,8 @@ class ThroughMode(Singleton):
             log.error("Channel id not exist. Check serialID config.")
             return False, []
         print("channel.get(protocol):", channel.get("protocol"))
-        if channel.get("protocol") in ["http", "tcp", "udp"]:
-            msg_len = params_list[1]
+        if channel.get("protocol") in ["tcp", "udp"]:
+            msg_len = params_list[0]
             if msg_len == "0":
                 return "", [cloud_channel_id]
             else:
