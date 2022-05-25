@@ -231,19 +231,13 @@ class Dtu(Singleton):
                 remote_pub.add_cloud(udp_iot, cid)
                 self.__channel.cloud_object_dict[cid] = udp_iot
             elif protocol.startswith("http"):
-                dtu_req = DtuRequest()
-                dtu_req.addObserver(self.__remote_sub)
-                
-                status = dtu_req.serialize(data)
-                if status == RET.OK:
-                    data = dtu_req.req()  # 发送请求
-                    print("***********************http request***********************")
-                    for i in data:
-                        print(i)
-                    self.__channel.cloud_object_dict[cid] = dtu_req
-                    dtu_req.channel_id = cid
-                else:
-                    log.error(error_map.get(RET.HTTPERR))
+                http_iot = DtuRequest(data.get("request", None),
+                                    data.get("reg_data", reg_data),
+                                    )
+                http_iot.init(enforce=True)
+                http_iot.addObserver(remote_sub)
+                remote_pub.add_cloud(http_iot, cid)
+                self.__channel.cloud_object_dict[cid] = http_iot
             else:
                 continue
 

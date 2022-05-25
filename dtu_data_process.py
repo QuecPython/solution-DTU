@@ -218,6 +218,7 @@ class DtuDataProcess(Singleton):
         channel_id = None
         serial_id = None
         pkg_id = None
+        request_id = None
 
         # 云端为MQTT/Aliyun/Txyun时可获取tpoic id
         if kwargs.get("topic") is not None:
@@ -227,7 +228,16 @@ class DtuDataProcess(Singleton):
         # 云端为quecthing 时，没有topic id 
         pkg_id = kwargs.get("pkgid", None)
 
-        topic_id = topic_id if topic_id is not None else pkg_id
+        request_id = kwargs.get("request", None)
+
+        if topic_id is not None:
+            msg_id = topic_id   # aliyun\mqtt\huaweiyun\tenxunyun
+        elif pkg_id is not None:
+            msg_id = pkg_id     # quecthing
+        elif request_id is not None:
+            msg_id = request_id # http
+        else:
+            msg_id = None       #tcp\udp
         
         for k, v in self.__channel.cloud_object_dict.items():
             if cloud == v:
@@ -238,7 +248,7 @@ class DtuDataProcess(Singleton):
                 serial_id = sid
 
         data = kwargs["data"].decode() if isinstance(kwargs["data"], bytes) else kwargs["data"]
-        ret_data = self.__cloud_data_parse(data, topic_id, channel_id)
+        ret_data = self.__cloud_data_parse(data, msg_id, channel_id)
 
         # reply cloud query command
         if ret_data["cloud_data"] is not None:
@@ -310,8 +320,11 @@ class DtuDataProcess(Singleton):
         cloud_channel_config = self.__channel.cloud_channel_dict[channel_id]
 
         try:
-            if cloud_channel_config.get("protocol") in ["http", "tcp", "udp", "quecthing"]:
+            if cloud_channel_config.get("protocol") in ["tcp", "udp", "quecthing"]:
                 return self.__remote_post_data(channel_id = channel_id, data=data)
+            elif cloud_channel_config.get("protocol") is "http":
+                request_ids = list(cloud_channel_config.get("request").keys())
+                return self.__remote_post_data(channel_id = channel_id, topic_id=request_ids[0], data=data)
             else:
                 print("protocol:", cloud_channel_config.get("protocol"))
                 topics = list(cloud_channel_config.get("publish").keys())

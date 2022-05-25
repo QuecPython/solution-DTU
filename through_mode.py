@@ -46,6 +46,7 @@ class ThroughMode(Singleton):
     def uart_data_parse(self, data, cloud_channel_dict, cloud_channel_array=None):
         str_msg = data.decode()
         params_list = str_msg.split(",")
+        print("params_list", params_list)
         if len(params_list) not in [2, 3, 4]:
             log.error("param length error")
             return False, []
@@ -78,6 +79,7 @@ class ThroughMode(Singleton):
                     log.error("crc32 error")
                     return False, []
         else:
+            print("test23")
             topic_id = params_list[0]
             msg_len = params_list[1]
             crc32 = params_list[2]
@@ -90,6 +92,7 @@ class ThroughMode(Singleton):
             # Message length check
             if msg_len_int != len(msg_data):
                 return False, []
+            print("test24")
             cal_crc32 = self.__protocol.crc32(msg_data)
             if crc32 == cal_crc32:
                 return msg_data, [cloud_channel_id, topic_id]

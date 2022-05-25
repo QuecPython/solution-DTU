@@ -118,7 +118,7 @@ class RemotePublish(Observable):
         try:
             return self.__cloud.through_post_data(data, topic_id) if self.__cloud else False
         except Exception as e:
-            log.err("cloud post fault:", e)
+            log.error("cloud post fault:", e)
 
     def add_cloud(self, cloud, channel_id):
         """Add Cloud object"""

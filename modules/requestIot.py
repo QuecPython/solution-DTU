@@ -24,8 +24,8 @@
 @copyright :Copyright (c) 2022
 """
 
-import request
 import ujson
+import request
 
 from usr.modules.logging import RET
 from usr.modules.logging import error_map
@@ -35,28 +35,28 @@ from usr.modules.logging import getLogger
 log = getLogger(__name__)
 class DtuRequest(CloudObservable):
 
-    def __init__(self, request_id_dict, reg_data="", timeout=120):
+    def __init__(self, request_id_dict, reg_data=""):
+        super().__init__()
         self.conn_type = "http"
         self.__reg_data = reg_data
-        self.__timeout = timeout
         self.__request_id_dict = request_id_dict
         self.__url = None
         self.__method = None
-        self.__data_methods = ("PUT", "POST", "DELETE", "HEAD")
+        self.__data_methods = ("PUT", "POST", "DELETE", "HEAD", "GET")
         try:
             for k,v in self.__request_id_dict.items():
-                if v.get("method").upper() in ["GET", "POST", "PUT", "DELETE", "HEAD"]:
+                if v.get("method").upper() in self.__data_methods:
                     self.__method = v.get("method").upper()
-                    self.__url = v.get("url").upper()
+                    self.__url = v.get("url")
                 else:
-                    return RET.HTTPCHANNELPARSEERR
+                    raise Exception("http param error")
         except Exception as e:
             log.error("request id dict error:", e)
     
     def init(self,  enforce=False):
         return True
 
-    def __req(self, data):
+    def __req(self, data, request_id):
         global resp
         print("url", self.__url)
         print("method", self.__method)
@@ -71,29 +71,25 @@ class DtuRequest(CloudObservable):
             log.error("{}: {}".format(error_map.get(RET.HTTPERR), e))
             return False
         else:
-            if resp.status_code == 302:
-                log.error(error_map.get(RET.REQERR1))
-                return False
-            if resp.status_code == 404:
-                log.error(error_map.get(RET.REQERR2))
-                return False
-            if resp.status_code == 500:
-                log.error(error_map.get(RET.REQERR))
-                return False
+            try:
+                read_data = ""
+                for i in resp.content:
+                    read_data += i
+            except Exception as e:
+                log.error("resp.content fault:", e)
             if resp.status_code == 200:
-                print("HTTP RESP")
-                print(resp)
                 try:
-                    self.notifyObservers(self, *("raw_data", {"request":"0", "data":data}))
+                    self.notifyObservers(self, *("raw_data", {"request_id":request_id, "data":read_data}))
                 except Exception as e:
                     log.error("{}".format(e))
                 return True
+            else:
+                log.error("http error:", resp.status_code)
+                return False
 
         
     # http发送的数据为json类型
-    def send(self, data, request_id):
-        print("send data:", data)
-        print("request_id:", request_id)
+    def through_post_data(self, data, request_id):
         if isinstance(data, str):
             data = data
         else:
@@ -102,10 +98,10 @@ class DtuRequest(CloudObservable):
             for k,v in self.__request_id_dict.items():
                 if k == request_id:
                     self.__method = v.get("method").upper()
-                    self.__url = v.get("url").upper()
+                    self.__url = v.get("url")
         except Exception as e:
             log.error("request id dict error:", e)
-        return self.__req(data)
+        return self.__req(data, request_id)
     
     def get_status(self):
         resp = request.get(self.__url)
@@ -113,3 +109,15 @@ class DtuRequest(CloudObservable):
             return True 
         else:
             return False
+
+    def post_data(self, data):
+        pass
+
+    def ota_request(self):
+        pass
+
+    def ota_action(self, action, module=None):
+        pass
+
+    def device_report(self):
+        pass

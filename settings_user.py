@@ -21,10 +21,9 @@ class UserConfig(object):
     conf = {"1": 
                 {
                 "protocol": "http",
-                "request": {"1":{"method":"get", "url":"220.180.239.212:18011/get"}},
+                "request": {"1":{"method":"get", "url":"http://220.180.239.212:18011/test"}},
                 "reg_data": "",
-                "timeout": "",
-                "serialID": 1
+                "serialID": 2
                 }
             }
     reg = 0
