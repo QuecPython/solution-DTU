@@ -34,6 +34,7 @@ from usr.modules.logging import error_map
 from usr.modules.logging import RET
 from usr.modules.logging import getLogger
 
+
 log = getLogger(__name__)
 
 def modbus_crc(string_byte):
@@ -55,30 +56,59 @@ def modbus_crc(string_byte):
 
 
 class ModbusMode(Singleton):
+    """When working in modbus mode, the DTU process cloud data and uart data
+
+    This class has the following functions:
+        1.Parse cloud publish data
+        2.Parse the data read from uart
+    Attribute:
+        __modbus_conf(dict):modbus configs
+        modbus configs format:
+        {
+            "groups":
+            [        
+                {
+                    "device_type": "temp_humid_sensor",     
+                    "device_model": "TH10S-B",             
+                    "slave_address":["0x01"]             
+                },
+                {
+                    "device_type": "light_sensor",
+                    "device_model": "YGC-BG-M",
+                    "slave_address":["0x02", "0x03"]
+                }
+            ]
+        }
+
+        __groups(list):slave address list
+    """
     def __init__(self, mode, modbus_conf):
-        print("modbusCMD start")
-        self.modbus_conf = None
-        self.__protocol = None
+        self.__modbus_conf = modbus_conf
+        self.__groups = dict()
         if mode == "modbus":
-            self.modbus_conf = modbus_conf
-            print(self.modbus_conf)
-            self.groups = dict()
-            self._load_groups()
+            self.__load_groups()
 
-    def set_protocol(self, protocol):
-        self.__protocol = protocol
-
-    def _load_groups(self):
-        print("modbus load groups")
-        groups_conf = self.modbus_conf.get("groups", [])
+    def __load_groups(self):
+        groups_conf = self.__modbus_conf.get("groups", [])
         idx = 0
-        print(groups_conf)
         for group in groups_conf:
-            print(group)
-            self.groups[idx] = [int(x, 16) for x in group["slave_address"]]
+            self.__groups[idx] = [int(x, 16) for x in group["slave_address"]]
             idx += 1
 
     def cloud_data_parse(self, data, topic_id, channel_id):
+        """Parse the data read from cloud
+
+        Args:
+            data (bytes): Data read from the serial port
+            topic_id (str): cloud config dict 
+            channel_id(str): Cloud channel list corresponding to uart channel 
+
+        Raises:
+            error_map.get: command parse error transfer to modbus
+
+        Returns:
+            dict: Data that has been processed,wait to send to cloud or uart
+        """
         ret_data = {"cloud_data":None, "uart_data":None}
         print("data:{}".format(data))
         print("data type:{}".format(type(data)))
@@ -101,7 +131,7 @@ class ModbusMode(Singleton):
                     except Exception as e:
                         log.info("modbus command error: %s" % e)
                         ret_data["cloud_data"] = {"status": 0, "error": e}
-                    groups_addr = self.groups.get(int(groups_num))
+                    groups_addr = self.__groups.get(int(groups_num))
                     for addr in groups_addr:
                         modbus_cmd = [addr]
                         modbus_cmd.extend(int_cmd)
@@ -118,13 +148,11 @@ class ModbusMode(Singleton):
                     except Exception as e:
                         log.info("modbus command error: %s" % e)
                         ret_data["cloud_data"] = {"status": 0, "error": e}
-                    print("modbus write cmd")
-                    print(crc_cmd)
                     ret_data["uart_data"] = crc_cmd
                     ret_data["cloud_data"] = {"code": command, "status": 1}
                 else:
                     err_msg = "can't get any modbus params"
-                    print(err_msg)
+                    log.error("Modbus mode: can't get any modbus params")
                     ret_data["cloud_data"] = {"code": 0, "status": 0, "error": err_msg}
             return ret_data
         except Exception as e:
@@ -132,6 +160,17 @@ class ModbusMode(Singleton):
                 return ret_data
 
     def uart_data_parse(self, data, cloud_channel_dict, cloud_channel_array=None):
+        """Parse the data read from uart
+
+        Args:
+            data (bytes): Data read from the serial port
+            cloud_channel_dict (dict): cloud config dict 
+            cloud_channel_array(list): Cloud channel list corresponding to uart channel 
+        Returns:
+            list: 1.msg_data:Data that has been processed,wait to send to cloud
+                  2.cloud_channel_id:cloud channel id 
+                  3.topic_id:toic id of data
+        """
         str_msg = ubinascii.hexlify(data, ",").decode()
         # Modbus模式和透传模式 下一个串口通道只能绑定一个云端口
         cloud_channel_id = cloud_channel_array[0]
@@ -143,10 +182,10 @@ class ModbusMode(Singleton):
         print(type(str_msg))
         print(str_msg)
         modbus_data_list = str_msg.split(",")
-        hex_list = ["0x" + x for x in modbus_data_list]
+        hex_str_list = ["0x" + x for x in modbus_data_list]
         # 返回channel
         if channel.get("protocol") in ["http", "tcp", "udp", "quecthing"]:
-            return hex_list, [cloud_channel_id]
+            return [hex_str_list, cloud_channel_id]
         else:
             topics = list(channel.get("publish").keys())
-            return hex_list, [cloud_channel_id, topics[0]]
+            return [hex_str_list, cloud_channel_id, topics[0]]

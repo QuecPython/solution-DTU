@@ -34,15 +34,10 @@ DEVICE_FIRMWARE_VERSION = modem.getDevFwVersion()
 
 _settings_lock = _thread.allocate_lock()
 
-CONFIG = {
-    "config_dir": "/usr",
-    "config_path": "/usr/dtu_config.json",
-}
-
 
 class Settings(Singleton):
 
-    def __init__(self, settings_file=CONFIG["config_path"]):
+    def __init__(self, settings_file="/usr/dtu_config.json"):
         self.settings_file = settings_file
         self.current_settings = {}
         self.init()

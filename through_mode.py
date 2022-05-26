@@ -23,39 +23,81 @@
 
 from usr.modules.common import Singleton
 from usr.modules.logging import getLogger
+from usr.dtu_protocol_data import dtu_crc
 
 log = getLogger(__name__)
 
 class ThroughMode(Singleton):
-    def __init__(self):
-        self.__protocol = None
+    """When Dtu work in through mode, the method of processing data
+        This class has the following functions
+        1.Parse cloud publish data
+        2.Parse the data read from uart
+    """
 
-    def set_protocol(self, protocol):
-        self.__protocol = protocol
+    def __package_datas(self, msg_data, topic_id=None):
+        """Package downsteam data
+
+        Args:
+            msg_data (str): Data that needs to be send
+            topic_id (str): Topic id of data to be sent.
+
+        Returns:
+            bytes: Complete the packaged data
+        """
+        msg_length = len(str(msg_data))
+        if msg_length != 0:
+            crc32_val = self.crc32(str(msg_data))
+            ret_bytes = "%s,%s,%s,%s".encode('utf-8') % (str(topic_id), str(msg_length), str(crc32_val), str(msg_data))
+        else:
+            ret_bytes = "%s,%d".encode('utf-8') % (str(topic_id), msg_length)   
+        print("ret_bytes:", ret_bytes)
+            
+        return ret_bytes
 
     def cloud_data_parse(self, data, topic_id, channel_id):
+        """Parse cloud publish data
+
+        Args:
+            data (str): cloud publish data
+            topic_id (str): toic id of data
+            channel_id (str): cloud channel id 
+
+        Returns:
+            dict: Data that has been processed,wait to send to cloud or uart 
+        """
         ret_data = {"cloud_data":None, "uart_data":None}
 
         if isinstance(data, (int, float)):
             data = str(data)
-        package_data = self.__protocol.package_datas(data, topic_id)
-        print("package_data:", package_data)
+        package_data = self.__package_datas(data, topic_id)
+        log.info("package_data:", package_data)
         ret_data["uart_data"] = package_data
         return ret_data
 
     def uart_data_parse(self, data, cloud_channel_dict, cloud_channel_array=None):
+        """Parse the data read from uart
+
+        Args:
+            data (bytes):  Data read from the serial port
+            cloud_channel_dict (dict): cloud config dict 
+            cloud_channel_array(list): Cloud channel list corresponding to uart channel 
+        Returns:
+            list: 1.msg_data:Data that has been processed,wait to send to cloud
+                  2.cloud_channel_id:cloud channel id 
+                  3.topic_id:toic id of data
+        """
         str_msg = data.decode()
         params_list = str_msg.split(",")
         print("params_list", params_list)
         if len(params_list) not in [2, 3, 4]:
             log.error("param length error")
-            return False, []
+            return []
         # Modbus模式和透传模式 下一个串口通道只能绑定一个云端口
         cloud_channel_id = cloud_channel_array[0]
         channel = cloud_channel_dict.get(str(cloud_channel_id))
         if not channel:
             log.error("Channel id not exist. Check serialID config.")
-            return False, []
+            return []
         print("channel.get(protocol):", channel.get("protocol"))
         if channel.get("protocol") in ["tcp", "udp"]:
             msg_len = params_list[0]
@@ -68,18 +110,17 @@ class ThroughMode(Singleton):
                     msg_len_int = int(msg_len)
                 except:
                     log.error("data parse error")
-                    return False, []
+                    return []
                 # Message length check
                 if msg_len_int != len(msg_data):
-                    return False, []
-                cal_crc32 = self.__protocol.crc32(msg_data)
+                    return []
+                cal_crc32 = dtu_crc.crc32(msg_data)
                 if cal_crc32 == crc32:
-                    return msg_data, [cloud_channel_id]
+                    return [msg_data, cloud_channel_id]
                 else:
                     log.error("crc32 error")
-                    return False, []
+                    return []
         else:
-            print("test23")
             topic_id = params_list[0]
             msg_len = params_list[1]
             crc32 = params_list[2]
@@ -88,13 +129,13 @@ class ThroughMode(Singleton):
                 msg_len_int = int(msg_len)
             except:
                 log.error("data parse error")
-                return False, []
+                return []
             # Message length check
             if msg_len_int != len(msg_data):
-                return False, []
+                return []
             print("test24")
-            cal_crc32 = self.__protocol.crc32(msg_data)
+            cal_crc32 = dtu_crc.crc32(msg_data)
             if crc32 == cal_crc32:
-                return msg_data, [cloud_channel_id, topic_id]
+                return [msg_data, cloud_channel_id, topic_id]
             else:
-                return False, []
+                return []

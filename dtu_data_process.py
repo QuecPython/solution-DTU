@@ -28,11 +28,9 @@
 import log
 import utime
 import ujson
-import osTimer
 from machine import Pin
 from machine import UART
 from usr.modules.common import Singleton
-from usr.dtu_channels import ChannelTransfer
 from usr.command_mode import CommandMode
 from usr.modbus_mode import ModbusMode
 from usr.through_mode import ThroughMode
@@ -44,19 +42,40 @@ from usr.settings import PROJECT_NAME, PROJECT_VERSION, DEVICE_FIRMWARE_NAME, DE
 log = getLogger(__name__)
 
 class DtuDataProcess(Singleton):
+    """This is a class for process Dtu data.
 
+    This class has the following functions:
+        1.Uart init
+
+        2. Parsing cloud data, Answer cloud data or send to uart
+
+        3. Check OTA state
+        3.1 Publish mcu and firmware ota plain request(topic:"/sys/pk/dk/thing/ota/firmware/get")
+        3.2 Publish mcu and firmware name, version(topic:"/ota/device/inform/pk/dk")
+
+        4.Read uart data
+
+        5.Post history data to cloud
+
+        6.Determine the parameters and perform the OTA plan
+
+    Attribute:
+        __serial_map(dict): key(str):uart id, value:uart object list
+        __through_mode(object): ThroughMode() instantiation
+        __command_mode(object): CommandMode() instantiation
+        __modbus_mode(object): ModbusMode() instantiation
+    """
     def __init__(self, settings):
         # 配置uart
-        uconf = settings.get("uconf")
-        self.serial_map = dict()
-        for sid, conf in uconf.items():
+        self.__serial_map = dict()
+        for sid, conf in settings.get("uconf").items():
             uart_conn = UART(getattr(UART, "UART%d" % int(sid)),
                              int(conf.get("baudrate")),
                              int(conf.get("databits")),
                              int(conf.get("parity")),
                              int(conf.get("stopbits")),
                              int(conf.get("flowctl")))
-            self.serial_map[sid] = uart_conn
+            self.__serial_map[sid] = uart_conn
         # 初始化方向gpio
         self.__direction_pin(settings.get("direction_pin"))
         self.__work_mode = settings.get("work_mode")
@@ -65,11 +84,7 @@ class DtuDataProcess(Singleton):
         self.__through_mode = None
         self.__cloud_data_parse = None
         self.__uart_data_parse = None
-        self.wait_retry_count = 0
-        self.sub_topic_id = None
-        self.cloud_protocol = None
         self.__remote_pub = None
-        
         self.__channel = None
 
         if self.__work_mode == "command":
@@ -90,14 +105,6 @@ class DtuDataProcess(Singleton):
         self.__channel = channel
         if isinstance(self.__command_mode, CommandMode):
             self.__command_mode.search_cmd.set_channel(channel)
-
-    def set_procotol_data(self, procotol):
-        if self.__command_mode is not None:
-            self.__command_mode.__protocol = procotol
-        elif self.__modbus_mode is not None:
-            self.__modbus_mode.__protocol = procotol
-        elif self.__through_mode is not None:
-            self.__through_mode.__protocol = procotol
 
     def add_module(self, module, callback=None):
         if isinstance(module, RemotePublish):
@@ -137,18 +144,31 @@ class DtuDataProcess(Singleton):
             log.error("periodic_ota_check fault", e)
 
     def __direction_pin(self, direction_pin=None):
+        """Config Rs485 Tx/Rx ctrl gpio and set gpio output level 
+
+        Args:
+            direction_pin (dict, optional): _description_. Defaults to None.
+        """
         if direction_pin == None:
             return
-        print(direction_pin)
         for sid, conf in direction_pin.items():
-            uart = self.serial_map.get(str(sid))
+            uart = self.__serial_map.get(str(sid))
             gpio = getattr(Pin, "GPIO%s" % str(conf.get("GPIOn")))
-            # 输出电平
             direction_level = conf.get("direction")
             uart.control_485(gpio, direction_level)
 
       
     def __gui_tools_parse(self, gui_data, sid):
+        """Parse uart data in the format specified by the GUI
+
+        Args:
+            gui_data (bytes): data read from uart
+            sid (str): uart channel id
+
+        Returns:
+            True: GUI data was successfully obtained
+            False: get GUI data failed
+        """
         print(gui_data)
         gui_data = gui_data.decode()
         data_list = gui_data.split(",", 3)
@@ -196,7 +216,7 @@ class DtuDataProcess(Singleton):
         rec_crc_val = self.protocol.crc32(rec_str)
         rec_format = "{},{},{}".format(len(rec_str), rec_crc_val, rec_str)
         # Gets the serialID of the data to be returned
-        uart = self.serial_map.get(str(sid))
+        uart = self.__serial_map.get(str(sid))
         print(uart)
         uart.write(rec_format.encode("utf-8"))
         print(rec_format)
@@ -211,9 +231,6 @@ class DtuDataProcess(Singleton):
             cloud (cloud object): different cloud object,such as:AliYunIot、TXYunIot、QuecThing、HuaweiIot
             kwargs (dict): The data received by the cloud,contains topic and data
         """
-        print("test67")
-        print("kwargs:{}".format(kwargs))
-        print("kwargs type:{}".format(type(kwargs)))
         topic_id = None
         channel_id = None
         serial_id = None
@@ -267,11 +284,16 @@ class DtuDataProcess(Singleton):
             self.__remote_post_data(channel_id, topic_id, data=str_data)
         #send to uart cloud message
         if ret_data["uart_data"] is not None:
-            uart_port = self.serial_map.get(str(serial_id))
+            uart_port = self.__serial_map.get(str(serial_id))
             uart_port.write(ret_data["uart_data"])
 
-    # to online
     def uart_read_data_parse_main(self, data, sid):
+        """Parsing uart data, send data to cloud
+
+        Args:
+            data (bytes): data read from uart
+            sid (str): Uart id for data sources
+        """
         cloud_channel_array = self.__channel.serial_channel_dict.get(int(sid))
         if not cloud_channel_array:
             log.error("Serial Config not exist!")
@@ -281,29 +303,27 @@ class DtuDataProcess(Singleton):
         if gui_flag:
             return False
         
-        read_msg, send_params = self.__uart_data_parse(data, self.__channel.cloud_channel_dict, cloud_channel_array)
-        print("[elian]read_msg:%s, send_params:%s" % (read_msg, send_params))
-        if read_msg is False:
+        send_params = self.__uart_data_parse(data, self.__channel.cloud_channel_dict, cloud_channel_array)
+        print("[elian]send_params:%s" % send_params)
+        
+        if len(send_params) == 3:
+            self.__remote_post_data(channel_id=send_params[1], topic_id=send_params[2], data=send_params[0])
+            return True
+        elif len(send_params) == 2:
+            self.__remote_post_data(channel_id=send_params[1], data=send_params[0])
+            return True
+        else:
             return False
 
-        if not isinstance(read_msg, str):
-            read_msg = str(read_msg)
-        
-        if len(send_params) == 2:
-            self.__remote_post_data(channel_id=send_params[0], topic_id=send_params[1], data=read_msg)
-        elif len(send_params) == 1:
-            self.__remote_post_data(channel_id=send_params[0], data=read_msg)
-
     def read(self):
+        """read data uart
+        """
         while 1:
-            # 返回是否有可读取的数据长度
-            for sid, uart in self.serial_map.items():
+            for sid, uart in self.__serial_map.items():
                 msgLen = uart.any()
-                # 当有数据时进行读取
                 if msgLen:
                     msg = uart.read(msgLen)
                     try:
-                        # 初始数据是字节类型（bytes）,将字节类型数据进行编码
                         self.uart_read_data_parse_main(msg, sid)
                     except Exception as e:
                         log.error("UART handler error: %s" % e)
@@ -314,8 +334,17 @@ class DtuDataProcess(Singleton):
                     continue
 
     def post_history_data(self, data):
+        """Post history data to cloud
+
+        Args:
+            data (str): history data
+
+        Returns:
+            True: Successfully post
+            False:Failure to post
+        """
         log.info("post_history_data")
-        # 获取云端通道配置任意一个通道的channel_id发送历史数据
+        # Obtain the channel_id of any channel in cloud channel configuration to send historical data
         channel_id = list(self.__channel.cloud_channel_dict.keys())[0]
         cloud_channel_config = self.__channel.cloud_channel_dict[channel_id]
 
@@ -335,6 +364,13 @@ class DtuDataProcess(Singleton):
             return False
 
     def event_ota_plain(self, cloud, *args, **kwargs):
+        """Determine the parameters and perform the OTA plan
+
+        Args:
+            cloud (cloud object): Call event_ota_plain
+            args(tuple):Ota parameters sent from the cloud
+            kwargs(dict):None
+        """
         log.debug("ota_plain args: %s, kwargs: %s" % (str(args), str(kwargs)))
         current_settings = settings.get()
 

@@ -12,15 +12,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""
+@file      :dtu_crc.py
+@author    :elian.wang@quectel.com
+@brief     :When dtu package downsteam data, perform Crc calculations
+@version   :0.1
+@date      :2022-05-26 10:32:09
+@copyright :Copyright (c) 2022
+"""
+
+
 from usr.modules.common import Singleton
 
-class DtuProtocolData(Singleton):
+class DtuCrc(Singleton):
+    """This class is dtu package downsteam data
+
+        This class has the following functions
+        1.Perform CRC check on data
+    """
 
     def __init__(self):
-        self.crc_table = []
-        self._create_table()
+        self.__crc_table = []
+        self.__create_table()
 
-    def _create_table(self):
+    def __create_table(self):
         poly = 0xEDB88320
         a = []
         for byte in range(256):
@@ -32,32 +50,13 @@ class DtuProtocolData(Singleton):
                     crc >>= 1
                 byte >>= 1
             a.append(crc)
-        self.crc_table = a
+        self.__crc_table = a
 
     def crc32(self, crc_string):
         value = 0xffffffff
         for ch in crc_string:
-            value = self.crc_table[(ord(ch) ^ value) & 0xff] ^ (value >> 8)
+            value = self.__crc_table[(ord(ch) ^ value) & 0xff] ^ (value >> 8)
         crc_value = str((-1 - value) & 0xffffffff)
         return crc_value
 
-    def package_datas(self, msg_data, topic_id=None, channel_id=None):
-        data = []
-        msg_length = len(str(msg_data))
-        if channel_id is not None:
-            data.append(str(channel_id))
-        if topic_id is not None:
-            data.append(str(topic_id))
-        data.append(str(msg_length))
-
-        if len(msg_data) != 0:
-            crc32_val = self.crc32(str(msg_data))
-            data.append(crc32_val)
-            data.append(str(msg_data))
-       
-        data_str = ",".join(data)
-        ret_bytes = data_str.encode()
-        print("ret_bytes:", ret_bytes)
-            
-        return ret_bytes
-
+dtu_crc = DtuCrc() 

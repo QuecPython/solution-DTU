@@ -17,17 +17,17 @@
 
 """
 @file      :dtu.py
-@author    :elian.wang
+@author    :elian.wang@quectel.com
 @brief     :dtu main function
 @version   :0.1
 @date      :2022-05-18 09:12:37
 @copyright :Copyright (c) 2022
 """
 
-import sim, uos, dataCall, ujson, net, modem, utime, _thread, uhashlib, fota, ure, ubinascii, cellLocator, request
+import sim, dataCall, net, modem, utime, _thread
 from usr.modules.common import Singleton
-from usr.modules.aliyunIot import AliYunIot, AliObjectModel
-from usr.modules.quecthing import QuecThing, QuecObjectModel
+from usr.modules.aliyunIot import AliYunIot
+from usr.modules.quecthing import QuecThing
 from usr.modules.mqttIot import MqttIot
 from usr.modules.huawei_cloud import HuaweiIot
 from usr.modules.txyunIot import TXYunIot
@@ -35,17 +35,17 @@ from usr.modules.requestIot import DtuRequest
 from usr.modules.tcp_udpIot import TcpSocketIot
 from usr.modules.tcp_udpIot import UdpSocketIot
 
-from usr.dtu_data_process import DtuDataProcess
-from usr.dtu_channels import ChannelTransfer
-from usr.modules.logging import RET
-from usr.modules.logging import error_map
+
 from usr.dtu_gpio import Gpio
-from usr.modules.remote import RemotePublish, RemoteSubscribe
-from usr.modules.logging import getLogger
-from usr.settings import PROJECT_NAME, PROJECT_VERSION, DEVICE_FIRMWARE_NAME, DEVICE_FIRMWARE_VERSION
-from usr.dtu_protocol_data import DtuProtocolData
-from usr.modules.history import History
 from usr.settings import settings
+from usr.modules.history import History
+from usr.modules.logging import getLogger
+from usr.dtu_channels import ChannelTransfer
+from usr.dtu_data_process import DtuDataProcess
+from usr.modules.remote import RemotePublish, RemoteSubscribe
+from usr.settings import PROJECT_NAME, PROJECT_VERSION, DEVICE_FIRMWARE_NAME, DEVICE_FIRMWARE_VERSION
+
+
 
 log = getLogger(__name__)
 
@@ -284,17 +284,12 @@ def run():
     # 实例化通道数据
     channels = ChannelTransfer(settings.current_settings.get("work_mode"), settings.current_settings.get("conf"))
 
-    # 实例化DTU协议数据解析方法
-    dtu_protocol_data = DtuProtocolData()
-
     if settings.current_settings.get("offline_storage"):
         history = History()
 
     data_process = DtuDataProcess(settings.current_settings)
 
     data_process.set_channel(channels)
-
-    data_process.set_procotol_data(dtu_protocol_data)
     
     remote_sub = RemoteSubscribe()
     remote_sub.add_executor(data_process)

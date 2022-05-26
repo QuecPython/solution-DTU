@@ -24,8 +24,6 @@
 @copyright :Copyright (c) 2022
 """
 
-
-
 import net
 import sim
 import sms
@@ -35,16 +33,18 @@ import audio
 import modem
 import ntptime
 import cellLocator
-from usr.modules.common import Singleton
+
 from misc import Power, ADC
 from usr.dtu_gpio import Gpio
-from usr.modules.logging import getLogger
+from usr.settings import settings
 from usr.modules.logging import RET
+from usr.modules.logging import getLogger
 from usr.modules.logging import error_map
 from usr.modules.logging import DTUException
-from usr.modules.temp_humidity_sensor import TempHumiditySensor
+from usr.modules.common import Singleton
 from usr.settings import PROJECT_VERSION
-from usr.settings import settings
+from usr.dtu_protocol_data import dtu_crc
+from usr.modules.temp_humidity_sensor import TempHumiditySensor
 
 log = getLogger(__name__)
 
@@ -59,7 +59,7 @@ class DTUSearchCommand(Singleton):
         self.__channel = channel
 
     def get_imei(self, code, data):
-        return {"code": code, "data": dev_imei, "status": 1}
+        return {"code": code, "data": modem.getDevImei(), "status": 1}
 
     def get_number(self, code, data):
         log.info(sim.getPhoneNumber())
@@ -390,30 +390,46 @@ class CommandMode(Singleton):
         }
         self.search_command_func_code_list = self.search_command.keys()
         self.basic_setting_command_list = self.basic_setting_command.keys()
-        self.__protocol = None
         self.search_cmd = DTUSearchCommand()
         self.setting_cmd = BasicSettingCommand()
 
-    def set_protocol(self, protocol):
-        self.__protocol = protocol
+    def __package_datas(self, msg_data, topic_id=None, channel_id=None):
+        """Package downsteam data
+
+        Args:
+            msg_data (str): Data that needs to be send
+            topic_id (str): Topic id of data to be sent.
+            channel_id (str): Channel id of data to be sent.
+
+        Returns:
+            bytes: Complete the packaged data
+        """
+        msg_length = len(str(msg_data))
+        if msg_length != 0:
+            crc32_val = self.crc32(str(msg_data))
+            ret_bytes = "%s,%s,%s,%s,%s".encode('utf-8') % (str(channel_id), str(topic_id), str(msg_length), str(crc32_val), str(msg_data))
+        else:
+            ret_bytes = "%s,%s,%d".encode('utf-8') % (str(channel_id), str(topic_id), msg_length)   
+        print("ret_bytes:", ret_bytes)
+            
+        return ret_bytes
+
 
     def cloud_data_parse(self, data, topic_id, channel_id):
         """Dtu parse cloud data,return cloud data or serial data
 
         Args:
-            data (_type_): _description_
-            topic_id (_type_): _description_
-            channel_id (_type_): _description_
+            data (str): cloud publish data
+            topic_id (str): toic id of data
+            channel_id (str): cloud channel id 
 
         Raises:
-            error_map.get: _description_
+            error_map.get: command parse error transfer to modbus
 
         Returns:
-            _type_: _description_
+            dict: Data that has been processed,wait to send to cloud or uart
         """
         ret_data = {"cloud_data":None, "uart_data":None}
-        print("data:", data)
-        print("type data:", type(data))
         try:
             if isinstance(data, str):
                 msg_data = ujson.loads(data)
@@ -469,31 +485,41 @@ class CommandMode(Singleton):
             
             return ret_data
         else:
-            package_data = self.__protocol.package_datas(data, topic_id, channel_id)
-            ret_data["uart_data"] = package_data
+            ret_data["uart_data"] = self.__package_datas(data, topic_id, channel_id)
             return ret_data
         
 
     def uart_data_parse(self, data, cloud_channel_dict, cloud_channel_array=None):
+        """Parse the data read from uart
+
+        Args:
+            data (bytes): Data read from the serial port
+            cloud_channel_dict (dict): cloud config dict 
+            cloud_channel_array(list): Cloud channel list corresponding to uart channel 
+        Returns:
+            list: 1.msg_data:Data that has been processed,wait to send to cloud
+                  2.cloud_channel_id:cloud channel id 
+                  3.topic_id:toic id of data
+        """
         str_msg = data.decode()
         params_list = str_msg.split(",")
         if len(params_list) not in [2, 4, 5]:
             log.error("param length error")
-            return False, []
+            return []
 
         channel_id = params_list[0]
         if channel_id not in cloud_channel_array:
             log.error("Channel id not exist. Check conf config.")
-            return False, []
+            return []
             
         channel = cloud_channel_dict.get(str(channel_id))
         if not channel:
             log.error("Channel id not exist. Check serialID config.")
-            return False, []
+            return []
         if channel.get("protocol") in ["http", "tcp", "udp"]:
             msg_len = params_list[1]
             if msg_len == "0":
-                return {}, [channel_id]
+                return [{}, channel_id]
             else:
                 crc32 = params_list[2]
                 msg_data = params_list[3]
@@ -501,16 +527,16 @@ class CommandMode(Singleton):
                     msg_len_int = int(msg_len)
                 except:
                     log.error("data parse error")
-                    return False, []
+                    return []
                 # Message length check
                 if msg_len_int != len(msg_data):
-                    return False, []
-                cal_crc32 = self.__protocol.crc32(msg_data)
+                    return []
+                cal_crc32 = dtu_crc.crc32(msg_data)
                 if cal_crc32 == crc32:
-                    return {"data": msg_data}, [channel_id]
+                    return [ujson.dumps({"data": msg_data}), channel_id]
                 else:
                     log.error("crc32 error")
-                    return False, []
+                    return []
         else:
             topic_id = params_list[1]
             msg_len = params_list[2]
@@ -520,12 +546,12 @@ class CommandMode(Singleton):
                 msg_len_int = int(msg_len)
             except:
                 log.error("data parse error")
-                return False, []
+                return []
             # Message length check
             if msg_len_int != len(msg_data):
-                return False, []
-            cal_crc32 = self.__protocol.crc32(msg_data)
+                return []
+            cal_crc32 = dtu_crc.crc32(msg_data)
             if crc32 == cal_crc32:
-                return {"data": msg_data}, [channel_id, topic_id]
+                return [ujson.dumps({"data": msg_data}), channel_id, topic_id]
             else:
-                return False, []
+                return []

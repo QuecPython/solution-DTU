@@ -34,7 +34,23 @@ from usr.modules.logging import getLogger
 
 log = getLogger(__name__)
 class DtuRequest(CloudObservable):
+    """This is a class for http iot.
 
+    This class extend CloudObservable.
+
+    This class has the following functions:
+        1. send data to http server
+        2. parse http server ack data
+
+    Attribute:
+        conn_type:cloud name
+
+    Run step:
+        1. cloud = DtuRequest(request_id_dict, reg_data)
+        2. cloud.addObserver(RemoteSubscribe)
+        3. cloud.init()
+        4. cloud.through_post_data(data)
+    """
     def __init__(self, request_id_dict, reg_data=""):
         super().__init__()
         self.conn_type = "http"

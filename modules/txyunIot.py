@@ -40,21 +40,13 @@ class TXYunIot(CloudObservable):
 
     This class has the following functions:
         1. Cloud connect and disconnect
-
         2. Publish data to cloud
-        2.1 Publish object module
-        2.2 Publish ota device info, ota upgrade process, ota plain info request
-        2.3 Publish rrpc response
-
         3. Subscribe data from cloud
-        3.1 Subscribe publish object model result
-        3.2 Subscribe cloud message
-        3.3 Subscribe ota plain
-        3.4 Subscribe rrpc request
 
     Attribute:
         pub_topic_dict: topic dict for publish dtu through data
         sub_topic_dict: topic dict for subscribe cloud through data
+        conn_type:cloud name
 
     Run step:
         1. cloud = AliYunIot(pk, ps, dk, ds, server, client_id)
@@ -194,11 +186,11 @@ class TXYunIot(CloudObservable):
             return False
 
     def through_post_data(self, data, topic_id):
-        print("test56")
-        print("topic_id type:", type(self.pub_topic_dict))
-        print("self.pub_topic_dict:", self.pub_topic_dict)
-        print("self.pub_topic_dict[topic_id]:", self.pub_topic_dict[topic_id])
-        print("data:", data)
+        """Publish through data
+        Return:
+            Ture: Success
+            False: Failed
+        """
         try:
             pub_res = self.__txyun.publish(self.pub_topic_dict[topic_id], data, qos=0)
             print("pub_res:", pub_res)

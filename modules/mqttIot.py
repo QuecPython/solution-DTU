@@ -33,30 +33,22 @@ from usr.modules.common import CloudObservable
 log = getLogger(__name__)
 
 class MqttIot(CloudObservable):
-    """This is a class for huaweiyun iot.
+    """This is a class for universal mqtt iot.
 
     This class extend CloudObservable.
 
     This class has the following functions:
         1. Cloud connect and disconnect
-
         2. Publish data to cloud
-        2.1 Publish object module
-        2.2 Publish ota device info, ota upgrade process, ota plain info request
-        2.3 Publish rrpc response
-
         3. Subscribe data from cloud
-        3.1 Subscribe publish object model result
-        3.2 Subscribe cloud message
-        3.3 Subscribe ota plain
-        3.4 Subscribe rrpc request
 
     Attribute:
         pub_topic_dict: topic dict for publish dtu through data
         sub_topic_dict: topic dict for subscribe cloud through data
+        conn_type:cloud name
 
     Run step:
-        1. cloud = HuaweiIot(pk, ps, dk, ds, server, client_id)
+        1. cloud = MqttIot(server, qos, port, clean_session, client_id, pub_topic, sub_topic)
         2. cloud.addObserver(RemoteSubscribe)
         3. cloud.init()
         4. cloud.post_data(data)
