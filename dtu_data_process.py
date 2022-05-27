@@ -37,6 +37,7 @@ from usr.through_mode import ThroughMode
 from usr.modules.remote import RemotePublish
 from usr.modules.logging import getLogger
 from usr.settings import settings
+from usr.dtu_crc import dtu_crc
 from usr.settings import PROJECT_NAME, PROJECT_VERSION, DEVICE_FIRMWARE_NAME, DEVICE_FIRMWARE_VERSION
 
 log = getLogger(__name__)
@@ -194,7 +195,7 @@ class DtuDataProcess(Singleton):
         elif len(msg_data) < data_len_int:
             log.info("Msg length shorter than length")
             return True
-        data_crc = self.protocol.crc32(msg_data)
+        data_crc = dtu_crc.crc32(msg_data)
         if crc32_val != data_crc:
             log.error("DTU CMD CRC32 vaildate failed")
             return False
@@ -213,7 +214,7 @@ class DtuDataProcess(Singleton):
         rec_str = ujson.dumps(rec)
         print(rec_str)
         print(len(rec_str))
-        rec_crc_val = self.protocol.crc32(rec_str)
+        rec_crc_val = dtu_crc.crc32(rec_str)
         rec_format = "{},{},{}".format(len(rec_str), rec_crc_val, rec_str)
         # Gets the serialID of the data to be returned
         uart = self.__serial_map.get(str(sid))
@@ -245,7 +246,7 @@ class DtuDataProcess(Singleton):
         # 云端为quecthing 时，没有topic id 
         pkg_id = kwargs.get("pkgid", None)
 
-        request_id = kwargs.get("request", None)
+        request_id = kwargs.get("request_id", None)
 
         if topic_id is not None:
             msg_id = topic_id   # aliyun\mqtt\huaweiyun\tenxunyun
@@ -264,7 +265,14 @@ class DtuDataProcess(Singleton):
             if channel_id in cid:
                 serial_id = sid
 
-        data = kwargs["data"].decode() if isinstance(kwargs["data"], bytes) else kwargs["data"]
+        if isinstance(kwargs["data"], bytes):
+            data = kwargs["data"].decode()
+        elif isinstance(kwargs["data"], dict):
+            data = ujson.dumps(kwargs["data"])
+        elif isinstance(kwargs["data"], str):
+            data = kwargs["data"]
+        else:
+            data = str(kwargs["data"])
         ret_data = self.__cloud_data_parse(data, msg_id, channel_id)
 
         # reply cloud query command
@@ -294,6 +302,7 @@ class DtuDataProcess(Singleton):
             data (bytes): data read from uart
             sid (str): Uart id for data sources
         """
+        
         cloud_channel_array = self.__channel.serial_channel_dict.get(int(sid))
         if not cloud_channel_array:
             log.error("Serial Config not exist!")

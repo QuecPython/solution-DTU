@@ -37,13 +37,10 @@ import cellLocator
 from misc import Power, ADC
 from usr.dtu_gpio import Gpio
 from usr.settings import settings
-from usr.modules.logging import RET
 from usr.modules.logging import getLogger
-from usr.modules.logging import error_map
-from usr.modules.logging import DTUException
 from usr.modules.common import Singleton
 from usr.settings import PROJECT_VERSION
-from usr.dtu_protocol_data import dtu_crc
+from usr.dtu_crc import dtu_crc
 from usr.modules.temp_humidity_sensor import TempHumiditySensor
 
 log = getLogger(__name__)
@@ -106,14 +103,11 @@ class DTUSearchCommand(Singleton):
             prod_gpio = Gpio()
             gpio_get = getattr(prod_gpio, "gpio%s" % pins)
             gpor_read = gpio_get.read()
-        except DTUException as e:
-            log.error(e)
-            return {"code": code, "status": 0}
         except Exception as e:
             log.error(e)
             return {"code": code, "status": 0}
         else:
-           return {"code": code, "data": gpor_read, "status": 1}
+            return {"code": code, "data": gpor_read, "status": 1}
 
     def get_vbatt(self, code, data):
         log.info("get_vbatt")
@@ -232,13 +226,10 @@ class BasicSettingCommand(Singleton):
         try:
             uconf = data["uconf"]
             if not isinstance(uconf, dict):
-                raise DTUException(RET.DATATYPEERR)
+                raise Exception("Data type error")
             settings.set("uconf", uconf)
             settings.save()
             return {"code": code, "status": 1}
-        except DTUException as e:
-            log.error(e)
-            return {"code": code, "status": 0}
         except Exception as e:
             log.error("e = {}".format(e))
             return {"code": code, "status": 0}
@@ -247,13 +238,10 @@ class BasicSettingCommand(Singleton):
         try:
             conf = data["conf"]
             if not isinstance(conf, dict):
-                raise DTUException(RET.DATATYPEERR)
+                raise Exception("Data type error")
             settings.set("conf", conf)
             settings.save()
             return {"code": code, "status": 1}
-        except DTUException as e:
-            log.error(e)
-            return {"code": code, "status": 0}
         except Exception as e:
             log.error(e)
             return {"code": code, "status": 0}
@@ -264,15 +252,12 @@ class BasicSettingCommand(Singleton):
         try:
             apn = data["apn"]
             if not isinstance(apn, list):
-                raise DTUException(RET.DATATYPEERR)
+                raise Exception("Data type error")
             if len(apn) != 3:
-                raise DTUException(RET.NUMBERERR)
+                raise Exception("Params number error")
             settings.set("apn", apn)
             settings.save()
             return {"code": code, "status": 1}
-        except DTUException as e:
-            log.error(e)
-            return {"code": code, "status": 0}
         except Exception as e:
             log.error(e)
             return {"code": code, "status": 0}
@@ -283,13 +268,10 @@ class BasicSettingCommand(Singleton):
         try:
             pins = data["pins"]
             if not isinstance(pins, list):
-                raise DTUException(RET.DATATYPEERR)
+                raise Exception("Data type error")
             settings.set("pins", pins)
             settings.save()
             return {"code": code, "status": 1}
-        except DTUException as e:
-            log.error(e)
-            return {"code": code, "status": 0}
         except Exception as e:
             log.error(e)
             return {"code": code, "status": 0}
@@ -298,14 +280,11 @@ class BasicSettingCommand(Singleton):
         try:
             conf = data["dtu_config"]
             if not isinstance(conf, dict):
-                raise DTUException(RET.DATATYPEERR)
+                raise Exception("Data type error")
             if settings.set_multi(conf):
                 return {"code": code, "status": 1}
             else:
                 return {"code": code, "status": 0}
-        except DTUException as e:
-            log.error(e)
-            return {"code": code, "status": 0}
         except Exception as e:
             log.error(e)
             return {"code": code, "status": 0}
@@ -404,14 +383,17 @@ class CommandMode(Singleton):
         Returns:
             bytes: Complete the packaged data
         """
-        msg_length = len(str(msg_data))
-        if msg_length != 0:
-            crc32_val = self.crc32(str(msg_data))
-            ret_bytes = "%s,%s,%s,%s,%s".encode('utf-8') % (str(channel_id), str(topic_id), str(msg_length), str(crc32_val), str(msg_data))
+        if msg_data is not None:
+            msg_length = len(str(msg_data))
+            crc32_val = dtu_crc.crc32(str(msg_data))
+            if topic_id == None: # tcp\udp
+                ret_bytes = "%s,%s,%s,%s".encode('utf-8') % (str(channel_id), str(msg_length), str(crc32_val), str(msg_data))
+            else:
+                ret_bytes = "%s,%s,%s,%s,%s".encode('utf-8') % (str(channel_id), str(topic_id), str(msg_length), str(crc32_val), str(msg_data))
         else:
-            ret_bytes = "%s,%s,%d".encode('utf-8') % (str(channel_id), str(topic_id), msg_length)   
+            ret_bytes = None
+
         print("ret_bytes:", ret_bytes)
-            
         return ret_bytes
 
 
@@ -423,22 +405,16 @@ class CommandMode(Singleton):
             topic_id (str): toic id of data
             channel_id (str): cloud channel id 
 
-        Raises:
-            error_map.get: command parse error transfer to modbus
-
         Returns:
             dict: Data that has been processed,wait to send to cloud or uart
         """
+
         ret_data = {"cloud_data":None, "uart_data":None}
         try:
             if isinstance(data, str):
                 msg_data = ujson.loads(data)
-            elif isinstance(data, bytes):
-                msg_data = ujson.loads(str(data))
-            elif isinstance(data, dict):
-                msg_data = data
             else:
-                raise error_map.get(RET.CMDPARSEERR)
+                raise Exception("Cloud data parse error")
         except Exception as e:
             log.info(e)
             return ret_data
@@ -452,8 +428,8 @@ class CommandMode(Singleton):
         if cmd_code is not None:
             if cmd_code not in self.__not_need_password_verify_code:
                 if password != settings.current_settings.get("password"):
-                    log.error(error_map.get(RET.PASSWDVERIFYERR))
-                    ret_data["cloud_data"] = {"code": cmd_code, "status": 0, "error": error_map.get(RET.PASSWDVERIFYERR)}
+                    log.error("Password verify error")
+                    ret_data["cloud_data"] = {"code": cmd_code, "status": 0, "error": "Password verify error"}
                     return ret_data
 
             print("cmd_code", cmd_code)
@@ -473,8 +449,8 @@ class CommandMode(Singleton):
                     log.error("basic_setting_command_list:", e)
             else:
                 # err
-                log.error(error_map.get(RET.POINTERR))
-                ret_data["cloud_data"] = {"code": cmd_code, "status": 0, "error": error_map.get(RET.POINTERR)}
+                log.error("Command code error")
+                ret_data["cloud_data"] = {"code": cmd_code, "status": 0, "error": "Command code error"}
 
             # 应答报文中msg_id与 云端发送的msg_id保持一致
             ret_data["cloud_data"]["msg_id"] = msg_id
@@ -503,6 +479,7 @@ class CommandMode(Singleton):
         """
         str_msg = data.decode()
         params_list = str_msg.split(",")
+        print("[elian]params_list:%s" % params_list)
         if len(params_list) not in [2, 4, 5]:
             log.error("param length error")
             return []
@@ -516,7 +493,7 @@ class CommandMode(Singleton):
         if not channel:
             log.error("Channel id not exist. Check serialID config.")
             return []
-        if channel.get("protocol") in ["http", "tcp", "udp"]:
+        if channel.get("protocol") in ["tcp", "udp"]:
             msg_len = params_list[1]
             if msg_len == "0":
                 return [{}, channel_id]

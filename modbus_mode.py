@@ -30,8 +30,6 @@ import ujson
 import utime
 import ubinascii
 from usr.modules.common import Singleton
-from usr.modules.logging import error_map
-from usr.modules.logging import RET
 from usr.modules.logging import getLogger
 
 
@@ -103,9 +101,6 @@ class ModbusMode(Singleton):
             topic_id (str): cloud config dict 
             channel_id(str): Cloud channel list corresponding to uart channel 
 
-        Raises:
-            error_map.get: command parse error transfer to modbus
-
         Returns:
             dict: Data that has been processed,wait to send to cloud or uart
         """
@@ -120,7 +115,7 @@ class ModbusMode(Singleton):
             elif isinstance(data, dict):
                 msg_data = data
             else:
-                raise error_map.get(RET.CMDPARSEERR)
+                raise Exception("Cloud data parse error")
             modbus_data = msg_data.get("modbus", None)
             if modbus_data is not None:
                 if "groups" in modbus_data:
@@ -156,7 +151,7 @@ class ModbusMode(Singleton):
                     ret_data["cloud_data"] = {"code": 0, "status": 0, "error": err_msg}
             return ret_data
         except Exception as e:
-                log.info("{}: {}".format(error_map.get(RET.CMDPARSEERR), e))
+                log.info("command parse error transfer to modbus: {}".format(e))
                 return ret_data
 
     def uart_data_parse(self, data, cloud_channel_dict, cloud_channel_array=None):
@@ -185,7 +180,7 @@ class ModbusMode(Singleton):
         hex_str_list = ["0x" + x for x in modbus_data_list]
         # 返回channel
         if channel.get("protocol") in ["http", "tcp", "udp", "quecthing"]:
-            return [hex_str_list, cloud_channel_id]
+            return [str(hex_str_list), cloud_channel_id]
         else:
             topics = list(channel.get("publish").keys())
-            return [hex_str_list, cloud_channel_id, topics[0]]
+            return [str(hex_str_list), cloud_channel_id, topics[0]]

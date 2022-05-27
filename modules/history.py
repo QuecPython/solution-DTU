@@ -17,7 +17,7 @@
 
 """
 @file      :history.py
-@author    :elian.wang@quectel.com
+@author    :Jack Sun (jack.sun@quectel.com)
 @brief     :Store data that fails to be sent, and send when communication is normal
 @version   :0.1
 @date      :2022-05-20 16:25:07

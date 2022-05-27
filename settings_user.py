@@ -18,11 +18,19 @@ class UserConfig(object):
 
     password = "123"
 
-    conf = {"1": 
-                {
-                "protocol": "http",
-                "request": {"1":{"method":"get", "url":"http://220.180.239.212:18011/test"}},
-                "reg_data": "",
+    conf = {"1": {
+                "protocol": "aliyun",
+                "type": "mos",
+                "keepAlive": "",
+                "clientID": "0",
+                "Devicename": "dtu_device1",
+                "ProductKey": "gzsi5zT5fH3",
+                "DeviceSecret": "173f006cab770615346978583ac430c0",
+                "ProductSecret": "D07Ujh1RvKAs6KEY",
+                "cleanSession": "0",
+                "qos": "1",
+                "subscribe": {"0": "/gzsi5zT5fH3/dtu_device1/user/get"},
+                "publish": {"0": "/gzsi5zT5fH3/dtu_device1/user/update"},
                 "serialID": 2
                 }
             }
@@ -43,9 +51,22 @@ class UserConfig(object):
     pins = ["1", "2", "3"]
     direction_pin = {}
     apn = ["", "", ""]
-    work_mode = "through"
+    work_mode = "command"
     auto_connect = 1
     offline_storage = True
     modbus = {
+        "groups":
+        [        
+            {
+                "device_type": "temp_humid_sensor",     
+                "device_model": "TH10S-B",             
+                "slave_address":["0x01"]             
+            },
+            {
+                "device_type": "light_sensor",
+                "device_model": "YGC-BG-M",
+                "slave_address":["0x02", "0x03"]
+            }
+        ]
     }
     

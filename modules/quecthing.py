@@ -17,7 +17,7 @@
 
 """
 @file      :quecthing.py
-@author    :elian.wang@quectel.com
+@author    :Jack Sun (jack.sun@quectel.com)
 @brief     :This file shows the interface of quecthing
 @version   :0.1
 @date      :2022-05-18 13:14:44

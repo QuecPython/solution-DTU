@@ -30,8 +30,6 @@ import ujson
 import _thread
 import usocket
 
-from usr.modules.logging import RET
-from usr.modules.logging import error_map
 from usr.modules.logging import getLogger
 from usr.modules.common import CloudObservable
 
@@ -104,7 +102,7 @@ class SocketIot(CloudObservable):
             else:
                 return False
         except Exception as e:
-            log.error("{}: {}".format(error_map.get(RET.DATAPARSEERR), e))
+            log.error("data parse error: {}".format(e))
             return False
     
     def through_post_data(self, data, topic_id):

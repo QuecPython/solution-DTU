@@ -27,8 +27,6 @@
 import ujson
 import request
 
-from usr.modules.logging import RET
-from usr.modules.logging import error_map
 from usr.modules.common import CloudObservable
 from usr.modules.logging import getLogger
 
@@ -84,7 +82,7 @@ class DtuRequest(CloudObservable):
             else:
                 resp = request.get(uri, data=data)
         except Exception as e:
-            log.error("{}: {}".format(error_map.get(RET.HTTPERR), e))
+            log.error("http request error: {}".format(e))
             return False
         else:
             try:

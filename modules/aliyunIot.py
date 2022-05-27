@@ -17,7 +17,7 @@
 
 """
 @file      :aliyunIot.py
-@author    :elian.wang@quectel.com
+@author    :Jack Sun (jack.sun@quectel.com)
 @brief     :This file shows the interface of alicloud
 @version   :0.1
 @date      :2022-05-18 09:16:41

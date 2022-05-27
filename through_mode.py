@@ -23,7 +23,7 @@
 
 from usr.modules.common import Singleton
 from usr.modules.logging import getLogger
-from usr.dtu_protocol_data import dtu_crc
+from usr.dtu_crc import dtu_crc
 
 log = getLogger(__name__)
 
@@ -44,12 +44,15 @@ class ThroughMode(Singleton):
         Returns:
             bytes: Complete the packaged data
         """
-        msg_length = len(str(msg_data))
-        if msg_length != 0:
-            crc32_val = self.crc32(str(msg_data))
-            ret_bytes = "%s,%s,%s,%s".encode('utf-8') % (str(topic_id), str(msg_length), str(crc32_val), str(msg_data))
+        if msg_data is not None:
+            msg_length = len(str(msg_data))
+            crc32_val = dtu_crc.crc32(str(msg_data))
+            if topic_id == None: # tcp\udp
+                ret_bytes = "%s,%s,%s".encode('utf-8') % (str(msg_length), str(crc32_val), str(msg_data))
+            else:
+                ret_bytes = "%s,%s,%s,%s".encode('utf-8') % (str(topic_id), str(msg_length), str(crc32_val), str(msg_data))
         else:
-            ret_bytes = "%s,%d".encode('utf-8') % (str(topic_id), msg_length)   
+            ret_bytes = None
         print("ret_bytes:", ret_bytes)
             
         return ret_bytes
