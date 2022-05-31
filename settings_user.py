@@ -14,9 +14,8 @@
 
 
 class UserConfig(object):
-    plate = 1
 
-    password = "123"
+    password = ""
 
     conf = {"1": {
                 "protocol": "aliyun",
@@ -51,7 +50,7 @@ class UserConfig(object):
     pins = ["1", "2", "3"]
     direction_pin = {}
     apn = ["", "", ""]
-    work_mode = "command"
+    work_mode = "through"
     auto_connect = 1
     offline_storage = True
     modbus = {

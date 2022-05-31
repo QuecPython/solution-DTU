@@ -45,6 +45,8 @@ class Settings(Singleton):
     def __init_config(self):
         try:
             self.current_settings = {k: v for k, v in UserConfig.__dict__.items() if not k.startswith("_")}
+            # The initial password is the last six digits of the IMEI
+            self.current_settings["password"] = modem.getDevImei()[-6:]
             return True
         except:
             return False
@@ -57,22 +59,22 @@ class Settings(Singleton):
         return False
 
     def __set_config(self, opt, val):
-        if opt == ["conf", "message", "uconf", "direction_pin", "modbus"]:
+        if opt in ["conf", "message", "uconf", "direction_pin", "modbus"]:
             if not isinstance(val, dict):
                 return False
             self.current_settings[opt] = val
             return True
-        elif opt == ["plate", "reg", "convert", "version", "nolog", "fota", "ota", "service_acquire", "auto_connect", "offline_storage"]:
+        elif opt in ["reg", "convert", "version", "nolog", "fota", "ota", "service_acquire", "auto_connect", "offline_storage"]:
             if not isinstance(val, int):
                 return False
             self.current_settings[opt] = val
             return True
-        elif opt == ["password", "work_mode"]:
+        elif opt in ["password", "work_mode"]:
             if not isinstance(val, str):
                 return False
             self.current_settings[opt] = val
             return True
-        elif opt == ["pins", "apn"]:
+        elif opt in ["pins", "apn"]:
             if not isinstance(val, list):
                 return False
             self.current_settings[opt] = val

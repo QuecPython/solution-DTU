@@ -86,9 +86,11 @@ class DTUSearchCommand(Singleton):
         log.info("get_adc")
         try:
             adc = ADC()
-            adcn_val = "ADC%s" % str(data["adcn"])
+            adc.open()
+            adcn_val = "ADC%s" % str(data.get("adcn", 0))
             adcn = getattr(ADC, adcn_val)
             adcv = adc.read(adcn)
+            adc.close()
         except Exception as e:
             log.error(e)
             return {"code": code, "data": None, "status": 0}
@@ -123,7 +125,10 @@ class DTUSearchCommand(Singleton):
         log.info("get_network_connect")
         conn_status = dict()
         for code, connect in self.__channel.cloud_object_dict.items():
-            conn_status[code] = connect.get_status()
+            if connect.get_status() == True:
+                conn_status[code] = 1
+            else:
+                conn_status[code] = 0
         return {"code": code, "data": conn_status, "status": 1}
 
     def get_cell_status(self, code, data):
@@ -150,15 +155,6 @@ class BasicSettingCommand(Singleton):
         log.info("Restarting...")
         Power.powerRestart()
 
-    def set_plate(self, code, data):
-        try:
-            settings.set("plate", data["plate"])
-            settings.save()
-            return {"code": code, "status": 1}
-        except Exception as e:
-            log.error("e = {}".format(e))
-            return {"code": code, "status": 0}
-
     def set_reg(self, code, data):
         try:
             settings.set("reg", data["reg"])
@@ -168,18 +164,12 @@ class BasicSettingCommand(Singleton):
             log.error("e = {}".format(e))
             return {"code": code, "status": 0}
 
-    def set_version(self, code, data):
-        try:
-            settings.set("version", data["version"])
-            settings.save()
-            return {"code": code, "status": 1}
-        except Exception as e:
-            log.error("e = {}".format(e))
-            return {"code": code, "status": 0}
-
     def set_passwd(self, code, data):
+        print("set_passwd")
         try:
+            print("new_password:", data.get("new_password"))
             settings.set("password", str(data["new_password"]))
+            log.info("new password:", settings.current_settings.get("password"))
             settings.save()
             return {"code": code, "status": 1}
         except Exception as e:
@@ -352,9 +342,7 @@ class CommandMode(Singleton):
             255: "restart",
             50: "set_message",
             51: "set_passwd",
-            52: "set_plate",
             53: "set_reg",
-            54: "set_version",
             55: "set_fota",
             56: "set_nolog",
             57: "set_service_acquire",
@@ -437,7 +425,7 @@ class CommandMode(Singleton):
                 try:
                     cmd_str = self.search_command.get(cmd_code)
                     func = getattr(self.search_cmd, cmd_str)
-                    ret_data["cloud_data"] = func(cmd_code, msg_data)
+                    ret_data["cloud_data"] = func(cmd_code, data)
                 except Exception as e:
                     log.error("search_command_func_code_list:", e)
             elif cmd_code in self.basic_setting_command_list:
