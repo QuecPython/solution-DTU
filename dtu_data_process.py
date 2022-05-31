@@ -170,6 +170,7 @@ class DtuDataProcess(Singleton):
             True: GUI data was successfully obtained
             False: get GUI data failed
         """
+        print("Gui data parse")
         print(gui_data)
         gui_data = gui_data.decode()
         data_list = gui_data.split(",", 3)
@@ -191,7 +192,6 @@ class DtuDataProcess(Singleton):
         if len(msg_data) > data_len_int:
             log.error("DTU CMD length validate failed.")
             return False
-        # 更改数据不完整,存入buffer,尝试继续读取
         elif len(msg_data) < data_len_int:
             log.info("Msg length shorter than length")
             return True
@@ -212,15 +212,11 @@ class DtuDataProcess(Singleton):
         password = data.get("password", None)
         rec = self.__command_mode.exec_command_code(int(cmd_code), data=params_data, password=password)
         rec_str = ujson.dumps(rec)
-        print(rec_str)
-        print(len(rec_str))
         rec_crc_val = dtu_crc.crc32(rec_str)
         rec_format = "{},{},{}".format(len(rec_str), rec_crc_val, rec_str)
         # Gets the serialID of the data to be returned
         uart = self.__serial_map.get(str(sid))
-        print(uart)
         uart.write(rec_format.encode("utf-8"))
-        print(rec_format)
         print("GUI CMD SUCCESS")
         return True
 
@@ -307,9 +303,8 @@ class DtuDataProcess(Singleton):
         if not cloud_channel_array:
             log.error("Serial Config not exist!")
             return False
-        # 移动gui判断逻辑
-        gui_flag = self.__gui_tools_parse(data, sid)
-        if gui_flag:
+        # judgement is GUI command
+        if self.__gui_tools_parse(data, sid) == True:
             return False
         
         send_params = self.__uart_data_parse(data, self.__channel.cloud_channel_dict, cloud_channel_array)

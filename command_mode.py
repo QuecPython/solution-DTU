@@ -311,11 +311,14 @@ class BasicSettingCommand(Singleton):
         try:
             number = data["number"]
             msg = data["sms_msg"]
-            sms.sendTextMsg(number, msg, "UCS2")
+            if sms.sendTextMsg(number, msg, 'GSM') == 0:
+                return {"code": code, "status": 1}
+            else:
+                return {"code": code, "status": 0}
         except Exception as e:
             log.error(e)
             return {"code": code, "status": 0}
-        return {"code": code, "status": 1}
+        
 
 class CommandMode(Singleton):
     """When working in command mode, the DTU receives cloud data and serial port data
@@ -383,7 +386,44 @@ class CommandMode(Singleton):
 
         print("ret_bytes:", ret_bytes)
         return ret_bytes
+    def exec_command_code(self, cmd_code, data=None, password=None):
+        """Execute external command code and return execution results
 
+        Args:
+            cmd_code (int): dtu receive external command code
+            data (str): data
+            password (str): Some commands require password checks.
+
+        Returns:
+            dict: result of execute external command
+        """
+        ret = dict()
+        #check password
+        if cmd_code not in self.__not_need_password_verify_code:
+            if password != settings.current_settings.get("password"):
+                log.error("Password verify error")
+                ret = {"code": cmd_code, "status": 0, "error": "Password verify error"}
+                return ret
+
+        print("cmd_code", cmd_code)
+        if cmd_code in self.search_command_func_code_list:
+            try:
+                cmd_str = self.search_command.get(cmd_code)
+                func = getattr(self.search_cmd, cmd_str)
+                ret = func(cmd_code, data)
+            except Exception as e:
+                log.error("search_command_func_code_list:", e)
+        elif cmd_code in self.basic_setting_command_list:
+            try:
+                cmd_str = self.basic_setting_command.get(cmd_code)
+                func = getattr(self.setting_cmd, cmd_str)
+                ret = func(cmd_code, data)
+            except Exception as e:
+                log.error("basic_setting_command_list:", e)
+        else:
+            log.error("Command code error")
+            ret = {"code": cmd_code, "status": 0, "error": "Command code error"}
+        return ret
 
     def cloud_data_parse(self, data, topic_id, channel_id):
         """Dtu parse cloud data,return cloud data or serial data
@@ -414,32 +454,7 @@ class CommandMode(Singleton):
         data = msg_data.get("data", None)
 
         if cmd_code is not None:
-            if cmd_code not in self.__not_need_password_verify_code:
-                if password != settings.current_settings.get("password"):
-                    log.error("Password verify error")
-                    ret_data["cloud_data"] = {"code": cmd_code, "status": 0, "error": "Password verify error"}
-                    return ret_data
-
-            print("cmd_code", cmd_code)
-            if cmd_code in self.search_command_func_code_list:
-                try:
-                    cmd_str = self.search_command.get(cmd_code)
-                    func = getattr(self.search_cmd, cmd_str)
-                    ret_data["cloud_data"] = func(cmd_code, data)
-                except Exception as e:
-                    log.error("search_command_func_code_list:", e)
-            elif cmd_code in self.basic_setting_command_list:
-                try:
-                    cmd_str = self.basic_setting_command.get(cmd_code)
-                    func = getattr(self.setting_cmd, cmd_str)
-                    ret_data["cloud_data"] = func(cmd_code, data)
-                except Exception as e:
-                    log.error("basic_setting_command_list:", e)
-            else:
-                # err
-                log.error("Command code error")
-                ret_data["cloud_data"] = {"code": cmd_code, "status": 0, "error": "Command code error"}
-
+            ret_data["cloud_data"] = self.exec_command_code(int(cmd_code), data=data, password=password)
             # 应答报文中msg_id与 云端发送的msg_id保持一致
             ret_data["cloud_data"]["msg_id"] = msg_id
 

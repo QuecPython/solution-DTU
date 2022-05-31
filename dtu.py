@@ -74,13 +74,19 @@ class Dtu(Singleton):
         return False
 
 
-    def prepare(self):
+    def check_sim_status(self):
+        ret = sim.getStatus()
+        print("sim.getStatus", ret)
         while True:
-            if not sim.getStatus():
-                if not self.__gpio.status():
-                    self.__gpio.show()
+            if sim.getStatus() != 1:
+                print("led 1")
+                self.__gpio.ctrl_led(1)
+                utime.sleep(1)
+                print("led 0")
+                self.__gpio.ctrl_led(0)
                 utime.sleep(1)
             else:
+                self.__gpio.ctrl_led(0)
                 break
 
     def dialing(self, apn):
@@ -101,9 +107,18 @@ class Dtu(Singleton):
                         break
         else:
             pass #默认apn在固件实现
-
-        # 检查拨号结果，拨号失败闪烁LED灯
-        self.__gpio.LED_blink(dataCall.getInfo(1, 0)[2][0], 10)
+        
+        # 检查拨号结果,拨号失败闪烁LED灯
+        while True:
+            if dataCall.getInfo(1, 0)[2][0] == 0:
+                self.__gpio.ctrl_led(1)
+                utime.sleep(1)
+                self.__gpio.ctrl_led(0)
+                utime.sleep(1)
+            else:
+                self.__gpio.ctrl_led(0)
+                break
+        
 
     def cloud_init(self, serv_list, remote_sub, remote_pub):
         print("serv_list:",serv_list)
@@ -243,11 +258,7 @@ class Dtu(Singleton):
 
     def refresh(self):
         log.info("refresh start")
-        # TODO 判断 auto_connect 
         try:
-            self.prepare()
-            log.info("prepart ready")
-
             _thread.start_new_thread(self.__data_process.read, ())
         except Exception as e:
             pass
@@ -306,6 +317,8 @@ def run():
     dtu.add_module(channels)
 
     dtu.add_module(data_process)
+
+    dtu.check_sim_status()
 
     dtu.dialing(settings.current_settings.get("apn"))
 

@@ -47,10 +47,10 @@ class UserConfig(object):
             }
     fota = 1
     ota = 1
-    pins = ["1", "2", "3"]
+    pins = ["", "", ""]
     direction_pin = {}
     apn = ["", "", ""]
-    work_mode = "through"
+    work_mode = "command"
     auto_connect = 1
     offline_storage = True
     modbus = {

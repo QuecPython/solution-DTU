@@ -21,7 +21,6 @@ log = getLogger(__name__)
 
 class Gpio(Singleton):
     def __init__(self, pins):
-        # self.gpio1 = Pin(Pin.GPIO1, Pin.OUT, Pin.PULL_DISABLE, 0)
         set_gpio = False
         log.info("pin: ", pins)
         for i in pins:
@@ -38,18 +37,11 @@ class Gpio(Singleton):
                 set_gpio = True
 
         if not set_gpio:
-            self.gpio1 = Pin(Pin.GPIO1, Pin.OUT, Pin.PULL_DISABLE, 0)
+            self.gpio1 = Pin(Pin.GPIO24, Pin.OUT, Pin.PULL_DISABLE, 0)
 
     def status(self):
         self.gpio1.read()
 
-    def show(self):
-        self.gpio1.write(1)
-
-    def LED_blink(self, sta, cnt):
-        while(sta == 0 and cnt > 0):
-            self.gpio1.write(1)
-            utime.sleep(1)
-            self.gpio1.write(0)
-            utime.sleep(1)
-            cnt -= 1
+    def ctrl_led(self, led_sta):
+        self.gpio1.write(led_sta)
+        
