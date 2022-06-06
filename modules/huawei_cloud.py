@@ -118,7 +118,6 @@ class HuaweiIot(CloudObservable):
         except:
             pass
 
-        print("test 61")
         try:
             self.notifyObservers(self, *("raw_data", {"topic":topic, "data":data} ) )
         except Exception as e:
@@ -218,11 +217,6 @@ class HuaweiIot(CloudObservable):
             return False
     
     def through_post_data(self, data, topic_id):
-        print("test56")
-        print("topic_id type:", type(self.pub_topic_dict))
-        print("self.pub_topic_dict:", self.pub_topic_dict)
-        print("self.pub_topic_dict[topic_id]:", self.pub_topic_dict[topic_id])
-        print("data:", data)
         try:
             self.__huaweiyun.publish(self.pub_topic_dict[topic_id], data, self.__qos)
         except Exception:

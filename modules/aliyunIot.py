@@ -1073,11 +1073,9 @@ class AliOTA(object):
         self.__set_upgrade_status(2)
         if self.__module == self.__firmware_name:
             # self.__start_fota()
-            print("test43")
             _thread.start_new_thread(self.__start_fota, ())
         elif self.__module == self.__mcu_name:
             # self.__start_sota()
-            print("test44")
             _thread.start_new_thread(self.__start_sota, ())
 
         return True

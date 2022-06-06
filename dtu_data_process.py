@@ -36,6 +36,7 @@ from usr.modbus_mode import ModbusMode
 from usr.through_mode import ThroughMode
 from usr.modules.remote import RemotePublish
 from usr.modules.logging import getLogger
+from usr.dtu_channels import ChannelTransfer
 from usr.settings import settings
 from usr.dtu_crc import dtu_crc
 from usr.settings import PROJECT_NAME, PROJECT_VERSION, DEVICE_FIRMWARE_NAME, DEVICE_FIRMWARE_VERSION
@@ -79,38 +80,21 @@ class DtuDataProcess(Singleton):
             self.__serial_map[sid] = uart_conn
         # 初始化方向gpio
         self.__direction_pin(settings.get("direction_pin"))
-        self.__work_mode = settings.get("work_mode")
-        self.__command_mode = None
-        self.__modbus_mode = None
-        self.__through_mode = None
-        self.__cloud_data_parse = None
-        self.__uart_data_parse = None
+        self.__work_mode_name = settings.get("work_mode")
+        self.__work_mode = None
         self.__remote_pub = None
         self.__channel = None
-
-        if self.__work_mode == "command":
-            self.__command_mode = CommandMode()
-            self.__cloud_data_parse = self.__command_mode.cloud_data_parse
-            self.__uart_data_parse = self.__command_mode.uart_data_parse
-        elif self.__work_mode == "modbus":
-            self.__modbus_mode = ModbusMode(self.__work_mode, settings.get("modbus"))
-            self.__cloud_data_parse = self.__modbus_mode.cloud_data_parse
-            self.__uart_data_parse = self.__modbus_mode.uart_data_parse
-        else:
-            self.__through_mode = ThroughMode()
-            self.__cloud_data_parse = self.__through_mode.cloud_data_parse
-            self.__uart_data_parse = self.__through_mode.uart_data_parse
-
-    def set_channel(self, channel):
-        log.info("set channel")
-        self.__channel = channel
-        if isinstance(self.__command_mode, CommandMode):
-            self.__command_mode.search_cmd.set_channel(channel)
 
     def add_module(self, module, callback=None):
         if isinstance(module, RemotePublish):
             self.__remote_pub = module
             return True
+        elif isinstance(module, CommandMode) or isinstance(module, ModbusMode) or isinstance(module, ThroughMode):
+            self.__work_mode = module
+        elif isinstance(module, ChannelTransfer):
+            self.__channel = module
+            if isinstance(self.__work_mode, CommandMode):
+                self.__work_mode.search_cmd.set_channel(module)
 
     def __remote_post_data(self, channel_id, topic_id=None, data=None):
         if not self.__remote_pub:
@@ -171,10 +155,8 @@ class DtuDataProcess(Singleton):
             False: get GUI data failed
         """
         print("Gui data parse")
-        print(gui_data)
         gui_data = gui_data.decode()
         data_list = gui_data.split(",", 3)
-        print(data_list)
         if len(data_list) != 4:
             log.info("DTU CMD list length validate fail. CMD Parse end.")
             return False
@@ -269,7 +251,7 @@ class DtuDataProcess(Singleton):
             data = kwargs["data"]
         else:
             data = str(kwargs["data"])
-        ret_data = self.__cloud_data_parse(data, msg_id, channel_id)
+        ret_data = self.__work_mode.cloud_data_parse(data, msg_id, channel_id)
 
         # reply cloud query command
         if ret_data["cloud_data"] is not None:
@@ -307,8 +289,7 @@ class DtuDataProcess(Singleton):
         if self.__gui_tools_parse(data, sid) == True:
             return False
         
-        send_params = self.__uart_data_parse(data, self.__channel.cloud_channel_dict, cloud_channel_array)
-        print("[elian]send_params:%s" % send_params)
+        send_params = self.__work_mode.uart_data_parse(data, self.__channel.cloud_channel_dict, cloud_channel_array)
         
         if len(send_params) == 3:
             self.__remote_post_data(channel_id=send_params[1], topic_id=send_params[2], data=send_params[0])

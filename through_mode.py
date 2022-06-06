@@ -136,7 +136,6 @@ class ThroughMode(Singleton):
             # Message length check
             if msg_len_int != len(msg_data):
                 return []
-            print("test24")
             cal_crc32 = dtu_crc.crc32(msg_data)
             if crc32 == cal_crc32:
                 return [msg_data, cloud_channel_id, topic_id]

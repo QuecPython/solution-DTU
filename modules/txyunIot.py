@@ -109,7 +109,6 @@ class TXYunIot(CloudObservable):
         except:
             pass
 
-        print("test 61")
         try:
             self.notifyObservers(self, *("raw_data", {"topic":topic, "data":data} ) )
         except Exception as e:

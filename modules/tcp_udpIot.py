@@ -38,14 +38,14 @@ log = getLogger(__name__)
 class SocketIot(CloudObservable):
     """This is a class for tcp udp iot
     """
-    def __init__(self, server, port, reg_data, heartbeat_time, ping=""):
+    def __init__(self, server, port, reg_data, keepalive_interval, ping=""):
         super().__init__()
         self.__cli = None
         self.__server = server
         self.__port = port
         self.__reg_data = reg_data
         self.__ping = ping
-        self.__heartbeat_time = heartbeat_time
+        self.__keepalive_interval = keepalive_interval
         self.cloud_name = "socket"
 
     def __first_reg(self):
@@ -86,7 +86,7 @@ class SocketIot(CloudObservable):
                 log.info("Send a heartbeat: {}".format(self.__ping))
             except Exception as e:
                 log.info("send heartbeat failed !")
-            utime.sleep(self.__heartbeat_time)
+            utime.sleep(self.__keepalive_interval)
 
     def __send(self, data):
         try:
@@ -106,9 +106,6 @@ class SocketIot(CloudObservable):
             return False
     
     def through_post_data(self, data, topic_id):
-        print("test56")
-        print("data:", data)
-        print("type data:", type(data))
         return self.__send(data)
 
     def close(self):
@@ -131,7 +128,7 @@ class SocketIot(CloudObservable):
             
     def start_recv_and_ping(self):
         # if ping and heartbeat time configed,call heartbeat
-        if self.__ping and self.__heartbeat_time and self.__heartbeat_time != 0 and self.__ping is not "":
+        if self.__keepalive_interval != 0 and self.__ping is not "":
             _thread.start_new_thread(self.__heartbeat, ())
         # call receive socket data
         _thread.start_new_thread(self.__recv, ())
@@ -152,8 +149,8 @@ class SocketIot(CloudObservable):
 class TcpSocketIot(SocketIot):
     """TCP Communication type Iot
     """
-    def __init__(self, server, port, reg_data, heartbeat_time, ping="", life_time=120):
-        super().__init__(server, port, reg_data, heartbeat_time, ping=ping)
+    def __init__(self, server, port, reg_data, keepalive_interval, ping="", life_time=120):
+        super().__init__(server, port, reg_data, keepalive_interval, ping=ping)
         self.__life_time = life_time
         self.cloud_name = "tcp"
         
@@ -178,8 +175,8 @@ class TcpSocketIot(SocketIot):
 class UdpSocketIot(SocketIot):
     """UDP Communication type Iot
     """
-    def __init__(self, server, port, reg_data, heartbeat_time, ping="", life_time=120):
-        super().__init__(server, port, reg_data, heartbeat_time, ping=ping)
+    def __init__(self, server, port, reg_data, keepalive_interval, ping="", life_time=120):
+        super().__init__(server, port, reg_data, keepalive_interval, ping=ping)
         self.__life_time = life_time
         self.cloud_name = "udp"
     

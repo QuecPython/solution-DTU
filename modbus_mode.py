@@ -29,8 +29,10 @@
 import ujson
 import utime
 import ubinascii
+from usr.settings import settings
 from usr.modules.common import Singleton
 from usr.modules.logging import getLogger
+
 
 
 log = getLogger(__name__)
@@ -80,14 +82,10 @@ class ModbusMode(Singleton):
 
         __groups(list):slave address list
     """
-    def __init__(self, mode, modbus_conf):
-        self.__modbus_conf = modbus_conf
+    def __init__(self):
         self.__groups = dict()
-        if mode == "modbus":
-            self.__load_groups()
-
-    def __load_groups(self):
-        groups_conf = self.__modbus_conf.get("groups", [])
+        current_settings = settings.get()
+        groups_conf = current_settings.get("modbus").get("groups", [])
         idx = 0
         for group in groups_conf:
             self.__groups[idx] = [int(x, 16) for x in group["slave_address"]]
@@ -105,8 +103,6 @@ class ModbusMode(Singleton):
             dict: Data that has been processed,wait to send to cloud or uart
         """
         ret_data = {"cloud_data":None, "uart_data":None}
-        print("data:{}".format(data))
-        print("data type:{}".format(type(data)))
         try:
             if isinstance(data, str):
                 msg_data = ujson.loads(data)
@@ -173,9 +169,6 @@ class ModbusMode(Singleton):
         if not channel:
             print("Channel id not exist. Check serialID config.")
             return False, []
-        print("modbus str_msg")
-        print(type(str_msg))
-        print(str_msg)
         modbus_data_list = str_msg.split(",")
         hex_str_list = ["0x" + x for x in modbus_data_list]
         # 返回channel

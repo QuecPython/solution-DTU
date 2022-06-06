@@ -38,6 +38,9 @@ from usr.modules.tcp_udpIot import UdpSocketIot
 
 from usr.dtu_gpio import Gpio
 from usr.settings import settings
+from usr.command_mode import CommandMode
+from usr.modbus_mode import ModbusMode
+from usr.through_mode import ThroughMode
 from usr.modules.history import History
 from usr.modules.logging import getLogger
 from usr.dtu_channels import ChannelTransfer
@@ -300,7 +303,17 @@ def run():
 
     data_process = DtuDataProcess(settings.current_settings)
 
-    data_process.set_channel(channels)
+    if settings.current_settings.get("work_mode") == "modbus":
+        data_process.add_module(ModbusMode())
+    elif settings.current_settings.get("work_mode") == "command":
+        data_process.add_module(CommandMode())
+    elif settings.current_settings.get("work_mode") == "through":
+        data_process.add_module(ThroughMode())
+    else:
+        log.error("work mode parameter error")
+        return
+        
+    data_process.add_module(channels)
     
     remote_sub = RemoteSubscribe()
     remote_sub.add_executor(data_process)

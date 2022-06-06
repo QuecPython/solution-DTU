@@ -579,9 +579,6 @@ class QuecThing(CloudObservable):
         return res
 
     def through_post_data(self, data, topic_id=None):
-        print("test56")
-        print("data:{}".format(data))
-        print("data type:{}".format(type(data)))
         """
         data_bytes = data.encode("UTF-8")
         print("data_bytes:{}".format(data_bytes))

@@ -91,11 +91,13 @@ class DtuRequest(CloudObservable):
                     read_data += i
             except Exception as e:
                 log.error("resp.content fault:", e)
+                return False
             if resp.status_code == 200:
                 try:
                     self.notifyObservers(self, *("raw_data", {"request_id":request_id, "data":read_data}))
                 except Exception as e:
                     log.error("{}".format(e))
+                    return False
                 return True
             else:
                 log.error("http error:", resp.status_code)
@@ -115,6 +117,7 @@ class DtuRequest(CloudObservable):
                     self.__url = v.get("url")
         except Exception as e:
             log.error("request id dict error:", e)
+            return False
         return self.__req(data, request_id)
     
     def get_status(self):

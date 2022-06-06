@@ -325,7 +325,7 @@ class CommandMode(Singleton):
     """
     def __init__(self):
         self.__not_need_password_verify_code = [0x00, 0x01, 0x02, 0x03, 0x05]
-        self.search_command = {
+        self.__search_command = {
             0: "get_imei",
             1: "get_number",
             2: "get_version",
@@ -341,7 +341,7 @@ class CommandMode(Singleton):
             12: "get_cell_status",
             13: "get_celllocator",
         }
-        self.basic_setting_command = {
+        self.__basic_setting_command = {
             255: "restart",
             50: "set_message",
             51: "set_passwd",
@@ -358,10 +358,10 @@ class CommandMode(Singleton):
             64: "set_tts",
             65: "set_ntp",
         }
-        self.search_command_func_code_list = self.search_command.keys()
-        self.basic_setting_command_list = self.basic_setting_command.keys()
+        self.__search_command_func_code_list = self.__search_command.keys()
+        self.__basic_setting_command_list = self.__basic_setting_command.keys()
         self.search_cmd = DTUSearchCommand()
-        self.setting_cmd = BasicSettingCommand()
+        self.__setting_cmd = BasicSettingCommand()
 
     def __package_datas(self, msg_data, topic_id=None, channel_id=None):
         """Package downsteam data
@@ -406,17 +406,17 @@ class CommandMode(Singleton):
                 return ret
 
         print("cmd_code", cmd_code)
-        if cmd_code in self.search_command_func_code_list:
+        if cmd_code in self.__search_command_func_code_list:
             try:
-                cmd_str = self.search_command.get(cmd_code)
+                cmd_str = self.__search_command.get(cmd_code)
                 func = getattr(self.search_cmd, cmd_str)
                 ret = func(cmd_code, data)
             except Exception as e:
                 log.error("search_command_func_code_list:", e)
-        elif cmd_code in self.basic_setting_command_list:
+        elif cmd_code in self.__basic_setting_command_list:
             try:
-                cmd_str = self.basic_setting_command.get(cmd_code)
-                func = getattr(self.setting_cmd, cmd_str)
+                cmd_str = self.__basic_setting_command.get(cmd_code)
+                func = getattr(self.__setting_cmd, cmd_str)
                 ret = func(cmd_code, data)
             except Exception as e:
                 log.error("basic_setting_command_list:", e)

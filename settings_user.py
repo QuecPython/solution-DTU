@@ -18,18 +18,9 @@ class UserConfig(object):
     password = ""
 
     conf = {"1": {
-                "protocol": "aliyun",
-                "type": "mos",
-                "keepAlive": "",
-                "clientID": "0",
-                "Devicename": "dtu_device1",
-                "ProductKey": "gzsi5zT5fH3",
-                "DeviceSecret": "173f006cab770615346978583ac430c0",
-                "ProductSecret": "D07Ujh1RvKAs6KEY",
-                "cleanSession": "0",
-                "qos": "1",
-                "subscribe": {"0": "/gzsi5zT5fH3/dtu_device1/user/get"},
-                "publish": {"0": "/gzsi5zT5fH3/dtu_device1/user/update"},
+                "protocol": "http",
+                "request": {"1":{"method":"get", "url":"http://220.180.239.212:18011/test"}},
+                "reg_data": "",
                 "serialID": 2
                 }
             }
