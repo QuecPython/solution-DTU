@@ -27,7 +27,7 @@ from usr.modules.logging import getLogger
 log = getLogger(__name__)
 
 PROJECT_NAME = "QuecPython-Dtu"
-PROJECT_VERSION = "2.1.0"
+PROJECT_VERSION = "2.0.0"
 
 DEVICE_FIRMWARE_NAME = uos.uname()[0].split("=")[1]
 DEVICE_FIRMWARE_VERSION = modem.getDevFwVersion()

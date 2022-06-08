@@ -18,9 +18,18 @@ class UserConfig(object):
     password = ""
 
     conf = {"1": {
-                "protocol": "http",
-                "request": {"1":{"method":"get", "url":"http://220.180.239.212:18011/test"}},
-                "reg_data": "",
+                "protocol": "aliyun",
+                "type": "mos",
+                "keepAlive": "",
+                "clientID": "0",
+                "Devicename": "dtu_device1",
+                "ProductKey": "gzsi5zT5fH3",
+                "DeviceSecret": "173f006cab770615346978583ac430c0",
+                "ProductSecret": "D07Ujh1RvKAs6KEY",
+                "cleanSession": "0",
+                "qos": "1",
+                "subscribe": {"0": "/gzsi5zT5fH3/dtu_device1/user/get"},
+                "publish": {"0": "/gzsi5zT5fH3/dtu_device1/user/update"},
                 "serialID": 2
                 }
             }
@@ -41,7 +50,7 @@ class UserConfig(object):
     pins = ["", "", ""]
     direction_pin = {}
     apn = ["", "", ""]
-    work_mode = "modbus"
+    work_mode = "command"
     auto_connect = 1
     offline_storage = True
     modbus = {
