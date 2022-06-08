@@ -63,9 +63,7 @@ class DtuDataProcess(Singleton):
 
     Attribute:
         __serial_map(dict): key(str):uart id, value:uart object list
-        __through_mode(object): ThroughMode() instantiation
-        __command_mode(object): CommandMode() instantiation
-        __modbus_mode(object): ModbusMode() instantiation
+        __work_mode(object): ThroughMode() or CommandMode() or ModbusMode() instantiation
     """
     def __init__(self, settings):
         # 配置uart

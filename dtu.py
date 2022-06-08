@@ -301,18 +301,22 @@ def run():
     if settings.current_settings.get("offline_storage"):
         history = History()
 
-    data_process = DtuDataProcess(settings.current_settings)
+    dtu_gpio_ctrl = Gpio(settings.current_settings.get("pins"))
 
     if settings.current_settings.get("work_mode") == "modbus":
-        data_process.add_module(ModbusMode())
+        work_mode = ModbusMode()
     elif settings.current_settings.get("work_mode") == "command":
-        data_process.add_module(CommandMode())
+        work_mode = CommandMode()
     elif settings.current_settings.get("work_mode") == "through":
-        data_process.add_module(ThroughMode())
+        work_mode = ThroughMode()
     else:
         log.error("work mode parameter error")
         return
-        
+
+    data_process = DtuDataProcess(settings.current_settings)
+
+    data_process.add_module(work_mode)
+    
     data_process.add_module(channels)
     
     remote_sub = RemoteSubscribe()
@@ -325,7 +329,7 @@ def run():
 
     dtu = Dtu()
 
-    dtu.add_module(Gpio(settings.current_settings.get("pins")))
+    dtu.add_module(dtu_gpio_ctrl)
 
     dtu.add_module(channels)
 
