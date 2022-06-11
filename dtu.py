@@ -303,19 +303,19 @@ def run():
 
     dtu_gpio_ctrl = Gpio(settings.current_settings.get("pins"))
 
-    if settings.current_settings.get("work_mode") == "modbus":
-        work_mode = ModbusMode()
-    elif settings.current_settings.get("work_mode") == "command":
-        work_mode = CommandMode()
-    elif settings.current_settings.get("work_mode") == "through":
-        work_mode = ThroughMode()
-    else:
-        log.error("work mode parameter error")
-        return
+    modbus_mode = ModbusMode()
+
+    through_mode = ThroughMode()
+
+    command_mode = CommandMode()
 
     data_process = DtuDataProcess(settings.current_settings)
 
-    data_process.add_module(work_mode)
+    data_process.add_module(modbus_mode)
+
+    data_process.add_module(through_mode)
+
+    data_process.add_module(command_mode)
     
     data_process.add_module(channels)
     

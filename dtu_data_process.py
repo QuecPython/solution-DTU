@@ -63,7 +63,9 @@ class DtuDataProcess(Singleton):
 
     Attribute:
         __serial_map(dict): key(str):uart id, value:uart object list
-        __work_mode(object): ThroughMode() or CommandMode() or ModbusMode() instantiation
+        __through_mode(object): ThroughMode() instantiation
+        __command_mode(object): CommandMode() instantiation
+        __modbus_mode(object): ModbusMode() instantiation
     """
     def __init__(self, settings):
         # 配置uart
@@ -79,7 +81,9 @@ class DtuDataProcess(Singleton):
         # 初始化方向gpio
         self.__direction_pin(settings.get("direction_pin"))
         self.__work_mode_name = settings.get("work_mode")
-        self.__work_mode = None
+        self.__command_mode = None
+        self.__modbus_mode = None
+        self.__through_mode = None
         self.__remote_pub = None
         self.__channel = None
 
@@ -87,12 +91,15 @@ class DtuDataProcess(Singleton):
         if isinstance(module, RemotePublish):
             self.__remote_pub = module
             return True
-        elif isinstance(module, CommandMode) or isinstance(module, ModbusMode) or isinstance(module, ThroughMode):
-            self.__work_mode = module
+        elif isinstance(module, CommandMode):
+            self.__command_mode = module
+        elif isinstance(module, ModbusMode):
+            self.__modbus_mode = module
+        elif isinstance(module, ThroughMode):
+            self.__through_mode = module
         elif isinstance(module, ChannelTransfer):
             self.__channel = module
-            if isinstance(self.__work_mode, CommandMode):
-                self.__work_mode.search_cmd.set_channel(module)
+            self.__command_mode.search_cmd.set_channel(module)
 
     def __remote_post_data(self, channel_id, topic_id=None, data=None):
         if not self.__remote_pub:
@@ -249,7 +256,13 @@ class DtuDataProcess(Singleton):
             data = kwargs["data"]
         else:
             data = str(kwargs["data"])
-        ret_data = self.__work_mode.cloud_data_parse(data, msg_id, channel_id)
+        
+        if self.__work_mode_name == "through":
+            ret_data = self.__through_mode.cloud_data_parse(data, msg_id, channel_id)
+        elif self.__work_mode_name == "modbus":
+            ret_data = self.__modbus_mode.cloud_data_parse(data, msg_id, channel_id)
+        elif self.__work_mode_name == "command":
+            ret_data = self.__command_mode.cloud_data_parse(data, msg_id, channel_id)
 
         # reply cloud query command
         if ret_data["cloud_data"] is not None:
@@ -287,7 +300,12 @@ class DtuDataProcess(Singleton):
         if self.__gui_tools_parse(data, sid) == True:
             return False
         
-        send_params = self.__work_mode.uart_data_parse(data, self.__channel.cloud_channel_dict, cloud_channel_array)
+        if self.__work_mode_name == "through":
+            send_params = self.__through_mode.uart_data_parse(data, self.__channel.cloud_channel_dict, cloud_channel_array)
+        elif self.__work_mode_name == "modbus":
+            send_params = self.__modbus_mode.uart_data_parse(data, self.__channel.cloud_channel_dict, cloud_channel_array)
+        elif self.__work_mode_name == "command":
+            send_params = self.__command_mode.uart_data_parse(data, self.__channel.cloud_channel_dict, cloud_channel_array)
         
         if len(send_params) == 3:
             self.__remote_post_data(channel_id=send_params[1], topic_id=send_params[2], data=send_params[0])

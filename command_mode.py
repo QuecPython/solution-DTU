@@ -102,11 +102,15 @@ class DTUSearchCommand(Singleton):
         log.info("get_gpio")
         try:
             pins = data["pins"]
-            prod_gpio = Gpio()
+            print("pins:", pins)
+            prod_gpio = Gpio("")
+            print("test12")
             gpio_get = getattr(prod_gpio, "gpio%s" % pins)
+            print("test13")
+            print(gpio_get)
             gpor_read = gpio_get.read()
         except Exception as e:
-            log.error(e)
+            log.error("get gpio err:",e)
             return {"code": code, "status": 0}
         else:
             return {"code": code, "data": gpor_read, "status": 1}
@@ -142,12 +146,11 @@ class DTUSearchCommand(Singleton):
 
     def get_celllocator(self, code, data):
         log.info("get_celllocator")
-        res = cellLocator.getLocation("www.queclocator.com", 80, "1111111122222222", 8, 1)
-        location_dict = {
-            "latitude": res[0],
-            "longitude": res[1],
-        }
-        return {"code": code, "data": location_dict, "status": 1}
+        res = cellLocator.getLocation("www.queclocator.com", 80, "xGP77d2z0i91s67n", 8, 1)
+        if res == (0.0, 0.0, 0):
+            return {"code": code, "data": {}, "status": 0}
+        else:
+            return {"code": code, "data": {"latitude": res[0], "longitude": res[1]}, "status": 1}
 
 
 class BasicSettingCommand(Singleton):
@@ -158,6 +161,15 @@ class BasicSettingCommand(Singleton):
     def set_reg(self, code, data):
         try:
             settings.set("reg", data["reg"])
+            settings.save()
+            return {"code": code, "status": 1}
+        except Exception as e:
+            log.error("e = {}".format(e))
+            return {"code": code, "status": 0}
+    
+    def set_parameter_version(self, code, data):
+        try:
+            settings.set("version", data["version"])
             settings.save()
             return {"code": code, "status": 1}
         except Exception as e:
@@ -346,6 +358,7 @@ class CommandMode(Singleton):
             50: "set_message",
             51: "set_passwd",
             53: "set_reg",
+            54: "set_parameter_version",
             55: "set_fota",
             56: "set_nolog",
             57: "set_service_acquire",
