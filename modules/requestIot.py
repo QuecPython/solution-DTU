@@ -49,10 +49,10 @@ class DtuRequest(CloudObservable):
         3. cloud.init()
         4. cloud.through_post_data(data)
     """
-    def __init__(self, request_id_dict, reg_data=""):
+    def __init__(self, request_id_dict, post_data=""):
         super().__init__()
         self.conn_type = "http"
-        self.__reg_data = reg_data
+        self.__post_data = post_data
         self.__request_id_dict = request_id_dict
         self.__url = None
         self.__method = None

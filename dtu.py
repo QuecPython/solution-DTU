@@ -187,7 +187,7 @@ class Dtu(Singleton):
                                     data.get("ProductSecret"),
                                     data.get("Devicename"),
                                     data.get("DeviceSecret"),
-                                    int(data.get("cleanSession"),0),
+                                    data.get("cleanSession", False),
                                     data.get("clientID"),
                                     data.get("publish"),
                                     data.get("subscribe"),
@@ -250,7 +250,7 @@ class Dtu(Singleton):
                 self.__channel.cloud_object_dict[cid] = udp_iot
             elif protocol.startswith("http"):
                 http_iot = DtuRequest(data.get("request", None),
-                                    data.get("reg_data", reg_data),
+                                    data.get("post_data", None),
                                     )
                 http_iot.init(enforce=True)
                 http_iot.addObserver(remote_sub)

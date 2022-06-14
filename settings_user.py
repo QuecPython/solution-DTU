@@ -18,19 +18,16 @@ class UserConfig(object):
     password = ""
 
     conf = {"1": {
-                "protocol": "aliyun",
-                "type": "mos",
+                "protocol": "quecthing",
                 "keepAlive": "",
-                "clientID": "0",
-                "Devicename": "dtu_device1",
-                "ProductKey": "gzsi5zT5fH3",
-                "DeviceSecret": "173f006cab770615346978583ac430c0",
-                "ProductSecret": "D07Ujh1RvKAs6KEY",
-                "cleanSession": "0",
+                "ProductKey": "p11js2",
+                "ProductSecret": "VU5nVkNRNy9lOUNX",
+                "Devicename": "dtudevice1",
+                "DeviceSecret":"",
                 "qos": "1",
-                "subscribe": {"0": "/gzsi5zT5fH3/dtu_device1/user/get"},
-                "publish": {"0": "/gzsi5zT5fH3/dtu_device1/user/update"},
-                "serialID": 2
+                "SessionFlag": False,
+                "sendMode": "pass",
+                "serialID": "2"
                 }
             }
     reg = 0
