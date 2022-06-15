@@ -192,9 +192,7 @@ class BasicSettingCommand(Singleton):
             return {"code": code, "status": 0}
 
     def set_passwd(self, code, data):
-        print("set_passwd")
         try:
-            print("new_password:", data.get("new_password"))
             settings.set("password", str(data["new_password"]))
             log.info("new password:", settings.current_settings.get("password"))
             settings.save()
@@ -265,7 +263,6 @@ class BasicSettingCommand(Singleton):
             
 
     def set_apns(self, code, data):
-        print("apn_code_data: ", code, data)
         try:
             apn = data["apn"]
             if not isinstance(apn, list):
@@ -281,7 +278,6 @@ class BasicSettingCommand(Singleton):
             
 
     def set_pins(self, code, data):
-        print("pins_code_data: ", code, data)
         try:
             pins = data["pins"]
             if not isinstance(pins, list):
@@ -307,7 +303,6 @@ class BasicSettingCommand(Singleton):
             return {"code": code, "status": 0}
 
     def set_tts(self, code, data):
-        print("tts_code_data: ", code, data)
         try:
             device = data["device"]
             tts = audio.TTS(device)
@@ -319,7 +314,6 @@ class BasicSettingCommand(Singleton):
             return {"code": code, "status": 1}
 
     def set_ntp(self, code, data):
-        print("ntp_code_data: ", code, data)
         ntp_server = data.get("ntp_server", None)
         if ntp_server:
             try:
@@ -334,7 +328,6 @@ class BasicSettingCommand(Singleton):
         return {"code": code, "status": 1}
 
     def set_message(self, code, data):
-        print("set_message")
         try:
             number = data["number"]
             msg = data["sms_msg"]
@@ -419,7 +412,6 @@ class CommandModbusMode(Singleton):
         else:
             ret_bytes = None
 
-        print("ret_bytes:", ret_bytes)
         return ret_bytes
     def exec_command_code(self, cmd_code, data=None, password=None):
         """Execute external command code and return execution results
@@ -440,7 +432,6 @@ class CommandModbusMode(Singleton):
                 ret = {"code": cmd_code, "status": 0, "error": "Password verify error"}
                 return ret
 
-        print("cmd_code", cmd_code)
         if cmd_code in self.__search_command_func_code_list:
             try:
                 cmd_str = self.__search_command.get(cmd_code)
@@ -514,7 +505,6 @@ class CommandModbusMode(Singleton):
                     modbus_cmd = [addr]
                     modbus_cmd.extend(int_cmd)
                     crc_cmd = modbus_crc(bytearray(modbus_cmd))
-                    print(crc_cmd)
                     ret_data["uart_data"] = crc_cmd
                 ret_data["cloud_data"] = {"code": cmd, "status": 1}
             elif "command" in data:

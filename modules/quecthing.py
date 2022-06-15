@@ -579,16 +579,8 @@ class QuecThing(CloudObservable):
         return res
 
     def through_post_data(self, data, topic_id=None):
-        """
-        data_bytes = data.encode("UTF-8")
-        print("data_bytes:{}".format(data_bytes))
-        print("data_bytes type:{}".format(type(data_bytes)))
-        """
         try:
-            print("__qos:", self.__qos)
-            print("type __qos:", type(self.__qos))
             pub_res = quecIot.passTransSend(self.__qos, data)
-            print("pub_res:", pub_res)
             return pub_res
         except Exception as e:
             log.error("quecthing passTransSend failed: %s. data: %s" % (e, data))

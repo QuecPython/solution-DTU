@@ -226,7 +226,6 @@ class AliYunIot(CloudObservable):
         self.cloud_name = "aliyun"
 
         self.__ota = AliOTA(self, self.__mcu_name, self.__firmware_name)
-        print("pub_topic ali init:", pub_topic)
         if pub_topic == None:
             self.pub_topic_dict = {"0": "/%s/%s/user/update" % (self.__pk, self.__dk)}
         else:
@@ -328,7 +327,6 @@ class AliYunIot(CloudObservable):
             self.__subscribe_topic(self.ota_topic_file_download_reply)
             """
             for id, usr_sub_topic in self.sub_topic_dict.items():
-                print("usr_sub_topic:", usr_sub_topic)
                 self.__subscribe_topic(usr_sub_topic, self.__qos)
 
             return True

@@ -120,8 +120,6 @@ class Dtu(Singleton):
         
 
     def cloud_init(self, serv_list, remote_sub, remote_pub):
-        print("serv_list:",serv_list)
-
         # 首次登陆服务器默认注册信息
         reg_data = {"csq": net.csqQueryPoll(), 
                     "imei": modem.getDevImei(), 
@@ -258,7 +256,7 @@ class Dtu(Singleton):
     def refresh(self):
         log.info("refresh start")
         try:
-            _thread.start_new_thread(self.__data_process.read, ())
+            _thread.start_new_thread(self.__data_process.read_and_parse_uart, ())
         except Exception as e:
             pass
 

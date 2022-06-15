@@ -91,7 +91,6 @@ class TXYunIot(CloudObservable):
 
     def __txyun_subscribe_topic(self):
         for id, usr_sub_topic in self.sub_topic_dict.items():
-            print("usr_sub_topic:", usr_sub_topic)
             if self.__txyun.subscribe(usr_sub_topic, qos=0) == -1:
                 log.error("Topic [%s] Subscribe Falied." % usr_sub_topic)
 
@@ -192,7 +191,6 @@ class TXYunIot(CloudObservable):
         """
         try:
             pub_res = self.__txyun.publish(self.pub_topic_dict[topic_id], data, qos=0)
-            print("pub_res:", pub_res)
             return pub_res
             
         except Exception:

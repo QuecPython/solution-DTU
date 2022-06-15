@@ -206,6 +206,25 @@ class DtuDataProcess(Singleton):
         print("GUI CMD SUCCESS")
         return True
 
+    def __uart_read_frame(self, uart, timeout=1000):
+        received_bytes = bytearray()
+
+        start_us = utime.ticks_us()
+
+        # stay inside this while loop at least for the timeout time
+        while (utime.ticks_diff(utime.ticks_us(), start_us) <= timeout):
+            # check amount of available characters
+            msgLen = uart.any()
+            if msgLen > 0:
+                r = uart.read(msgLen)
+                if r is not None:
+                    # append the new read stuff to the buffer
+                    received_bytes.extend(r)
+                    # update the timestamp of the last byte being read
+                    start_us = utime.ticks_us()
+
+        # return the result in case the overall timeout has been reached
+        return received_bytes
 
     def cloud_read_data_parse_main(self, cloud, *args, **kwargs):
         """Parsing cloud data, Answer cloud data or send to serial port
@@ -280,7 +299,7 @@ class DtuDataProcess(Singleton):
             uart_port = self.__serial_map.get(str(serial_id))
             uart_port.write(ret_data["uart_data"])
 
-    def uart_read_data_parse_main(self, data, sid):
+    def __uart_data_parse_main(self, data, sid):
         """Parsing uart data, send data to cloud
 
         Args:
@@ -309,23 +328,19 @@ class DtuDataProcess(Singleton):
         else:
             return False
 
-    def read(self):
-        """read data uart
+    def read_and_parse_uart(self):
+        """read uart data and parse
         """
         while 1:
             for sid, uart in self.__serial_map.items():
-                msgLen = uart.any()
-                if msgLen:
-                    msg = uart.read(msgLen)
+                # read uart data
+                read_byte = self.__uart_read_frame(uart, 1000)
+                if read_byte != bytearray(b''):
                     try:
-                        self.uart_read_data_parse_main(msg, sid)
+                        self.__uart_data_parse_main(read_byte, sid)
                     except Exception as e:
-                        log.error("UART handler error: %s" % e)
-                        utime.sleep_ms(100)
-                        continue
-                else:
-                    utime.sleep_ms(100)
-                    continue
+                        log.error("Parse uart data error: %s" % e)
+            utime.sleep_ms(20)
 
     def post_history_data(self, data):
         """Post history data to cloud
@@ -349,9 +364,7 @@ class DtuDataProcess(Singleton):
                 request_ids = list(cloud_channel_config.get("request").keys())
                 return self.__remote_post_data(channel_id = channel_id, topic_id=request_ids[0], data=data)
             else:
-                print("protocol:", cloud_channel_config.get("protocol"))
                 topics = list(cloud_channel_config.get("publish").keys())
-                print("topics:", topics)
                 return self.__remote_post_data(channel_id = channel_id, topic_id=topics[0], data=data)
         except Exception as e:
             log.error(e)

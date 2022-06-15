@@ -99,7 +99,6 @@ class HuaweiIot(CloudObservable):
 
     def __huaweiyun_subscribe_topic(self):
         for id, usr_sub_topic in self.sub_topic_dict.items():
-            print("usr_sub_topic:", usr_sub_topic)
             if self.__huaweiyun.subscribe(usr_sub_topic, qos=0) == -1:
                 log.error("Topic [%s] Subscribe Falied." % usr_sub_topic)
 

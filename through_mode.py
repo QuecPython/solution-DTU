@@ -53,7 +53,6 @@ class ThroughMode(Singleton):
                 ret_bytes = "%s,%s,%s,%s".encode('utf-8') % (str(topic_id), str(msg_length), str(crc32_val), str(msg_data))
         else:
             ret_bytes = None
-        print("ret_bytes:", ret_bytes)
             
         return ret_bytes
 
@@ -95,7 +94,6 @@ class ThroughMode(Singleton):
         if not channel:
             log.error("Channel id not exist. Check serialID config.")
             return []
-        print("channel.get(protocol):", channel.get("protocol"))
         if channel.get("protocol") in ["tcp", "udp"]:
             params_list = data.decode().split(",", 2)
             msg_len = params_list[0]
