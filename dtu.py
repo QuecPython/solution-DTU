@@ -77,7 +77,6 @@ class Dtu(Singleton):
 
 
     def check_sim_status(self):
-        ret = sim.getStatus()
         while True:
             if sim.getStatus() != 1:
                 self.__gpio.ctrl_led(1)
