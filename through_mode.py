@@ -89,12 +89,6 @@ class ThroughMode(Singleton):
                   2.cloud_channel_id:cloud channel id 
                   3.topic_id:toic id of data
         """
-        str_msg = data.decode()
-        params_list = str_msg.split(",")
-        print("params_list", params_list)
-        if len(params_list) not in [2, 3, 4]:
-            log.error("param length error")
-            return []
         # Modbus模式和透传模式 下一个串口通道只能绑定一个云端口
         cloud_channel_id = cloud_channel_array[0]
         channel = cloud_channel_dict.get(str(cloud_channel_id))
@@ -103,6 +97,7 @@ class ThroughMode(Singleton):
             return []
         print("channel.get(protocol):", channel.get("protocol"))
         if channel.get("protocol") in ["tcp", "udp"]:
+            params_list = data.decode().split(",", 2)
             msg_len = params_list[0]
             if msg_len == "0":
                 return "", [cloud_channel_id]
@@ -124,6 +119,7 @@ class ThroughMode(Singleton):
                     log.error("crc32 error")
                     return []
         else:
+            params_list = data.decode().split(",", 3)
             topic_id = params_list[0]
             msg_len = params_list[1]
             crc32 = params_list[2]

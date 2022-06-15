@@ -64,12 +64,11 @@ class SocketIot(CloudObservable):
             try:
                 data = self.__cli.recv(1024)
             except Exception as e:
-                print(e)
+                log.info("recv error:", e)
                 utime.sleep_ms(50)
                 continue
             else:
                 if data != b"":
-                    print("socket data:", data)
                     try:
                         self.notifyObservers(self, *("raw_data", {"topic":None, "data":data} ) )
                     except Exception as e:

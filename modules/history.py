@@ -156,5 +156,4 @@ class History(Singleton):
             return False
 
     def update(self, observable, *args, **kwargs):
-        print("history write")
         return self.write(list(args[1:]))

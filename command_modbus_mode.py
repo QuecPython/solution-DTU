@@ -16,7 +16,7 @@
 # -*- coding: utf-8 -*-
 
 """
-@file      :command_mode.py
+@file      :command_modbus_mode.py
 @author    :elian.wang@quectel.com
 @brief     :Dtu function interface that works in command mode
 @version   :0.1
@@ -32,6 +32,7 @@ import ujson
 import audio
 import modem
 import ntptime
+import ubinascii
 import cellLocator
 
 from misc import Power, ADC
@@ -47,6 +48,24 @@ log = getLogger(__name__)
 
 dev_imei = modem.getDevImei()
 HISTORY_ERROR = []
+
+
+def modbus_crc(bytearray_data):
+    crc = 0xFFFF
+    for pos in bytearray_data:
+        crc ^= pos
+        for i in range(8):
+            if ((crc & 1) != 0):
+                crc >>= 1
+                crc ^= 0xA001
+            else:
+                crc >>= 1
+    gen_crc = hex(((crc & 0xff) << 8) + (crc >> 8))
+    int_crc = int(gen_crc, 16)
+    high, low = divmod(int_crc, 0x100)
+    bytearray_data.append(high)
+    bytearray_data.append(low)
+    return bytearray_data
 
 class DTUSearchCommand(Singleton):
     def __init__(self):
@@ -102,12 +121,8 @@ class DTUSearchCommand(Singleton):
         log.info("get_gpio")
         try:
             pins = data["pins"]
-            print("pins:", pins)
             prod_gpio = Gpio("")
-            print("test12")
             gpio_get = getattr(prod_gpio, "gpio%s" % pins)
-            print("test13")
-            print(gpio_get)
             gpor_read = gpio_get.read()
         except Exception as e:
             log.error("get gpio err:",e)
@@ -332,7 +347,7 @@ class BasicSettingCommand(Singleton):
             return {"code": code, "status": 0}
         
 
-class CommandMode(Singleton):
+class CommandModbusMode(Singleton):
     """When working in command mode, the DTU receives cloud data and serial port data
     """
     def __init__(self):
@@ -375,6 +390,13 @@ class CommandMode(Singleton):
         self.__basic_setting_command_list = self.__basic_setting_command.keys()
         self.search_cmd = DTUSearchCommand()
         self.__setting_cmd = BasicSettingCommand()
+        self.__groups = dict()
+        current_settings = settings.get()
+        groups_conf = current_settings.get("modbus").get("groups", [])
+        idx = 0
+        for group in groups_conf:
+            self.__groups[idx] = [int(x, 16) for x in group["slave_address"]]
+            idx += 1
 
     def __package_datas(self, msg_data, topic_id=None, channel_id=None):
         """Package downsteam data
@@ -461,20 +483,54 @@ class CommandMode(Singleton):
             return ret_data
 
         cmd_code = msg_data.get("cmd_code", None)
-        msg_id = msg_data.get("msg_id")
+        msg_id = msg_data.get("msg_id", None)
         password = msg_data.get("password", None)
         cloud_request_topic = msg_data.get("topic_id", None)
         data = msg_data.get("data", None)
+        modbus_data = msg_data.get("modbus", None)
 
+        # commond mode 
         if cmd_code is not None:
             ret_data["cloud_data"] = self.exec_command_code(int(cmd_code), data=data, password=password)
-            # 应答报文中msg_id与 云端发送的msg_id保持一致
+            # The "msg_id" in the reply packet is the same as the "msg_id" sent by the cloud
             ret_data["cloud_data"]["msg_id"] = msg_id
 
-            # 判断云端指令中是否指定应答报文的topic
+            # Determine whether the topic of the reply message is specified in the cloud instruction
             if cloud_request_topic is not None:
                 ret_data["cloud_data"]["topic_id"] = cloud_request_topic
             
+            return ret_data
+        elif modbus_data is not None: # modbus mode
+            if "groups" in modbus_data:
+                groups_num = modbus_data["groups"].get("num")
+                cmd = modbus_data["groups"].get("cmd")
+                try:
+                    int_cmd = [int(x, 16) for x in cmd]
+                except Exception as e:
+                    log.info("modbus command error: %s" % e)
+                    ret_data["cloud_data"] = {"status": 0, "error": e}
+                groups_addr = self.__groups.get(int(groups_num))
+                for addr in groups_addr:
+                    modbus_cmd = [addr]
+                    modbus_cmd.extend(int_cmd)
+                    crc_cmd = modbus_crc(bytearray(modbus_cmd))
+                    print(crc_cmd)
+                    ret_data["uart_data"] = crc_cmd
+                ret_data["cloud_data"] = {"code": cmd, "status": 1}
+            elif "command" in data:
+                command = modbus_data["command"]
+                try:
+                    int_cmd = [int(x, 16) for x in command]
+                    crc_cmd = modbus_crc(bytearray(int_cmd))
+                except Exception as e:
+                    log.info("modbus command error: %s" % e)
+                    ret_data["cloud_data"] = {"status": 0, "error": e}
+                ret_data["uart_data"] = crc_cmd
+                ret_data["cloud_data"] = {"code": command, "status": 1}
+            else:
+                err_msg = "can't get any modbus params"
+                log.error("Modbus mode: can't get any modbus params")
+                ret_data["cloud_data"] = {"code": 0, "status": 0, "error": err_msg}
             return ret_data
         else:
             ret_data["uart_data"] = self.__package_datas(data, topic_id, channel_id)
@@ -493,58 +549,80 @@ class CommandMode(Singleton):
                   2.cloud_channel_id:cloud channel id 
                   3.topic_id:toic id of data
         """
-        str_msg = data.decode()
-        params_list = str_msg.split(",")
-        print("[elian]params_list:%s" % params_list)
-        if len(params_list) not in [2, 4, 5]:
-            log.error("param length error")
-            return []
-
-        channel_id = params_list[0]
-        if channel_id not in cloud_channel_array:
-            log.error("Channel id not exist. Check conf config.")
-            return []
-            
+        if "," not in data.decode():
+            work_mode = "modbus"
+        else:
+            if modbus_crc(bytearray(data))[-2:-1] == bytearray(b'\x00'):
+                work_mode = "modbus"
+            else:
+                work_mode = "cmd"
+        # In Modbus mode, one Uart port corresponds to one cloud channel
+        # In Command mode, one Uart port can corresponds to multi cloud channel
+        if work_mode == "cmd":
+            channel_id = data.decode().split(",")[0]
+            if channel_id not in cloud_channel_array:
+                log.error("Channel id not exist. Check conf config.")
+                return []
+        else: 
+            channel_id = cloud_channel_array[0]
         channel = cloud_channel_dict.get(str(channel_id))
         if not channel:
             log.error("Channel id not exist. Check serialID config.")
-            return []
-        if channel.get("protocol") in ["tcp", "udp"]:
-            msg_len = params_list[1]
-            if msg_len == "0":
-                return [{}, channel_id]
-            else:
-                crc32 = params_list[2]
-                msg_data = params_list[3]
-                try:
-                    msg_len_int = int(msg_len)
-                except:
-                    log.error("data parse error")
-                    return []
-                # Message length check
-                if msg_len_int != len(msg_data):
-                    return []
-                cal_crc32 = dtu_crc.crc32(msg_data)
-                if cal_crc32 == crc32:
-                    return [ujson.dumps({"data": msg_data}), channel_id]
+            return False, []
+
+        if work_mode == "cmd":
+            if channel.get("protocol") in ["tcp", "udp"]:
+                # According to different protocols, it is divided into lists of different lengths
+                params_list = data.decode().split(",", 3)
+                msg_len = params_list[1]
+                if msg_len == "0":
+                    return [{}, channel_id]
                 else:
-                    log.error("crc32 error")
-                    return []
-        else:
-            topic_id = params_list[1]
-            msg_len = params_list[2]
-            crc32 = params_list[3]
-            msg_data = params_list[4]
-            try:
-                msg_len_int = int(msg_len)
-            except:
-                log.error("data parse error")
-                return []
-            # Message length check
-            if msg_len_int != len(msg_data):
-                return []
-            cal_crc32 = dtu_crc.crc32(msg_data)
-            if crc32 == cal_crc32:
-                return [ujson.dumps({"data": msg_data}), channel_id, topic_id]
+                    crc32 = params_list[2]
+                    msg_data = params_list[3]
+                    try:
+                        msg_len_int = int(msg_len)
+                    except:
+                        log.error("data parse error")
+                        return []
+                    # Message length check
+                    if msg_len_int != len(msg_data):
+                        return []
+                    cal_crc32 = dtu_crc.crc32(msg_data)
+                    if cal_crc32 == crc32:
+                        return [ujson.dumps({"data": msg_data}), channel_id]
+                    else:
+                        log.error("crc32 error")
+                        return []
             else:
-                return []
+                # According to different protocols, it is divided into lists of different lengths
+                params_list = data.decode().split(",", 4)
+                topic_id = params_list[1]
+                msg_len = params_list[2]
+                if msg_len == "0":
+                    return [{}, channel_id]
+                else:
+                    crc32 = params_list[3]
+                    msg_data = params_list[4]
+                    try:
+                        msg_len_int = int(msg_len)
+                    except:
+                        log.error("data parse error")
+                        return []
+                    # Message length check
+                    if msg_len_int != len(msg_data):
+                        return []
+                    cal_crc32 = dtu_crc.crc32(msg_data)
+                    if crc32 == cal_crc32:
+                        return [ujson.dumps({"data": msg_data}), channel_id, topic_id]
+                    else:
+                        return []
+        else:
+            modbus_data_list = ubinascii.hexlify(data, ",").decode().split(",")
+            hex_str_list = ["0x" + x for x in modbus_data_list]
+            # 返回channel
+            if channel.get("protocol") in ["http", "tcp", "udp", "quecthing"]:
+                return [str(hex_str_list), channel_id]
+            else:
+                topics = list(channel.get("publish").keys())
+                return [str(hex_str_list), channel_id, topics[0]]

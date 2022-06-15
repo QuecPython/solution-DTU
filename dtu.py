@@ -38,8 +38,7 @@ from usr.modules.tcp_udpIot import UdpSocketIot
 
 from usr.dtu_gpio import Gpio
 from usr.settings import settings
-from usr.command_mode import CommandMode
-from usr.modbus_mode import ModbusMode
+from usr.command_modbus_mode import CommandModbusMode
 from usr.through_mode import ThroughMode
 from usr.modules.history import History
 from usr.modules.logging import getLogger
@@ -79,13 +78,10 @@ class Dtu(Singleton):
 
     def check_sim_status(self):
         ret = sim.getStatus()
-        print("sim.getStatus", ret)
         while True:
             if sim.getStatus() != 1:
-                print("led 1")
                 self.__gpio.ctrl_led(1)
                 utime.sleep(1)
-                print("led 0")
                 self.__gpio.ctrl_led(0)
                 utime.sleep(1)
             else:
@@ -303,19 +299,15 @@ def run():
 
     dtu_gpio_ctrl = Gpio(settings.current_settings.get("pins"))
 
-    modbus_mode = ModbusMode()
-
     through_mode = ThroughMode()
 
-    command_mode = CommandMode()
+    command_modbus_mode = CommandModbusMode()
 
     data_process = DtuDataProcess(settings.current_settings)
 
-    data_process.add_module(modbus_mode)
-
     data_process.add_module(through_mode)
 
-    data_process.add_module(command_mode)
+    data_process.add_module(command_modbus_mode)
     
     data_process.add_module(channels)
     
