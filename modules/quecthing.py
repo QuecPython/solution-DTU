@@ -26,6 +26,7 @@
 
 
 import uos
+import usys
 import uzlib
 import ql_fs
 import ujson
@@ -626,7 +627,7 @@ class QuecOTA(object):
         self.__download_size = 0
 
     def __write_ota_file(self, data):
-        with open(self.__ota_file, "wb+") as fp:
+        with open(self.__ota_file, "ab+") as fp:
             fp.write(data)
             self.__file_hash.update(data)
 
@@ -677,7 +678,7 @@ class QuecOTA(object):
     def __upgrade(self):
         with open(self.__ota_file, "rb+") as ota_file:
             ota_file.seek(10)
-            unzipFp = uzlib.DecompIO(ota_file, -15)
+            unzipFp = uzlib.DecompIO(ota_file, -15, 1)
             log.debug("[OTA Upgrade] Unzip file success.")
             ql_fs.mkdirs(self.__updater_dir)
             file_list = []
@@ -705,10 +706,11 @@ class QuecOTA(object):
                             read_size = 0x200
                             last_size = size
                             while last_size > 0:
-                                read_size = read_size if read_size <= last_size else last_size
                                 data = unzipFp.read(read_size)
-                                fp.write(data)
-                                last_size -= read_size
+                                # Calculate the actual write length
+                                write_size = read_size if read_size <= last_size else last_size
+                                fp.write(data[0:write_size])
+                                last_size -= write_size
                             file_list.append({"file_name": "/usr/" + file_name, "size": size})
 
                 for file_name in file_list:
@@ -720,6 +722,7 @@ class QuecOTA(object):
                 app_fota_download.set_update_flag()
             except Exception as e:
                 log.error("Unpack Error: %s" % e)
+                usys.print_exception(e)
                 return False
 
         return True
