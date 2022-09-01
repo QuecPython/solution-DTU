@@ -140,12 +140,15 @@ class DtuDataProcess(Singleton):
         """
         if direction_pin == None:
             return
+        print("direction_pin:", direction_pin)
         for sid, conf in direction_pin.items():
             uart = self.__serial_map.get(str(sid))
             gpio = getattr(Pin, "GPIO%s" % str(conf.get("GPIOn")))
+            print("gpio:", gpio)
             direction_level = conf.get("direction")
-            uart.control_485(gpio, direction_level)
-
+            print("direction_level:", direction_level)
+            ret = uart.control_485(gpio, direction_level)
+            print("ret:", ret)
       
     def __gui_tools_parse(self, gui_data, sid):
         """Parse uart data in the format specified by the GUI

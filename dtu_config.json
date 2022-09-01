@@ -36,7 +36,7 @@
     "2",
     "3"
   ],
-  "direction_pin": {},
+  "direction_pin": {"2":{"GPIOn":"2", "direction":1}},
   "apn": [
     "",
     "",

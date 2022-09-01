@@ -1,0 +1,78 @@
+{
+	"system-config":
+	{
+		"cloud": "aliYun",
+		"usr-config": true,
+		"base-function":
+		{
+			"location": true,
+			"logger": true,
+			"exception": true,
+			"watch-dog": true,
+			"key-pad": true,
+			"voice-call": true
+		},
+		"peripheral-device":
+		{
+			"sensor-triaxial": true
+		},
+		"peripheral-bus":
+		{
+			"uart":1,
+			"spi":1,
+			"i2c":1
+		}
+	},
+	"aliYun-config":
+	{	
+		"SERVER": "iot-06z00buwfivy3ls.mqtt.iothub.aliyuncs.com",
+		"DK": "867776053271232",
+        "ID": "867776053271232",
+        "PK": "gilsnnzOHfP",
+        "DS": "abd5fbe15f17696fb495491896b2a4d2",
+    	"PS": null,
+		"burning_method": 1,
+		"keep_alive": 300,
+		"clean_session": false,
+		"qos": 1
+	},
+	"usr-config":
+	{
+    	"positioningMode": {
+      		"mode": 2,
+      		"interval": 5,
+      		"distance": 20
+		}
+  	},
+	"location-config":
+	{
+		"loc_method": 6,
+		"init_params": {
+			"gps_cfg": {
+				"gps_mode": 1,
+				"enable_pin": 3,
+				"UARTn": 2,
+				"buadrate": 9600,
+				"databits": 8,
+				"parity": 0,
+				"stopbits": 1,
+				"flowctl": 0
+			},
+			"cell_cfg":{
+				"cellLocator_mode":0,
+				"server-info":{
+					"serverAddr": "www.queclocator.com",
+					"port": 80,
+					"token": "xGP77d2z0i91s67n",
+					"timeout": 3,
+					"profileIdx": 0
+				}
+	
+			},
+			"wifi_cfg" : {
+				"wifiLocatior_mode":0,
+				"token": "xGP77d2z0i91s67n"
+			}
+		}
+}
+}
