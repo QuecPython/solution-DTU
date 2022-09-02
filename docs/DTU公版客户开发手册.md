@@ -507,3 +507,12 @@ res = settings.reset()
 
 #### 3.3.1. `UserConfig()`类
 包含dtu_config.json中所有的配置项，当初始化配置参数时，如果没有找到dtu_config.json时则获取UserConfig类中元素的赋值。
+
+## 4. 业务流程框架图
+
+### 4.1 DTU功能框架图
+![](./media/dtu_frame_diagram.jpg)
+
+### 4.2 OTA升级流程图
+![](./media/dtu_ota_flow_diagram.jpg)
+`上图为阿里云OTA升级流程，由于移远云创建升级计划后不会主动向模块发送升级计划，模块需要增加周期性请求OTA升级计划。`

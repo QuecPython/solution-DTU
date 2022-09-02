@@ -26,6 +26,7 @@
 
 import _thread
 import modem
+import osTimer
 from usr.modules.common import Singleton
 from usr.modules.aliyunIot import AliYunIot
 from usr.modules.quecthing import QuecThing
@@ -49,7 +50,8 @@ class Dtu(Singleton):
     """Dtu main function call
     """
     def __init__(self):
-        pass
+        self.__ota_timer = osTimer()
+        self.__ota_transaction = None
 
     def __cloud_init(self, protocol):
         """Cloud initialization and connection
@@ -159,6 +161,10 @@ class Dtu(Singleton):
                                 )
             cloud.init(enforce=True)
             return cloud
+    
+    def __periodic_ota_check(self, args):
+        """Periodically check whether cloud have an upgrade plan"""
+        self.__ota_transaction.ota_check()
 
     def start(self):
         """Dtu init flow
@@ -212,6 +218,9 @@ class Dtu(Singleton):
         # Send module release information to cloud. After receiving this information, 
         # the cloud server checks whether to upgrade modules
         ota_transaction.ota_check()
+        # Periodically check whether cloud have an upgrade plan
+        self.__ota_transaction = ota_transaction
+        self.__ota_timer.start(1000 * 600, 1, self.__periodic_ota_check)
         # Start uplink transaction
         try:
             _thread.start_new_thread(up_transaction.uplink_main, ())
