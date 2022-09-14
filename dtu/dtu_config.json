@@ -1,19 +1,13 @@
 {
-  "plate": 1,
   "password": "123",
   "conf": {
-    "1": {
-      "protocol": "hwyun",
-      "url": "a1621ed65c.iot-mqtts.cn-north-4.myhuaweicloud.com",
-      "port": "1883",
-      "device_id": "621ece4cc4e6a958e354301e_869537055499330",
-      "secret": "a306255686a71e56ad53965fc2771bf8",
-      "keep_alive": 10,
-      "cleanSession": true,
-      "subscribe": {"0": "$oc/devices/621ece4cc4e6a958e354301e_869537055499330/sys/messages/down"},
-      "publish": {"0": "$oc/devices/621ece4cc4e6a958e354301e_869537055499330/sys/messages/up"},
-      "qos": 0,
-      "serialID": 2
+    "3": {
+      "protocol": "udp",
+      "ip_type":"IPv4",
+      "server": "220.180.239.212",
+      "port": "18011",
+      "keep_alive": 5,
+      "serialID": "2"
     }
   },
   "reg": 0,
@@ -31,6 +25,7 @@
     }
   },
   "fota": 1,
+  "ota": 1,
   "pins": [
     "1",
     "2",
@@ -43,8 +38,10 @@
     ""
   ],
   "service_acquire": 0,
-  "work_mode": "though",
+  "work_mode": "through",
   "auto_connect": 1,
-  "offline_storage": false,
-  "modbus": {}
+  "offline_storage": 1,
+  "modbus":{
+  }
+  
   }

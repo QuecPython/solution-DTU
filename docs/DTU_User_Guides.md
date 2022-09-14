@@ -1,31 +1,32 @@
-## 修订历史
 
-| Version | **Date**   | **Author** | **Change expression** |
-| :------ | ---------- | ---------- | --------------------- |
-| 1.0     | 2021-11-25 | 陈驰      | 初始版本              |
 
-## 基本概述
+# **DTU上手说明_V1.0**
 
-本文档旨在指导用户如何基于我司的QuecPython开发板进行DTU功能开发。
 
-## 使用前准备
 
-### 在NANO SIM卡座中插入SIM卡
 
-![](./media/dev_board.png)
+## 1.基本概述
 
-### 将天线插入至开发板背面标注为"LTE"的插座中，并用力压紧直到听到"啪"一声
+本文档主要基于介绍DTU上手使用说明。
 
-![](./media/antenna.jpg)
+## 2.使用前准备
 
-### 使用USB数据线连接开发板至电脑USB接口
-### 设备开机与QPYcom下载请点击以下连接查看说明
+### 2.1 在NANO SIM卡座中插入SIM卡
 
-[QuecPython 开发环境搭建](https://python.quectel.com/doc/doc/Quick_start/zh/QuecPythonStart/dev_env.html)
+![](./media/DTU_User_Guides/dev_board.png)
 
-## DTU固件、配置文件加载到开发板
+### 2.2. 将天线插入至开发板背面标注为"LTE"的插座中，并用力压紧直到听到"啪"一声
 
-### 打开代码库中的DTU文件夹，按需求编写配置文件
+![](./media/DTU_User_Guides/antenna.jpg)
+
+### 2.3. 使用USB数据线连接开发板至电脑USB接口
+### 2.4. 设备开机与QPYcom下载请点击以下连接查看说明
+
+[QuecPython开发环境搭建](https://python.quectel.com/doc/doc/Quick_start/zh/QuecPythonStart/dev_env.html)
+
+## 3. DTU固件、配置文件加载到开发板
+
+### 3.1 打开代码库中的DTU文件夹，按需求编写配置文件
 
 **配置文件格式与说明如下**
 
@@ -46,11 +47,10 @@
     "2": {
         //TCP&UDP连接设置
         "protocol": "tcp",						//连接类型,TCP填写”tcp”,UDP填写”udp”
-        "ping": "",								//ping
-        "heartbeat": 30,						//心跳时间
-        "url": "220.180.239.212",				//请求url
-        "port": "8305",							//端口
-        "keepAlive": 300,						//保持连接时间
+        "ip_type":"IPv4",
+        "server": "220.180.239.212",
+        "port": "18011",
+        "keep_alive": 5,
         "serialID": 2							//捆绑串口,需要为配置文件中uconf中存在的key
     },
     "3": {
@@ -77,7 +77,7 @@
         "ProductKey": " a1QNbCDxIWM ",			//product key
         "DeviceSecret": "0bceb8010ade0df2e6989982e63f7601",		//device secret
         "ProductSecret": "",					//product secret
-        "cleanSession": "0",					//clean session
+        "cleanSession": false,					//clean session
         "qos": "1",								//QoS
         "subscribe": {"0": "/a1QNbCDxIWM/light01/user/get"},		//订阅的主题(支持多个)
         "publish": {"0": "/a1QNbCDxIWM/light01/user/update"},	//发布的主题(支持多个)
@@ -93,7 +93,7 @@
         "ProductKey": "H7MBLRYXN9",
         "DeviceSecret": "89c7tXT3s3grZTr/YFjxSg==",
         "ProductSecret": "",
-        "cleanSession": "0",
+        "cleanSession": false,
         "qos": "1",
         "subscribe": {"0": "H7MBLRYXN9/Smart_test01/control"},
         "publish": {"0": "H7MBLRYXN9/Smart_test01/event"},
@@ -113,7 +113,7 @@
   },
   "reg": 1,							//发送登陆消息
   "convert": 0,
-  "version": 100,						//固件版本
+  "version": 100,						//参数版本号
   "nolog": 0,							//是否输出log
   "message": {},						//协议短信透传
   "uconf": {							//串口设置
@@ -172,55 +172,54 @@
 
 conf通道配置中的“serialID”字段为捆绑的UART口编号，serialID中的数值必须是uconf串口配置中已经配置的UART口编号
 
-![](./media/config_serial_id.png)
+![](./media/DTU_User_Guides/config_serial_id.png)
+
 
 按需求编写配置文件后将配置文件保存为"dtu_config.json"，并保存至DTU代码库中的"dtu"文件夹内
 
 **注：json文件保存前需要移除注释**
 
-### 下载代码到设备
+### 3.2 下载代码到设备
 
-#### 接上数据线，连接至电脑，短按开发板上的"PWK"按键启动设备，并在QPYcom上选择MI05接口连接
+#### 3.2.1 接上数据线，连接至电脑，短按开发板上的"PWK"按键启动设备，并在QPYcom上选择MI05接口连接
 
-![](./media/port.png)
+![](./media/DTU_User_Guides/port.png)
 
-#### 切换到下载选项卡，点击创建项目，并输入任意项目名称
+#### 3.2.2 切换到下载选项卡，点击创建项目，并输入任意项目名称
 
-![](./media/qpycom_proj.png)
+![](./media/DTU_User_Guides/qpycom_proj.png)
 
-#### 将代码包"dtu"文件夹内所有文件拖入此框内，并应包含图示文件
+#### 3.2.3 将代码包"dtu"文件夹内所有文件拖入此框内，并应包含图示文件
 
-![](./media/qpycom_add_file.png)
+![](./media/DTU_User_Guides/qpycom_add_file.png)
 
-#### 单击箭头，选择"下载脚本"，并等待下载完成
+#### 3.2.4 单击箭头，选择"下载脚本"，并等待下载完成
 
-![](./media/qpycom_download.png)
+![](./media/DTU_User_Guides/qpycom_download.png)
 
-#### 切换至"文件"选项卡，在右边选中"dtu\_handler.py"，点击运行按钮，即可开始dtu调试运行，如果需要上电自动运行，只需要将"dtu\_handler.py"更名为"main.py"即可实现上电自动运行
+#### 3.2.5 切换至"文件"选项卡，在右边选中"dtu\_handler.py"，点击运行按钮，即可开始dtu调试运行，如果需要上电自动运行，只需要将"dtu\_handler.py"更名为"main.py"即可实现上电自动运行
 
-![](./media/qpycom_run.png)
+![](./media/DTU_User_Guides/qpycom_run.png)
 
-## 重启开发板
+## 4. 重启开发板
 
 上面的步骤完成之后，选择USB MI05 COM Port（老版本是USB串行设备），打开串口。
 
-![](./media/qpycom_run2.png)
+![](./media/DTU_User_Guides/qpycom_run2.png)
 
 DTU运行成功，下面为读取的配置文件。
 
-![](./media/qpycom_run_success.png)
+![](./media/DTU_User_Guides/qpycom_run_success.png)
 
-## 报文格式
+## 5 .报文格式
 
-### 命令模式
+### 5.1 命令模式
 
 支持多通道透传，通过配置文件中的serialID字段可以对通道与串口进行绑定，每个串口均支持绑定多个通道。在发送数据时需要传入通道id，DTU会向指定的通道发送数据。
 
 在命令模式与modbus模式下，接受到的报文会先进行命令解析，如果解析失败才会向串口传输数据。
 
-数据格式说明：
-
-#### HTTP/TCP/UDP
+#### 5.1.1 TCP/UDP
 
 - 上行数据报文格式:
 
@@ -240,19 +239,53 @@ crc32：消息数据crc32校验码，当msg_len为0时，此项可省略
 
 msg_data：消息体，当msg_len为0时，此项可省略
 
-- 示例报文：
+**示例报文：**
 
-**发送报文：**
+- 上行报文：
 
 `“1,6,1398235801,abcedf”`	(msg_len不为0)
 
 `“1,0”`			(msg_len为0)
 
-**返回报文：**
+- 下行报文：
 
 `“1,6,2584251182,ijklmn”`
 
-#### MQTT/Aliyun/Txyun
+#### 5.1.2 HTTP
+
+- 上行数据报文格式:
+
+`"<channel_id>,"<request_id>",<msg_len>"[,"<crc32>",”<msg_data>”]`
+
+- 下行数据报文格式:
+
+`"<channel_id>,"<request_id>",<msg_len>"[,"<crc32>",”<msg_data>”]`
+
+- 字段说明：
+
+channel_id：通道id，配置文件中通道id
+
+request_id: 请求id，配置文件中对应不同的url和method
+
+msg_len：消息体长度，字符串格式，可以为0
+
+crc32：消息数据crc32校验码，当msg_len为0时，此项可省略
+
+msg_data：消息体，当msg_len为0时，此项可省略
+
+**示例报文：**
+
+- 上行报文：
+
+`“1,1,6,1398235801,abcedf”`	(msg_len不为0)
+
+`“1,1,0”`			(msg_len为0)
+
+- 下行报文：
+
+`“1,1,6,2584251182,ijklmn”`
+
+#### 5.1.3 MQTT/Aliyun/Txyun
 
 - 上行数据报文格式:
 
@@ -270,20 +303,21 @@ topic_id：mqtt通道topic_id，上行为publish topic id，下行为subscribe t
 
 msg_len：消息体长度，字符串格式，可以为0
 
-crc32：消息数据crc32校验码，当msg_len为0时此项也不可省略
+crc32：消息数据crc32校验码，当msg_len为0时，此项可省略
 
-msg_data：消息体，当msg_len为0时此项也不可省略
+msg_data：消息体，当msg_len为0时，此项可省略
 
-- 示例报文：
+**示例报文：**
 
-- 发送报文：
+- 上行报文：
 
 `“1,1,6,1398235801,abcedf”`
 
-- 返回报文：
+- 下行报文：
 
 `“1,1,6,2584251182,ijklmn”`
-#### quecthing
+
+#### 5.1.4 quecthing
 
 - 上行数据报文格式:
 
@@ -307,25 +341,25 @@ msg_data：消息体，当msg_len为0时此项也不可省略
 
 **示例报文：**
 
-- 发送报文：
+- 上行报文：
 
 `“1,0,6,1398235801,abcedf”`     (透传&物模型非应答)
 
 `“1,16929,6,1398235801,abcedf”`     (物模型应答)
 
-- 返回报文：
+- 下行报文：
 
 `“1,0,6,2584251182,ijklmn”`   (透传报文)
 
 `“1,16930,6,2584251182,ijklmn”`    (物模型报文)
 
-#### 从串口执行控制命令
+#### 5.1.5 从串口执行控制命令
 
-- 发送命令报文格式:
+- 上行命令报文格式:
 
 `"<identify>,<msg_len>","<crc32>",<msg_data>"`
 
-- 返回命令报文格式:
+- 下行命令报文格式:
 
 `"<msg_len>","<crc32>",<msg_data>"`
 
@@ -347,15 +381,15 @@ msg_data：消息体，当msg_len为0时此项也不可省略
 
 `“99,6,2584251182,ijklmn”`
 
-### 透传模式
+
+### 5.2 透传模式
 
 支持MQTT/TCP/UDP/HTTP双通道透传（串口1&amp;串口2），透传模式每个串口仅支持绑定一个通道，可在配置文件中配置serialID对通道和串口进行绑定。透传模式如果串口配置了多个通道，只会选择第一个通道配置，后面的配置都会被忽略。
 
 透传模式传输时无需在数据格式上传入channel\_id，DTU会自动向串口绑定通道发送数据。
 
-数据格式说明：
 
-#### HTTP/TCP/UDP
+#### 5.2.1 TCP/UDP
 
 - 上行数据报文格式:
 
@@ -373,19 +407,51 @@ crc32：消息数据crc32校验码，当msg_len为0时，此项可省略
 
 msg_data：消息体，当msg_len为0时，此项可省略
 
-- 示例报文：
+**示例报文：**
 
-**发送报文：**
+- 发送报文：
 
 `“6,1398235801,abcedf”`	(msg_len不为0)
 
 `“0”`			(msg_len为0)
 
-**返回报文：**
+- 返回报文：
 
 `“6,2584251182,ijklmn”`
 
-#### MQTT/Aliyun/Txyun
+#### 5.2.2 HTTP
+
+- 上行数据报文格式:
+
+`"<request_id>","<msg_len>"[,"<crc32>",”<msg_data>”]"`
+
+- 下行数据报文格式:
+
+`"<request_id>","<msg_len>"[,"<crc32>",”<msg_data>”]"`
+
+- 字段说明：
+
+request_id: 请求id，配置文件中对应不同的url和method
+
+msg_len：消息体长度，字符串格式，可以为0
+
+crc32：消息数据crc32校验码，当msg_len为0时，此项可省略
+
+msg_data：消息体，当msg_len为0时，此项可省略
+
+**示例报文：**
+
+- 发送报文：
+
+`“1,6,1398235801,abcedf”`	(msg_len不为0)
+
+`“1,0”`			(msg_len为0)
+
+- 返回报文：
+
+`“1,6,2584251182,ijklmn”`
+
+#### 5.2.3 MQTT/Aliyun/Txyun
 
 - 上行数据报文格式:
 
@@ -405,23 +471,23 @@ crc32：消息数据crc32校验码，当msg_len为0时此项也不可省略
 
 msg_data：消息体，当msg_len为0时此项也不可省略
 
-- 示例报文：
+**示例报文：**
 
-**发送报文：**
+- 发送报文：
 
-`“6,1398235801,abcedf”`
+`“0,4,3632233996,test”`
 
-**返回报文：**
+- 返回报文：
 
-`“6,2584251182,ijklmn”`
+`“0,4,3632233996,test”`
 
-#### quecthing
+#### 5.2.4 quecthing
 
-- 发送数据报文格式:
+- 上行数据报文格式:
 
 `"<pkgid>,<msg_len>","<crc32>",<msg_data>"`
 
-- 返回数据报文格式:
+- 下行数据报文格式:
 
 `"<pkgid>,<msg_len>","<crc32>",<msg_data>"`
 
@@ -449,34 +515,31 @@ msg_data：消息体，当msg_len为0时此项也不可省略
 
 `“16930,6,2584251182,ijklmn”`    (物模型报文)
 
-### modbus模式
+### 5.3 modbus模式
 
 modbus模式会完整透传上行与上行报文，上行与下行都为bytes类型
 
 **示例报文：**
 
-- 发送报文
+- 上行报文
 
 `b'\x01\x03\x04\x01\x01\x02\x0c\xabj'`
 
-- 返回报文
+- 下行报文
 
 `b'\x01\x03\x04\x01\x01\x02\rj\xaa'`
-### 与云端通信报文
+
+### 5.4 与云端通信报文
 
 DTU与云端通信报文使用json格式
 
-#### 云端下行报文
+#### 5.4.1 云端下行报文
 
 - 命令模式：
 
-`{“msg_id”: msg_id, “data”: “1234”[, “cmd_code”: 0X40, “topic_id”: 1]}`
+`{“msg_id”: msg_id, “data”: “1234”[, “cmd_code”: 2, “topic_id”: 1]}`
 
-- 透传模式：
-
-`{“msg_id”: msg_id, “data”: “1234”}`
-
-- 字段说明：
+字段说明：
 
 msg_id：报文id，一般为时间戳+3位随机数
 
@@ -484,7 +547,13 @@ data：报文消息字段
 
 cmd_code：可选字段，填写对应功能码，并又DTU执行相应的操作，此字段仅在命令模式下生效
 
-topic_id：可选字段，填写mqtt返回需要publish的topic\_id，此字段仅在命令模式与使用MQTT/Aliyun/Txyun时生效
+topic_id：可选字段，填写DTU返回需要publish的topic_id，此字段仅在命令模式与使用MQTT/Aliyun/Txyun时生效
+
+- 透传模式：
+
+`“1234”`
+
+透传模式直接发送TXT格式的报文消息
 
 - modbus模式
 
@@ -509,17 +578,14 @@ modbus：可选字段，此字段仅在modbus模式使用，此字段下有2个�
 &ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;cmd：向地址组发送的modbus命令
 
 &ensp;&ensp;&ensp;&ensp;command：可选字段，在modbus下直接向UART口写入指定modbus命令
-#### 云端上行报文
+
+#### 5.4.2 云端上行报文
 
 - 命令模式与modbus模式：
 
-`{“msg_id”: msg_id, “data”: “1234”[, “cmd_code”: 0X40, “status”: 1]}`
+`{“msg_id”: msg_id, “data”: “100”[, “code”: 2, “status”: 1]}`
 
-- 透传模式：
-
-`{“msg_id”: msg_id, “data”: “1234”}`
-
-- 字段说明：
+字段说明：
 
 msg_id：报文id，一般为时间戳+3位随机数，回复报文会使用相同的msg\_id
 
@@ -529,23 +595,31 @@ cmd_code：可选字段，填写对应功能码，并又DTU执行相应的操作
 
 status：可选字段，仅在命令模式下生效，用于反馈命令是否执行成功
 
-## 阿里云MQTT案例说明
+- 透传模式：
 
-### 连接设备
+`“1234”`
+
+透传模式直接发送TXT格式的报文消息
+
+
+
+## 6 阿里云MQTT案例说明
+
+### 6.1 连接设备
 
 本案例使用EC600N开发板与CP2102 USB to TTL模块进行调试
 
 使用3根杜邦线分别连接CP2102的TX，RX和GND针脚
 
-![](./media/CP2102.jpg)
+![](./media/DTU_User_Guides/CP2102.jpg)
 
 将CP2102的TX引出线连接至EC600N开发板的RX0针脚（编号7），将CP2102的RX引出线连接至开发板的TX0针脚（编号6），将CP2101的GND引出线连接至开发板的GND针脚（编号1）
 
-![](./media/board_line_link.png)
+![](./media/DTU_User_Guides/board_line_link.png)
 
 将开发板与CP2102分别连接至电脑的USB口，开发板按下PWK按键开机
 
-### 获得阿里云连接参数
+### 6.2 获得阿里云连接参数
 
 用户需要在阿里云上注册账户，新建项目，注册设备名称并获得以下参数
 
@@ -559,13 +633,13 @@ status：可选字段，仅在命令模式下生效，用于反馈命令是否�
 
 获得阿里云pk/ps
 
-![](./media/aliyun_pkps.png)
+![](./media/DTU_User_Guides/aliyun_pkps.png)
 
 获得DeviceName
 
-![](./media/aliyun_dn.png)
+![](./media/DTU_User_Guides/aliyun_dn.png)
 
-### 编写配置文件
+### 6.3 编写配置文件
 
 编写配置文件，并将其命名为dtu_config.json
 
@@ -626,62 +700,63 @@ status：可选字段，仅在命令模式下生效，用于反馈命令是否�
 
 ```
 
-### 烧录代码
+### 6.4 烧录代码
 
-#### 连接开发板至电脑，开机，打开QPYCom，选择Qutctel USB MI05 Port端口，并点击连接
+#### 6.4.1 连接开发板至电脑，开机，打开QPYCom，选择Qutctel USB MI05 Port端口，并点击连接
 
-![](./media/qpycom_select_port.png)
+![](./media/DTU_User_Guides/qpycom_select_port.png)
 
-#### 切换到下载选项卡，点击"创建项目"，输入项目名称，并点击"确定"
+#### 6.4.2 切换到下载选项卡，点击"创建项目"，输入项目名称，并点击"确定"
 
-![](./media/qpycom_new_proj.png)
+![](./media/DTU_User_Guides/qpycom_new_proj.png)
 
-#### 将dtu文件夹内所有内容拖入"用户脚本/文件"框内
+#### 6.4.3 将dtu文件夹内所有内容拖入"用户脚本/文件"框内
 
-![](./media/qpycon_draft_file.png)
+![](./media/DTU_User_Guides/qpycon_draft_file.png)
 
-#### 点击"下载脚本"
+#### 6.4.4 点击"下载脚本"
 
-![](./media/qpycom_dl.png)
+![](./media/DTU_User_Guides/qpycom_dl.png)
 
-### 运行
+### 6.5 运行
 
-#### 切换至"文件"选项卡，选中"dtu_handler.py"，并点击运行
+#### 6.5.1 切换至"文件"选项卡，选中"dtu_handler.py"，并点击运行
 
-![](./media/qpycom_run3.png)
+![](./media/DTU_User_Guides/qpycom_run3.png)
 
-### 运行结果输出
+### 6.6 运行结果输出
 
-![](./media/qpycom_run_output.png)
+![](./media/DTU_User_Guides/qpycom_run_output.png)
 
-### 向云端发送消息
+### 6.7 向云端发送消息
 
-#### 打开串口调试工具，选择CP210X USB to UART 连接至CP2102转换板，并打开串口
+#### 6.7.1 打开串口调试工具，选择CP210X USB to UART 连接至CP2102转换板，并打开串口
 
-![](./media/pc_uart.png)
+![](./media/DTU_User_Guides/pc_uart.png)
 
-#### 在uart调试工具中按指定格式传入topic_id, msg_length, crc32值, 需要发送的数据，并点击"send";
+#### 6.7.2 在uart调试工具中按指定格式传入topic_id, msg_length, crc32值, 需要发送的数据，并点击"发送";
 
-![](./media/pc_uart_send.png)
+![](./media/DTU_User_Guides/pc_uart_send.png)
 
-#### DTU收到数据，并发送至云端
+#### 6.7.3 DTU收到数据，并发送至云端
 
-![](./media/dtt_recive.png)
+![](./media/DTU_User_Guides/dtt_recive.png)
 
-#### 云端接收到的消息
+#### 6.7.4 云端接收到的消息
 
-![](./media/cloud_recive.png)
+![](./media/DTU_User_Guides/cloud_recive.png)
 
-### 云端向设备发送信息
+### 6.8 云端向设备发送信息
 
-#### 在阿里云topic列表中向自定义topic发送消息
+#### 6.8.1 在阿里云topic列表中向自定义topic发送消息
 
-![](./media/aliyun_send.png)
+![](./media/DTU_User_Guides/aliyun_send.png)
 
-#### DTU成功收到消息并向串口透传数据
+#### 6.8.2 DTU成功收到消息并向串口透传数据
 
-![](./media/dtu_recive.png)
+![](./media/DTU_User_Guides/dtu_recive.png)
 
-#### 串口收到透传消息
+#### 6.8.3 串口收到透传消息
 
-![](./media/pc_get_recive.png)
+![](./media/DTU_User_Guides/pc_get_recive.png)
+

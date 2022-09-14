@@ -22,8 +22,10 @@ serialStatus = False
 add_time = False  # 是否加时间戳
 convet_to_hex = False  # 是否转为hex
 serialList = []  # 串口列表
-no_password_funcode = [0, 1, 2, 3, 5]  # 不需要密码的指令
-need_password_funcode = [4, 65, 66, 67, 68, 69, 70, 71, 81, 82, 83, 84, 85, 88, 89, 96, 97, 255]  # 需要密码的指令
+no_password_funcode = ["0", "1", "2", "3", "5"]  # 不需要密码的指令
+need_password_funcode = ["4", "6", "7", "8", "10", "11", "12", "13", 
+"50", "51", "52", "53", "54", "55", "56", "57", "58", "59", "60", "61", "62", "63", "255"]  # 需要密码的指令
+basic_setting_funcode = ["50", "51", "52", "53", "54", "55", "56", "57", "58", "59", "60", "61", "62", "63",] # 设置参数指令
 funcode_list = need_password_funcode + no_password_funcode
 file_password = None  # 配置文件的密码
 uart_0_list = []  # 串口0的标签
@@ -67,13 +69,10 @@ class _847017531_MyFrame(wx.Frame):
         self.text_ctrl_12 = wx.TextCtrl(self, wx.ID_ANY, "", style=wx.TE_PASSWORD)
         self.notebook_10 = wx.Notebook(self, wx.ID_ANY)
         self.notebook_10_ = wx.Panel(self.notebook_10, wx.ID_ANY)
-        self.combo_box_63 = wx.ComboBox(self.notebook_10_, wx.ID_ANY, choices=[u"不添加", u"添加"], style=wx.CB_READONLY)
         self.combo_box_84 = wx.ComboBox(self.notebook_10_, wx.ID_ANY, choices=[u"不发送", u"发送"], style=wx.CB_READONLY)
         self.text_ctrl_6 = wx.TextCtrl(self.notebook_10_, wx.ID_ANY, "")
         self.combo_box_86 = wx.ComboBox(self.notebook_10_, wx.ID_ANY, choices=[u"关闭", u"开启"], style=wx.CB_READONLY)
-        self.text_ctrl_10 = wx.TextCtrl(self.notebook_10_, wx.ID_ANY, "")
-        self.text_ctrl_11 = wx.TextCtrl(self.notebook_10_, wx.ID_ANY, "")
-        self.text_ctrl_13 = wx.TextCtrl(self.notebook_10_, wx.ID_ANY, "")
+        self.combo_box_87 = wx.ComboBox(self.notebook_10_, wx.ID_ANY, choices=[u"关闭", u"开启"], style=wx.CB_READONLY)
         ###########################################################################################################
         # 串口0
         self.serial_param = wx.Notebook(self.notebook_10, wx.ID_ANY)
@@ -114,7 +113,7 @@ class _847017531_MyFrame(wx.Frame):
         self.panel_12 = wx.Panel(self.channel_1, wx.ID_ANY)
         self.label_272 = wx.StaticText(self.panel_12, 802, u"通道类型", pos=(20, 5))
         self.combo_box_95 = wx.ComboBox(self.panel_12, 802, pos=(170, 5),
-                                        choices=["HTTP", "SOCKET TCP", "SOCKET UDP", "MQTT", u"阿里云", u"腾讯云", u"移远云"],
+                                        choices=["HTTP", "SOCKET TCP", "SOCKET UDP", "MQTT", u"阿里云", u"腾讯云", u"移远云", u"华为云"],
                                         style=wx.CB_READONLY)
         self.label_273 = wx.StaticText(self.panel_12, wx.ID_ANY, u"提示：选择透传的类型", pos=(290, 5))
         ###########################################################################################################
@@ -126,7 +125,7 @@ class _847017531_MyFrame(wx.Frame):
         self.panel_14 = wx.Panel(self.channel_2, wx.ID_ANY)
         self.label_309 = wx.StaticText(self.panel_14, wx.ID_ANY, u"通道类型", pos=(20, 5))
         self.combo_box_100 = wx.ComboBox(self.panel_14, 809, pos=(170, 5),
-                                         choices=["HTTP", "SOCKET TCP", "SOCKET UDP", "MQTT", u"阿里云", u"腾讯云", u"移远云"],
+                                         choices=["HTTP", "SOCKET TCP", "SOCKET UDP", "MQTT", u"阿里云", u"腾讯云", u"移远云", u"华为云"],
                                          style=wx.CB_READONLY)
         self.label_310 = wx.StaticText(self.panel_14, 810, u"提示：选择透传的类型", pos=(290, 5))
         ###########################################################################################################
@@ -138,7 +137,7 @@ class _847017531_MyFrame(wx.Frame):
         self.panel_15 = wx.Panel(self.channel_3, wx.ID_ANY)
         self.label_266 = wx.StaticText(self.panel_15, wx.ID_ANY, u"通道类型", pos=(20, 5))
         self.combo_box_75 = wx.ComboBox(self.panel_15, 828, pos=(170, 5),
-                                        choices=["HTTP", "SOCKET TCP", "SOCKET UDP", "MQTT", u"阿里云", u"腾讯云", u"移远云"],
+                                        choices=["HTTP", "SOCKET TCP", "SOCKET UDP", "MQTT", u"阿里云", u"腾讯云", u"移远云", u"华为云"],
                                         style=wx.CB_READONLY)
         self.label_267 = wx.StaticText(self.panel_15, wx.ID_ANY, u"提示：选择透传的类型", pos=(290, 5))
         ###########################################################################################################
@@ -151,7 +150,7 @@ class _847017531_MyFrame(wx.Frame):
 
         self.label_330 = wx.StaticText(self.panel_16, wx.ID_ANY, u"通道类型", pos=(20, 5))
         self.combo_box_79 = wx.ComboBox(self.panel_16, 829, pos=(170, 5),
-                                        choices=["HTTP", "SOCKET TCP", "SOCKET UDP", "MQTT", u"阿里云", u"腾讯云", u"移远云"],
+                                        choices=["HTTP", "SOCKET TCP", "SOCKET UDP", "MQTT", u"阿里云", u"腾讯云", u"移远云", u"华为云"],
                                         style=wx.CB_READONLY)
         self.label_331 = wx.StaticText(self.panel_16, wx.ID_ANY, u"提示：选择透传的类型", pos=(290, 5))
         ###########################################################################################################
@@ -164,7 +163,7 @@ class _847017531_MyFrame(wx.Frame):
 
         self.label_485 = wx.StaticText(self.panel_29, wx.ID_ANY, u"通道类型", pos=(20, 5))
         self.combo_box_120 = wx.ComboBox(self.panel_29, 830, pos=(170, 5),
-                                         choices=["HTTP", "SOCKET TCP", "SOCKET UDP", "MQTT", u"阿里云", u"腾讯云", u"移远云"],
+                                         choices=["HTTP", "SOCKET TCP", "SOCKET UDP", "MQTT", u"阿里云", u"腾讯云", u"移远云", u"华为云"],
                                          style=wx.CB_READONLY)
         self.label_486 = wx.StaticText(self.panel_29, wx.ID_ANY, u"提示：选择透传的类型", pos=(290, 5))
         ###########################################################################################################
@@ -176,7 +175,7 @@ class _847017531_MyFrame(wx.Frame):
         self.panel_31 = wx.Panel(self.channel_6, wx.ID_ANY)
         self.label_511 = wx.StaticText(self.panel_31, wx.ID_ANY, u"通道类型", pos=(20, 5))
         self.combo_box_125 = wx.ComboBox(self.panel_31, 831, pos=(170, 5),
-                                         choices=["HTTP", "SOCKET TCP", "SOCKET UDP", "MQTT", u"阿里云", u"腾讯云", u"移远云"],
+                                         choices=["HTTP", "SOCKET TCP", "SOCKET UDP", "MQTT", u"阿里云", u"腾讯云", u"移远云", u"华为云"],
                                          style=wx.CB_READONLY)
         self.label_512 = wx.StaticText(self.panel_31, wx.ID_ANY, u"提示：选择透传的类型", pos=(290, 5))
         ###########################################################################################################
@@ -189,7 +188,7 @@ class _847017531_MyFrame(wx.Frame):
 
         self.label_537 = wx.StaticText(self.panel_33, wx.ID_ANY, u"通道类型", pos=(20, 5))
         self.combo_box_130 = wx.ComboBox(self.panel_33, 832, pos=(170, 5),
-                                         choices=["HTTP", "SOCKET TCP", "SOCKET UDP", "MQTT", u"阿里云", u"腾讯云", u"移远云"],
+                                         choices=["HTTP", "SOCKET TCP", "SOCKET UDP", "MQTT", u"阿里云", u"腾讯云", u"移远云", u"华为云"],
                                          style=wx.CB_READONLY)
         self.label_538 = wx.StaticText(self.panel_33, wx.ID_ANY, u"提示：选择透传的类型", pos=(290, 5))
         ###########################################################################################################
@@ -232,7 +231,6 @@ class _847017531_MyFrame(wx.Frame):
         ###########################################################################################################
         self.__set_properties()
         self.__do_layout()
-        self.Bind(wx.EVT_COMBOBOX, self.ota_0ff, self.combo_box_86)
         # 打开串口按钮 button_2
         self.Bind(wx.EVT_BUTTON, self.open_serial, self.button_2)
         # 工具箱
@@ -320,18 +318,14 @@ class _847017531_MyFrame(wx.Frame):
         self.combo_box_10.SetSelection(0)
         self.button_2.SetMinSize((86, 25))
         self.text_ctrl_12.SetMinSize((114, 20))
-        self.combo_box_63.SetMinSize((109, 25))
-        self.combo_box_63.SetSelection(0)
         self.combo_box_84.SetMinSize((109, 25))
         self.combo_box_84.SetSelection(0)
         self.text_ctrl_6.SetMinSize((109, 25))
 
-        self.text_ctrl_10.SetMinSize((109, 25))
-        self.text_ctrl_11.SetMinSize((109, 25))
-        self.text_ctrl_13.SetMinSize((109, 25))
-
         self.combo_box_86.SetMinSize((109, 25))
         self.combo_box_86.SetSelection(0)
+        self.combo_box_87.SetMinSize((109, 25))
+        self.combo_box_87.SetSelection(0)
         self.radio_btn_50.SetMinSize((68, 30))
         self.radio_btn_50.SetValue(1)
         self.radio_btn_58.SetMinSize((68, 30))
@@ -477,7 +471,6 @@ class _847017531_MyFrame(wx.Frame):
         sizer_76 = wx.BoxSizer(wx.HORIZONTAL)
         sizer_75 = wx.BoxSizer(wx.HORIZONTAL)
         sizer_74 = wx.BoxSizer(wx.HORIZONTAL)
-        sizer_73 = wx.BoxSizer(wx.HORIZONTAL)
         sizer_24 = wx.BoxSizer(wx.HORIZONTAL)
         sizer_31 = wx.BoxSizer(wx.VERTICAL)
         sizer_32 = wx.BoxSizer(wx.HORIZONTAL)
@@ -486,8 +479,6 @@ class _847017531_MyFrame(wx.Frame):
         sizer_22 = wx.BoxSizer(wx.VERTICAL)
 
         sizer_143 = wx.BoxSizer(wx.HORIZONTAL)
-        sizer_146 = wx.BoxSizer(wx.HORIZONTAL)
-        sizer_144 = wx.BoxSizer(wx.HORIZONTAL)
 
         sizer_31.Add((20, 5), 0, 0, 0)
         label_6 = wx.StaticText(self, wx.ID_ANY, u"【PC端口参数】")
@@ -522,17 +513,6 @@ class _847017531_MyFrame(wx.Frame):
         sizer_24.Add(sizer_31, 1, wx.EXPAND, 0)
         sizer_23.Add(sizer_24, 0, wx.EXPAND, 0)
         sizer_140.Add((25, 20), 0, 0, 0)
-        sizer_73.Add((20, 20), 0, 0, 0)
-        label_126 = wx.StaticText(self.notebook_10_, wx.ID_ANY, u"是否加设备识别码IMEI")
-        label_126.SetMinSize((156, 18))
-        sizer_73.Add(label_126, 0, 0, 0)
-        sizer_73.Add((20, 20), 0, 0, 0)
-        sizer_73.Add(self.combo_box_63, 0, 0, 0)
-        sizer_73.Add((20, 20), 0, 0, 0)
-        label_237 = wx.StaticText(self.notebook_10_, wx.ID_ANY, u"提示：输出的前缀加设备IMEI")
-        label_237.SetMinSize((195, 25))
-        sizer_73.Add(label_237, 0, 0, 0)
-        sizer_140.Add(sizer_73, 0, 0, 0)
         sizer_140.Add((20, 5), 0, 0, 0)
         sizer_74.Add((20, 20), 0, 0, 0)
         label_127 = wx.StaticText(self.notebook_10_, wx.ID_ANY, u"首次登录服务器发送注册信息")
@@ -558,13 +538,13 @@ class _847017531_MyFrame(wx.Frame):
         sizer_140.Add(sizer_75, 0, 0, 0)
         sizer_140.Add((20, 5), 0, 0, 0)
         sizer_76.Add((20, 20), 0, 0, 0)
-        label_129 = wx.StaticText(self.notebook_10_, wx.ID_ANY, u"是否开启自动更新")
+        label_129 = wx.StaticText(self.notebook_10_, wx.ID_ANY, u"是否开启固件自动更新")
         label_129.SetMinSize((156, 18))
         sizer_76.Add(label_129, 0, 0, 0)
         sizer_76.Add((20, 20), 0, 0, 0)
         sizer_76.Add(self.combo_box_86, 0, 0, 0)
         sizer_76.Add((20, 20), 0, 0, 0)
-        label_240 = wx.StaticText(self.notebook_10_, wx.ID_ANY, u"提示：是否开启OTA升级")
+        label_240 = wx.StaticText(self.notebook_10_, wx.ID_ANY, u"提示: 是否开启OTA升级")
         label_240.SetMinSize((139, 25))
         sizer_76.Add(label_240, 0, 0, 0)
         sizer_140.Add(sizer_76, 0, 0, 0)
@@ -572,40 +552,17 @@ class _847017531_MyFrame(wx.Frame):
         sizer_141.Add((20, 20), 0, 0, 0)
         sizer_141.Add((20, 20), 0, 0, 0)
         sizer_143.Add((20, 20), 0, 0, 0)
-        label_132 = wx.StaticText(self.notebook_10_, wx.ID_ANY, "uid")
+        label_132 = wx.StaticText(self.notebook_10_, wx.ID_ANY, "是否开启脚本文件自动更新")
         label_132.SetMinSize((156, 18))
         sizer_143.Add(label_132, 0, 0, 0)
         sizer_143.Add((20, 20), 0, 0, 0)
-        sizer_143.Add(self.text_ctrl_11, 0, 0, 0)
+        sizer_143.Add(self.combo_box_87, 0, 0, 0)
         sizer_143.Add((20, 20), 0, 0, 0)
-        label_243 = wx.StaticText(self.notebook_10_, wx.ID_ANY, u"提示：用户uid")
-        label_243.SetMinSize((120, 25))
+        label_243 = wx.StaticText(self.notebook_10_, wx.ID_ANY, u"提示: 是否开启FOTA升级")
+        label_243.SetMinSize((156, 25))
         sizer_143.Add(label_243, 0, 0, 0)
         sizer_140.Add(sizer_143, 0, 0, 0)
         sizer_140.Add((20, 5), 0, 0, 0)
-        sizer_146.Add((20, 20), 0, 0, 0)
-        label_134 = wx.StaticText(self.notebook_10_, wx.ID_ANY, "module_type")
-        label_134.SetMinSize((156, 18))
-        sizer_146.Add(label_134, 0, 0, 0)
-        sizer_146.Add((20, 20), 0, 0, 0)
-        sizer_146.Add(self.text_ctrl_10, 0, 0, 0)
-        sizer_146.Add((20, 20), 0, 0, 0)
-        label_245 = wx.StaticText(self.notebook_10_, wx.ID_ANY, u"提示：设备类型")
-        label_245.SetMinSize((120, 25))
-        sizer_146.Add(label_245, 0, 0, 0)
-        sizer_140.Add(sizer_146, 0, 0, 0)
-        sizer_140.Add((20, 5), 0, 0, 0)
-        sizer_144.Add((20, 20), 0, 0, 0)
-        label_133 = wx.StaticText(self.notebook_10_, wx.ID_ANY, "pk")
-        label_133.SetMinSize((156, 18))
-        sizer_144.Add(label_133, 0, 0, 0)
-        sizer_144.Add((20, 20), 0, 0, 0)
-        sizer_144.Add(self.text_ctrl_13, 0, 0, 0)
-        sizer_144.Add((20, 20), 0, 0, 0)
-        label_244 = wx.StaticText(self.notebook_10_, wx.ID_ANY, u"提示：设备密钥")
-        label_244.SetMinSize((120, 25))
-        sizer_144.Add(label_244, 0, 0, 0)
-        sizer_140.Add(sizer_144, 0, 0, 0)
         self.notebook_10_.SetSizer(sizer_140)
 
         sizer_140.Add(sizer_141, 0, 0, 0)
@@ -873,9 +830,7 @@ class _847017531_MyFrame(wx.Frame):
         self.Layout()
         #################################Hide/Disable panel #################################
         # ota 升级设备参数
-        self.text_ctrl_10.Disable()
-        self.text_ctrl_11.Disable()
-        self.text_ctrl_13.Disable()
+
         # serial panel
         self.panel_17.Hide()
         self.panel_20.Hide()
@@ -904,16 +859,6 @@ class _847017531_MyFrame(wx.Frame):
 
 
     ################################# function ##############################################
-    def ota_0ff(self, event):
-        if self.combo_box_86.GetValue() == "关闭":
-            self.text_ctrl_10.Disable()
-            self.text_ctrl_11.Disable()
-            self.text_ctrl_13.Disable()
-        if self.combo_box_86.GetValue() == "开启":
-            self.text_ctrl_10.Enable()
-            self.text_ctrl_11.Enable()
-            self.text_ctrl_13.Enable()
-
     def open_serial(self, event):
         global ser
         if ser.isOpen():
@@ -1024,12 +969,15 @@ class _847017531_MyFrame(wx.Frame):
                 data_dict = json.loads(data_values)
                 status_code = data_dict.get("status")
                 if status_code == 1:
-                    self.handler_data(data_dict.get("data"))
+                    print("code:", data_dict.get("code"))
+                    if str(data_dict.get("code")) in basic_setting_funcode:
+                        self.handler_data("设置成功")
+                    else:
+                        self.handler_data(data_dict.get("data"))
                 else:
                     self.handler_data(data_dict.get("error"))
 
     def handler_data(self, new_str):
-        print("new_str:", new_str)
         show_data = "【" + time_now + "】" + " " + str(new_str)
         self.text_ctrl_3.write(">>> {}\n".format(show_data))
 
@@ -1048,65 +996,9 @@ class _847017531_MyFrame(wx.Frame):
         if success_code == "20006":
             self.text_ctrl_3.write(">>> txyun连接成功\n")
 
-    def error_tips(self, error_code):
-        global import_error
-        if error_code == "3001":
-            self.text_ctrl_3.write(">>> 读取sim卡错误\n")
-        if error_code == "3002":
-            self.text_ctrl_3.write(">>> 拨号错误\n")
-        if error_code == "4001":
-            self.text_ctrl_3.write(">>> http请求失败\n")
-        if error_code == "4002":
-            self.text_ctrl_3.write(">>> http请求状态500\n")
-        if error_code == "4003":
-            self.text_ctrl_3.write(">>> tcp连接失败\n")
-        if error_code == "4004":
-            self.text_ctrl_3.write(">>> udp连接失败\n")
-        if error_code == "4005":
-            self.text_ctrl_3.write(">>> mqtt连接失败\n")
-        if error_code == "4006":
-            self.text_ctrl_3.write(">>> aliyun连接失败\n")
-        if error_code == "4007":
-            self.text_ctrl_3.write(">>> txyun连接失败\n")
-        if error_code == "4008":
-            self.text_ctrl_3.write(">>> 协议解析错误\n")
-        if error_code == "5001":
-            self.text_ctrl_3.write(">>> 密码未携带\n")
-        if error_code == "5002":
-            self.text_ctrl_3.write(">>> 密码错误\n")
-            import_error = True
-        if error_code == "5003":
-            self.text_ctrl_3.write(">>> http参数错误\n")
-        if error_code == "5004":
-            self.text_ctrl_3.write(">>> 通道透传错误\n")
-        if error_code == "5005":
-            self.text_ctrl_3.write(">>> 数据类型错误\n")
-        if error_code == "5006":
-            self.text_ctrl_3.write(">>> 请求方法错误\n")
-        if error_code == "5007":
-            self.text_ctrl_3.write(">>> 数据透传失败\n")
-        if error_code == "5008":
-            self.text_ctrl_3.write(">>> mqtt类型不匹配\n")
-        if error_code == "5009":
-            self.text_ctrl_3.write(">>> 参数数量不符合\n")
-        if error_code == "6001":
-            self.text_ctrl_3.write(">>> json加载失败\n")
-        if error_code == "6002":
-            self.text_ctrl_3.write(">>> json解析失败\n")
-        if error_code == "6003":
-            self.text_ctrl_3.write(">>> 序列化解析失败\n")
-        if error_code == "6004":
-            self.text_ctrl_3.write(">>> 数据解析错误\n")
-        if error_code == "6005":
-            self.text_ctrl_3.write(">>> 指令错误\n")
-        if error_code == "6006":
-            self.text_ctrl_3.write(">>> 读取配置文件失败\n")
-        if error_code == "6007":
-            self.text_ctrl_3.write(">>> 读取文件不存在\n")
-
     def tool_lists(self, event):  # 工具箱
         print("工具箱")
-        self.Bind(wx.EVT_MENU, self.toolPopupMenu, id=6001, id2=6000 + 9)
+        self.Bind(wx.EVT_MENU, self.toolPopupMenu, id=6001, id2=6000 + 13)
         tool_list = ["查询IMEI号", "查询本机号码", "查询版本号", "查询信号强度", "诊断查询", "查询ICCID",
                      "查询ADC电压", "查询GPIO信息", "查询电池电压", "查询温湿度", "查询网络连接状态", "查询基站状态", "基站定位"]
         menu = wx.Menu()
@@ -1126,22 +1018,30 @@ class _847017531_MyFrame(wx.Frame):
         # TODO 工具箱拓展
 
         cmd_list = ["0,None,查询IMEI号", "1,None,查询本机号码", "2,None,查询版本号", "3,None,查询信号强度", "5,None,诊断查询", "6,None,查询ICCID",
-                    "7,None,查询ADC电压", "8,None,查询GPIO信息", "9,None,查询电池电压", "10,None,查询温湿度",
+                    "7,adcn,查询ADC电压", "8,pins,查询GPIO信息", "9,None,查询电池电压", "10,None,查询温湿度",
                     "11,None,查询网络连接状态", "12,None,查询基站状态", "13,None,基站定位"]
         for i in range(len(cmd_list)):
             if event.GetId() == 6001 + int(i):
-                func_code, data, cmd_name = cmd_list[i].split(",")
-                if func_code == '7':
-                    data = {"cmd_code": func_code, 'data': {"adcn": ""}}
-                    self.text_ctrl_14.Clear()
-                    self.text_ctrl_14.write(json.dumps(data))
-                elif func_code == "8":
-                    data = {"cmd_code": func_code, 'data': {"pins": ""}}
-                    self.text_ctrl_14.Clear()
-                    self.text_ctrl_14.write(json.dumps(data))
-                data = {"cmd_code": func_code, 'data': {}}
-                send_datas = self.package_data(data)
-                ser.write(send_datas)
+                func_code, send_msg, cmd_name = cmd_list[i].split(",")
+                # 查询ADC电压和查询GPIO信息需要更具体描述，不直接发送，而是将数据传输到发送框中，等客户完善后，由客户点击发送
+                if func_code in no_password_funcode:
+                    data = {"cmd_code": func_code, 'data': {}}
+                    send_datas = self.package_data(data)
+                    ser.write(send_datas)
+                else:
+                    password = self.text_ctrl_12.GetValue()
+                    if not password:
+                        wx.MessageBox(u'   请在上方输入框输入密码', u'提示', wx.YES_DEFAULT | wx.ICON_INFORMATION)
+                        return
+                    if func_code in ["7", "8"]:
+                        data = {"cmd_code": func_code, "password":password, "data": {send_msg: ""}}
+                        self.text_ctrl_14.Clear()
+                        self.text_ctrl_14.write(json.dumps(data))
+                        wx.MessageBox(u'   请在右下方发送框完善发送数据', u'提示', wx.YES_DEFAULT | wx.ICON_INFORMATION)
+                    else:
+                        data = {"cmd_code": func_code, "password": password, "data": {}}
+                        send_datas = self.package_data(data)
+                        ser.write(send_datas)
                 return
 
     def serial_config(self, event):
@@ -1236,54 +1136,75 @@ class _847017531_MyFrame(wx.Frame):
             self.text_ctrl_3.write(">>> 请输入指令!\n")
             return
         input_vals = self.text_ctrl_14.GetValue()
-        # if ":" in self.text_ctrl_14.GetValue():
-        #     data = self.text_ctrl_14.GetValue().replace(' ', '').split(":", 1)
-        #     func_code = data[0]
-        #     json_data = data[1]
-        #     if len(func_code) == 0:
-        #         self.text_ctrl_3.write(">>> ':' 前缺少功能码\n")
-        #         return
-        #     if not func_code.isdigit():
-        #         self.text_ctrl_3.write(">>> 不合法的数据格式 !\n")
-        #         return
-        #     if int(func_code) not in funcode_list:
-        #         self.text_ctrl_3.write(">>> 功能码错误!\n")
-        #         return
-        #     try:
-        #         print(func_code, json_data)
-        #         ts = TransferS(int(func_code), json.dumps(eval(json_data)))
-        #         dt = ts.send()
-        #         ser.write(dt)
-        #         self.text_ctrl_3.write(">>> 发送成功\n")
-        #     except Exception as e:
-        #         print(e)
-        # else:  # 只有功能码的指令
-        #     func_code = self.text_ctrl_14.GetValue()
-        #     if int(func_code) not in funcode_list:
-        #         self.text_ctrl_3.write(">>> 功能码错误!\n")
-        #         return
-        #     if int(func_code) in no_password_funcode:
-        #         json_data = {"cmd_code": func_code}
-        #     if int(func_code) in need_password_funcode:
-        #         password = self.text_ctrl_12.GetValue()
-        #         print("open_password:", open_password)
-        #         if not open_password:
-        #             self.text_ctrl_3.write(">>> 请打开密码输入框 !\n")
-        #             return
-        #         if not password:
-        #             self.text_ctrl_3.write(">>> 请输入密码 !\n")
-        #             return
-        #         json_data = {"password": password, "data": {}, "cmd_code": func_code}
-        #     # 向main口发送数据
-        #     print(func_code, json_data)
-            # ts = TransferS(int(func_code), json.dumps(json_data))
-            # dt = ts.send()
-            # str_datas = json.dumps(json_data)
-            # crc32_vals = str(zlib.crc32(str_datas))
-            # data_format = "{},{},{}".format(str(len(str_datas)), crc32_vals, str_datas)
+        """
+        if ":" in self.text_ctrl_14.GetValue():
+            data = self.text_ctrl_14.GetValue().replace(' ', '').split(":", 1)
+            func_code = data[0]
+            json_data = data[1]
+            if len(func_code) == 0:
+                self.text_ctrl_3.write(">>> ':' 前缺少功能码\n")
+                return
+            if not func_code.isdigit():
+                self.text_ctrl_3.write(">>> 不合法的数据格式 !\n")
+                return
+            if int(func_code) not in funcode_list:
+                self.text_ctrl_3.write(">>> 功能码错误!\n")
+                return
+            try:
+                print(func_code, json_data)
+                ts = TransferS(int(func_code), json.dumps(eval(json_data)))
+                dt = ts.send()
+                ser.write(dt)
+                self.text_ctrl_3.write(">>> 发送成功\n")
+            except Exception as e:
+                print(e)
+        else:  # 只有功能码的指令
+            func_code = self.text_ctrl_14.GetValue()
+            if int(func_code) not in funcode_list:
+                self.text_ctrl_3.write(">>> 功能码错误!\n")
+                return
+            if int(func_code) in no_password_funcode:
+                json_data = {"cmd_code": func_code}
+            if int(func_code) in need_password_funcode:
+                password = self.text_ctrl_12.GetValue()
+                print("open_password:", open_password)
+                if not open_password:
+                    self.text_ctrl_3.write(">>> 请打开密码输入框 !\n")
+                    return
+                if not password:
+                    self.text_ctrl_3.write(">>> 请输入密码 !\n")
+                    return
+                json_data = {"password": password, "data": {}, "cmd_code": func_code}
+            # 向main口发送数据
+            print(func_code, json_data)
+        ts = TransferS(int(func_code), json.dumps(json_data))
+        dt = ts.send()
+        str_datas = json.dumps(json_data)
+        crc32_vals = str(zlib.crc32(str_datas))
+        data_format = "{},{},{}".format(str(len(str_datas)), crc32_vals, str_datas)
+        """
         send_datas = self.package_data(input_vals)
         ser.write(send_datas)
         self.text_ctrl_3.write(">>> 发送成功\n")
+    
+    # 通道类型的标志位
+    def flag_bit(self, flag):
+        if flag == "HTTP":
+            return "http"
+        elif flag == "SOCKET TCP":
+            return "tcp"
+        elif flag == "SOCKET UDP":
+            return "udp"
+        elif flag == "MQTT":
+            return "mqtt"
+        elif flag == "阿里云":
+            return "aliyun"
+        elif flag == "腾讯云":
+            return "txyun"
+        elif flag == "移远云":
+            return "quecthing"
+        elif flag == "华为云":
+            return "hwyun"
 
     # 清空输入框
     def clear_data(self, event):
@@ -1294,59 +1215,57 @@ class _847017531_MyFrame(wx.Frame):
 
     def get_channel_params(self, flag, channel):
         def get_topic_format(topic_str):
-            topic_str = topic_str.replace("，", ",")
+            print("topic_str:", topic_str)
+            topic_str = topic_str.replace(",", ",")
             topic_list = topic_str.split(",")
+            print("topic_list:", topic_list)
             idx = 0
             topic_map = dict()
             for topic in topic_list:
                 topic_map[str(idx)] = topic.replace(" ", "")
+                idx += 1
             return topic_map
 
         label_list_get = eval("label_{}_list".format(channel))
-
+        print("channel flag:", flag)
         if flag == "HTTP":
             conf = {
-                "protocol": flag,
-                "method": label_list_get[1].GetValue(),
-                "url": label_list_get[4].GetValue(),
-                "reg_data": label_list_get[7].GetValue(),
-                "timeout": label_list_get[10].GetValue(),
-                "serialID": label_list_get[13].GetValue()
+                "protocol": self.flag_bit(flag),
+                "request": json.loads(label_list_get[1].GetValue()),
+                "post_data": label_list_get[4].GetValue(),
+                "timeout": label_list_get[7].GetValue(),
+                "serialID": label_list_get[10].GetValue()
             }
             return conf
-        elif flag in ["TCP", "UDP"]:
+        elif flag in ["SOCKET TCP", "SOCKET UDP"]:
             conf = {
-                "protocol": flag,
+                "protocol": self.flag_bit(flag),
                 "ping": label_list_get[1].GetValue(),
                 "heartbeat": label_list_get[4].GetValue(),
                 "url": label_list_get[7].GetValue(),
                 "port": label_list_get[10].GetValue(),
-                "keepAlive": label_list_get[13].GetValue(),
+                "keepAlive": int(label_list_get[13].GetValue()),
                 "serialID": label_list_get[16].GetValue()
             }
             return conf
         elif flag == "MQTT":
             conf = {
-                "protocol": flag,
+                "protocol": self.flag_bit(flag),
                 "clientID": label_list_get[1].GetValue(),
                 "keepAlive": label_list_get[4].GetValue(),
                 "url": label_list_get[7].GetValue(),
                 "port": label_list_get[10].GetValue(),
-                "cleanSession": label_list_get[13].GetValue(),
+                "cleanSession": True if label_list_get[13].GetValue() == '1' else False,
                 "subscribe": get_topic_format(label_list_get[16].GetValue()),
                 "publish": get_topic_format(label_list_get[19].GetValue()),
                 "qos": label_list_get[22].GetValue(),
                 "retain": label_list_get[25].GetValue(),
-                "serialID": label_list_get[22].GetValue()
+                "serialID": label_list_get[28].GetValue()
             }
             return conf
         elif flag in ["阿里云", "腾讯云"]:
-            if flag == "阿里云":
-                protocol = "aliyun"
-            else:
-                protocol = "txyun"
             conf = {
-                "protocol": protocol,
+                "protocol": self.flag_bit(flag),
                 "type": label_list_get[1].GetValue(),
                 "keepAlive": label_list_get[4].GetValue(),
                 "clientID": label_list_get[7].GetValue(),
@@ -1363,31 +1282,47 @@ class _847017531_MyFrame(wx.Frame):
             return conf
         elif flag == "移远云":
             conf = {
-                "protocol": "quecthing",
+                "protocol": self.flag_bit(flag),
                 "keepAlive": label_list_get[1].GetValue(),
                 "ProductKey": label_list_get[4].GetValue(),
                 "ProductSecret": label_list_get[7].GetValue(),
-                "qos": label_list_get[10].GetValue(),
-                "SessionFlag": False if label_list_get[13].GetValue() == "关闭" else True,
-                "sendMode": "phy" if label_list_get[16].GetValue() == "物模型" else "pass",
-                "serialID": label_list_get[19].GetValue(),
+                "Devicename": label_list_get[10].GetValue(),
+                "DeviceSecret": label_list_get[13].GetValue(),
+                "qos": label_list_get[16].GetValue(),
+                "SessionFlag": False if label_list_get[19].GetValue() == "关闭" else True,
+                "sendMode": "phy" if label_list_get[22].GetValue() == "物模型" else "pass",
+                "serialID": label_list_get[25].GetValue(),
+            }
+            return conf
+        elif flag == "华为云":
+            conf = {
+                "protocol": self.flag_bit(flag),
+                "url": label_list_get[1].GetValue(),
+                "port": label_list_get[4].GetValue(),
+                "Devicename": label_list_get[7].GetValue(),
+                "DeviceSecret": label_list_get[10].GetValue(),
+                "keep_alive": label_list_get[13].GetValue(),
+                "cleanSession": True if label_list_get[16].GetValue() == '1' else False,
+                "subscribe": get_topic_format(label_list_get[19].GetValue()),
+                "publish": get_topic_format(label_list_get[22].GetValue()),
+                "qos": label_list_get[25].GetValue(),
+                "serialID": label_list_get[28].GetValue(),
             }
             return conf
         else:
             return False
+    def uart_parity_transform(self, parity):
+        if parity == "NONE":
+            return "0"
+        elif parity == "EVENT":
+            return "1"
+        elif parity == "ODD":
+            return "2"
+        else:
+            return "0"
 
     def import_config_param(self, event):
         print("导入配置参数")
-        ota_list = {}
-        ota_list["ota"] = []
-        if self.combo_box_86.GetValue() == "开启":  # 开启ota升级
-            print(self.text_ctrl_11.GetValue())  # uid
-            print(self.text_ctrl_10.GetValue())  # module_type
-            print(self.text_ctrl_13.GetValue())  # pk
-            ota_list["ota"] = [self.text_ctrl_11.GetValue(), self.text_ctrl_10.GetValue(), self.text_ctrl_13.GetValue()]
-        else:
-            ota_list = {"ota": ["", "", ""]}
-        print("ota_list: ", ota_list)
         if not ser.isOpen():
             wx.MessageBox(u'请先打开USB Serial Port 串口', u'提示', wx.YES_DEFAULT | wx.ICON_INFORMATION)
             return None
@@ -1399,10 +1334,10 @@ class _847017531_MyFrame(wx.Frame):
                 wx.MessageBox(u'   请在上方输入框输入密码', u'提示', wx.YES_DEFAULT | wx.ICON_INFORMATION)
                 return
             # 基本参数
-            plate = [self.combo_box_63.GetCurrentSelection(), 82]
-            reg = [self.combo_box_84.GetCurrentSelection(), 83]
-            version = [self.text_ctrl_6.GetValue(), 84]
-            fota = [self.combo_box_86.GetCurrentSelection(), 85]
+            #plate = [self.combo_box_63.GetCurrentSelection(), 52]
+            reg = [self.combo_box_84.GetCurrentSelection(), 53]
+            version = [int(self.text_ctrl_6.GetValue()), 54] # 参数版本号
+            fota = [self.combo_box_87.GetCurrentSelection(), 55]
 
             ser_info = dict()
             # 串口0
@@ -1412,7 +1347,7 @@ class _847017531_MyFrame(wx.Frame):
                 uart_0_value = {
                     "baudrate": uart_0_list[1].GetValue(),
                     "databits": uart_0_list[3].GetValue(),
-                    "parity": uart_0_list[5].GetValue(),
+                    "parity": self.uart_parity_transform(uart_0_list[5].GetValue()),
                     "stopbits": uart_0_list[7].GetValue(),
                     "flowctl": "0"}
                 ser_info["0"] = uart_0_value
@@ -1422,7 +1357,7 @@ class _847017531_MyFrame(wx.Frame):
                 uart_1_value = {
                     "baudrate": uart_1_list[1].GetValue(),
                     "databits": uart_1_list[3].GetValue(),
-                    "parity": uart_1_list[5].GetValue(),
+                    "parity": self.uart_parity_transform(uart_1_list[5].GetValue()),
                     "stopbits": uart_1_list[7].GetValue(),
                     "flowctl": "0"}
                 ser_info["1"] = uart_1_value
@@ -1432,7 +1367,7 @@ class _847017531_MyFrame(wx.Frame):
                 uart_2_value = {
                     "baudrate": uart_2_list[1].GetValue(),
                     "databits": uart_2_list[3].GetValue(),
-                    "parity": uart_2_list[5].GetValue(),
+                    "parity": self.uart_parity_transform(uart_2_list[5].GetValue()),
                     "stopbits": uart_2_list[7].GetValue(),
                     "flowctl": "0"}
                 ser_info["2"] = uart_2_value
@@ -1442,7 +1377,7 @@ class _847017531_MyFrame(wx.Frame):
                 uart_3_value = {
                     "baudrate": uart_3_list[1].GetValue(),
                     "databits": uart_3_list[3].GetValue(),
-                    "parity": uart_3_list[5].GetValue(),
+                    "parity": self.uart_parity_transform(uart_3_list[5].GetValue()),
                     "stopbits": uart_3_list[7].GetValue(),
                     "flowctl": "0"}
                 ser_info["3"] = uart_3_value
@@ -1512,82 +1447,68 @@ class _847017531_MyFrame(wx.Frame):
                 else:
                     self.text_ctrl_3.write(">>> pio的值不在规定范围内(pio1~pio19)\n")
                     return
-                pin_info["pins"] = [NETLED, NETRDY, RSTCNF]
+                pin1 = NETLED.replace("pio", "", 1)
+                pin2 = NETRDY.replace("pio", "", 1)
+                pin3 = RSTCNF.replace("pio", "", 1)
+                pin_info["pins"] = [pin1, pin2, pin3]
             print(pin_info)
             password = config_password
             self.text_ctrl_3.write(">>> 正在导入配置参数请勿其他操作....\n")
             try:
-                for i in [plate, reg, version, fota]:
+                for i in [reg, version, fota]:
                     func_code = i[1]
                     data = i[0]
                     print(func_code, data)
                     self.Modify_config(func_code, data, password)
-                self.Modify_config(88, ser_info, password)
-                self.Modify_config(89, conf_info, password)
-                self.Modify_config(96, apn_info, password)
-                self.Modify_config(97, pin_info, password)
-                if self.combo_box_86.GetValue() == "开启":
-                    if len(ota_list["ota"]) == 3:
-                        print("导入ota")
-                        self.Modify_config(98, ota_list, password)
+                self.Modify_config(58, ser_info, password)
+                self.Modify_config(59, conf_info, password)
+                self.Modify_config(60, apn_info, password)
+                self.Modify_config(61, pin_info, password)
+                
+                print("导入ota")
+                self.Modify_config(62, 1 if self.combo_box_86.GetValue() == "开启" else 0, password)
                 restart_data = {}
+                self.text_ctrl_3.write(">>> 导入配置文件完成\n")
                 self.Modify_config(255, restart_data, password)
-                if import_error:
-                    self.text_ctrl_3.write(">>> 导入配置文件完成\n")
-                    self.text_ctrl_3.write(">>> 重启DTU...\n")
+                self.text_ctrl_3.write(">>> 重启DTU...\n")
             except Exception as e:
                 self.text_ctrl_3.write(">>> 导入文件失败\n")
         dlg.Destroy()
 
-    # 通道类型的标志位
-    def flag_bit(self, flag):
-        if flag == "HTTP":
-            return "http"
-        elif flag == "SOCKET TCP":
-            return "tcp"
-        elif flag == "SOCKET UDP":
-            return "udp"
-        elif flag == "MQTT":
-            return "mqtt"
-        elif flag == "阿里云":
-            return "aliyun"
-        elif flag == "腾讯云":
-            return "txyun"
-        elif flag == "移远云":
-            return "quecthing"
-
     # 修改配置参数
     def Modify_config(self, func_code, data, password):
         try:
-            if func_code == 81:  # password
-                data = {"password": password, "data": {"password": data}, "cmd_code": func_code}
+            if func_code == 51:  # password
+                data = {"password": password, "data": {"new_password": data}, "cmd_code": func_code}
                 time.sleep(0.5)
-            if func_code == 82:  # plate
+            if func_code == 52:  # plate
                 data = {"password": password, "data": {"plate": data}, "cmd_code": func_code}
                 time.sleep(0.5)
-            if func_code == 83:  # reg
+            if func_code == 53:  # reg
                 data = {"password": password, "data": {"reg": data}, "cmd_code": func_code}
                 time.sleep(0.5)
-            if func_code == 84:  # fota
+            if func_code == 54:  # version
                 data = {"password": password, "data": {"version": data}, "cmd_code": func_code}
                 time.sleep(0.5)
-            if func_code == 85:  # password
+            if func_code == 55:  # fota
                 data = {"password": password, "data": {"fota": data}, "cmd_code": func_code}
                 time.sleep(0.5)
-            if func_code == 88:  # ser_info
+            if func_code == 58:  # ser_info
+                data = {"password": password, "data": {"uconf": data}, "cmd_code": func_code}
+                time.sleep(0.5)
+            if func_code == 59:  # conf_info
+                data = {"password": password, "data": {"conf": data}, "cmd_code": func_code}
+                print("conf_info data:", data)
+                print("conf_info json:", json.dumps(data))
+                time.sleep(0.5)
+            if func_code == 60:  # apn_info
                 data = {"password": password, "data": data, "cmd_code": func_code}
                 time.sleep(0.5)
-            if func_code == 89:  # conf_info
+            if func_code == 61:  # pin_info
                 data = {"password": password, "data": data, "cmd_code": func_code}
                 time.sleep(0.5)
-            if func_code == 96:  # apn_info
-                data = {"password": password, "data": data, "cmd_code": func_code}
-                time.sleep(0.5)
-            if func_code == 97:  # pin_info
-                data = {"password": password, "data": data, "cmd_code": func_code}
-                time.sleep(0.5)
-            if func_code == 98:  # set_ota
-                data = {"password": password, "data": data, "cmd_code": func_code}
+            if func_code == 62:  # set_ota
+                data = {"password": password, "data": {"ota": data}, "cmd_code": func_code}
                 time.sleep(0.5)
             if func_code == 255:  # restart dtu
                 data = {"password": password, "data": data, "cmd_code": func_code}
@@ -1689,7 +1610,12 @@ class _847017531_MyFrame(wx.Frame):
             quecthing_list = self.quecthing_interface(panel)
             self.generate_label(quecthing_list, channel)
 
-
+        elif rb == '华为云':
+            self.Destroy_Window(channel)
+            self.clear_label_list(channel)
+            huweiyun_list = self.huaweiyun_interface(panel)
+            self.generate_label(huweiyun_list, channel)
+            
     def clear_label_list(self, channel):
         eval("label_{}_list".format(channel)).clear()
 
@@ -1713,22 +1639,21 @@ class _847017531_MyFrame(wx.Frame):
 
     # http 界面模板
     def http_interface(self, panel):
-        http_list = ['wx.StaticText({}, wx.ID_ANY, "method", pos=(20, 35))'.format(panel),
-                     'wx.ComboBox({}, 803, pos=(170, 35), choices=["get", "post"], style=wx.CB_READONLY)'.format(panel),
-                     'wx.StaticText({}, wx.ID_ANY, u"提示：提交请求的方法", pos=(290, 35))'.format(panel),
-                     'wx.StaticText({}, wx.ID_ANY, "url", pos=(20, 65))'.format(panel),
+        http_list = ['wx.StaticText({}, wx.ID_ANY, "request", pos=(20, 35))'.format(panel),
+                     'wx.TextCtrl({}, 803, "", pos=(170, 35))'.format(panel),
+                     'wx.StaticText({}, wx.ID_ANY, u"提示: HTTP请求url和method组合", pos=(290, 35))'.format(panel),
+
+                     'wx.StaticText({}, wx.ID_ANY, "data", pos=(20, 65))'.format(panel),
                      'wx.TextCtrl({}, 804, "", pos=(170, 65))'.format(panel),
-                     'wx.StaticText({}, wx.ID_ANY, u"提示：HTTP请求的地址和参数", pos=(290, 65))'.format(panel),
-                     'wx.StaticText({}, wx.ID_ANY, "data", pos=(20, 95))'.format(panel),
-                     'wx.TextCtrl({}, 804, "", pos=(170, 95))'.format(panel),
-                     'wx.StaticText({}, wx.ID_ANY, u"提示：post请求携带的数据，get请求不填写", pos=(290, 95))'.format(panel),
-                     'wx.StaticText({}, wx.ID_ANY, "timeout", pos=(20, 125))'.format(panel),
-                     'wx.TextCtrl({}, 805, "", pos=(170, 125))'.format(panel),
-                     'wx.StaticText({}, wx.ID_ANY, u"提示：HTTP请求最长等待时间，可选", pos=(290, 125))'.format(panel),
-                     'wx.StaticText({}, wx.ID_ANY, "serialD", pos=(20, 155))'.format(panel),
-                     'wx.ComboBox({}, 806, pos=(170, 155), choices=["1", "2", "3"], style=wx.CB_READONLY)'.format(
-                         panel),
-                     'wx.StaticText({}, wx.ID_ANY, u"提示：HTTP绑定的串口号（1~3）", pos=(290, 155))'.format(panel)]
+                     'wx.StaticText({}, wx.ID_ANY, u"提示：post请求携带的数据，get请求不填写", pos=(290, 65))'.format(panel),
+
+                     'wx.StaticText({}, wx.ID_ANY, "timeout", pos=(20, 95))'.format(panel),
+                     'wx.TextCtrl({}, 805, "", pos=(170, 95))'.format(panel),
+                     'wx.StaticText({}, wx.ID_ANY, u"提示：HTTP请求最长等待时间，可选", pos=(290, 95))'.format(panel),
+
+                     'wx.StaticText({}, wx.ID_ANY, "serialD", pos=(20, 125))'.format(panel),
+                     'wx.ComboBox({}, 806, pos=(170, 125), choices=["1", "2", "3"], style=wx.CB_READONLY)'.format(panel),
+                     'wx.StaticText({}, wx.ID_ANY, u"提示：HTTP绑定的串口号（1~3）", pos=(290, 125))'.format(panel)]
         return http_list
 
     # socket 界面模板
@@ -1845,33 +1770,86 @@ class _847017531_MyFrame(wx.Frame):
                              'wx.StaticText({}, wx.ID_ANY, u"提示：MQTT通道捆绑的串口ID (1~3)", pos=(290, 365))'.format(panel)]
         return aliyun_txyun_list
 
+        # 华为云 界面模板
+    def huaweiyun_interface(self, panel):
+        huaweiyun_list = [  'wx.StaticText({}, wx.ID_ANY, "url", pos=(20, 35))'.format(panel),
+                            'wx.TextCtrl({}, 803, "", pos=(170, 35))'.format(panel),
+                            'wx.StaticText({}, wx.ID_ANY, u"提示：不包含端口号", pos=(290, 35))'.format(panel),
+
+                            'wx.StaticText({}, wx.ID_ANY, "服务器的端口号", pos=(20, 65))'.format(panel),
+                            'wx.TextCtrl({}, 804, "", pos=(170, 65))'.format(panel),
+                            'wx.StaticText({}, wx.ID_ANY, u"提示：端口号范围 1~65536", pos=(290, 65))'.format(panel),
+
+                            'wx.StaticText({}, wx.ID_ANY, u"DeviceName", pos=(20, 95))'.format(panel),
+                            'wx.TextCtrl({}, 805, "", pos=(170, 95))'.format(panel),
+                            'wx.StaticText({}, wx.ID_ANY, u"提示：设备名称", pos=(290, 95))'.format(panel),
+
+                            'wx.StaticText({}, wx.ID_ANY, u"DeviceSecret", pos=(20, 125))'.format(panel),
+                            'wx.TextCtrl({}, 806, "", pos=(170, 125))'.format(panel),
+                            'wx.StaticText({}, wx.ID_ANY, u"提示：设备密钥", pos=(290, 125))'.format(panel),
+                           
+                            'wx.StaticText({}, wx.ID_ANY, "KeepAlive", pos=(20, 155))'.format(panel),
+                            'wx.TextCtrl({}, 807, "", pos=(170, 155))'.format(panel),
+                            'wx.StaticText({}, wx.ID_ANY, u"提示：客户端的请求超时时间，默认60s，可选", pos=(290, 155))'.format(panel),
+
+                            'wx.StaticText({}, wx.ID_ANY, u"CleanSession", pos=(20, 185))'.format(panel),
+                            'wx.ComboBox({}, wx.ID_ANY, pos=(170, 185), choices=["0", "1"],style=wx.CB_READONLY)'.format(panel),
+                            'wx.StaticText({}, wx.ID_ANY, u"提示：MQTT是否保存会话标志，默认0，可选", pos=(290, 185))'.format(panel),
+
+                            'wx.StaticText({}, wx.ID_ANY, u"订阅主题", pos=(20, 215))'.format(panel),
+                            'wx.TextCtrl({}, 808, "", pos=(170, 215))'.format(panel),
+                            'wx.StaticText({}, wx.ID_ANY, u"提示：多主题请使用逗号分割", pos=(290, 215))'.format(panel),
+
+                            'wx.StaticText({}, wx.ID_ANY, u"发布主题", pos=(20, 245))'.format(panel),
+                            'wx.TextCtrl({}, 809, "", pos=(170, 245))'.format(panel),
+                            'wx.StaticText({}, wx.ID_ANY, u"提示：多主题请使用逗号分割", pos=(290, 245))'.format(panel),
+
+                            'wx.StaticText({}, wx.ID_ANY, u"QOS", pos=(20, 275))'.format(panel),
+                            'wx.ComboBox({}, wx.ID_ANY, pos=(170, 275), choices=["0", "1"],style=wx.CB_READONLY)'.format(panel),
+                            'wx.StaticText({}, wx.ID_ANY, u"提示：MQTT的QOS级别，默认0，可选", pos=(290, 275))'.format(panel),
+                            
+                            'wx.StaticText({}, wx.ID_ANY, u"serialD", pos=(20, 305))'.format(panel),
+                            'wx.ComboBox({}, wx.ID_ANY, pos=(170, 305), choices=["1", "2", "3"],style=wx.CB_READONLY)'.format(panel),
+                            'wx.StaticText({}, wx.ID_ANY, u"提示：MQTT通道捆绑的串口ID (1~3)", pos=(290, 305))'.format(panel)]
+        return huaweiyun_list
+
     def quecthing_interface(self, panel):
         quecthing_list = [
             'wx.StaticText({}, wx.ID_ANY, "KeepAlive", pos=(20, 35))'.format(panel),
             'wx.TextCtrl({}, 804, "", pos=(170, 35))'.format(panel),
             'wx.StaticText({}, wx.ID_ANY, u"提示：客户端的请求超时时间，默认120s，可选", pos=(290, 35))'.format(panel),
+
             'wx.StaticText({}, wx.ID_ANY, u"ProductKey", pos=(20, 65))'.format(panel),
             'wx.TextCtrl({}, 805, "", pos=(170, 65))'.format(panel),
             'wx.StaticText({}, wx.ID_ANY, u"提示：产品Product Key", pos=(290, 65))'.format(panel),
+
             'wx.StaticText({}, wx.ID_ANY, u"ProductSecret", pos=(20, 95))'.format(panel),
             'wx.TextCtrl({}, 806, "", pos=(170, 95))'.format(panel),
             'wx.StaticText({}, wx.ID_ANY, u"提示：产品密钥", pos=(290, 95))'.format(panel),
-            'wx.StaticText({}, wx.ID_ANY, u"QOS", pos=(20, 125))'.format(panel),
-            'wx.ComboBox({}, wx.ID_ANY, pos=(170, 125), choices=["0", "1"],style=wx.CB_READONLY)'.format(
-                panel),
-            'wx.StaticText({}, wx.ID_ANY, u"提示：QOS级别，默认0，可选", pos=(290, 125))'.format(panel),
-            'wx.StaticText({}, wx.ID_ANY, u"SessionFlag", pos=(20, 155))'.format(panel),
-            'wx.ComboBox({}, wx.ID_ANY, pos=(170, 155), choices=[u"关闭", u"开启"],style=wx.CB_READONLY)'.format(
-                panel),
-            'wx.StaticText({}, wx.ID_ANY, u"提示：Session加密是否启用，默认关闭，可选", pos=(290, 155))'.format(panel),
-            'wx.StaticText({}, wx.ID_ANY, u"SendMode", pos=(20, 185))'.format(panel),
-            'wx.ComboBox({}, wx.ID_ANY, pos=(170, 185), choices=[u"透传", u"物模型"],style=wx.CB_READONLY)'.format(
-                panel),
-            'wx.StaticText({}, wx.ID_ANY, u"提示：发送模式设置", pos=(290, 185))'.format(panel),
-            'wx.StaticText({}, wx.ID_ANY, u"serialD", pos=(20, 215))'.format(panel),
-            'wx.ComboBox({}, wx.ID_ANY, pos=(170, 215), choices=["1", "2", "3"],style=wx.CB_READONLY)'.format(
-                panel),
-            'wx.StaticText({}, wx.ID_ANY, u"提示：MQTT通道捆绑的串口ID (1~3)", pos=(290, 215))'.format(panel)
+
+            'wx.StaticText({}, wx.ID_ANY, u"Devicename", pos=(20, 125))'.format(panel),
+            'wx.TextCtrl({}, 807, "", pos=(170, 125))'.format(panel),
+            'wx.StaticText({}, wx.ID_ANY, u"提示：设备名称", pos=(290, 125))'.format(panel),
+
+            'wx.StaticText({}, wx.ID_ANY, u"DeviceSecret", pos=(20, 155))'.format(panel),
+            'wx.TextCtrl({}, 808, "", pos=(170, 155))'.format(panel),
+            'wx.StaticText({}, wx.ID_ANY, u"提示：设备密钥", pos=(290, 155))'.format(panel),
+
+            'wx.StaticText({}, wx.ID_ANY, u"QOS", pos=(20, 185))'.format(panel),
+            'wx.ComboBox({}, wx.ID_ANY, pos=(170, 185), choices=["0", "1"],style=wx.CB_READONLY)'.format(panel),
+            'wx.StaticText({}, wx.ID_ANY, u"提示：QOS级别，默认0，可选", pos=(290, 185))'.format(panel),
+
+            'wx.StaticText({}, wx.ID_ANY, u"SessionFlag", pos=(20, 215))'.format(panel),
+            'wx.ComboBox({}, wx.ID_ANY, pos=(170, 215), choices=[u"关闭", u"开启"],style=wx.CB_READONLY)'.format(panel),
+            'wx.StaticText({}, wx.ID_ANY, u"提示：Session加密是否启用，默认关闭，可选", pos=(290, 215))'.format(panel),
+
+            'wx.StaticText({}, wx.ID_ANY, u"SendMode", pos=(20, 245))'.format(panel),
+            'wx.ComboBox({}, wx.ID_ANY, pos=(170, 245), choices=[u"透传", u"物模型"],style=wx.CB_READONLY)'.format(panel),
+            'wx.StaticText({}, wx.ID_ANY, u"提示：发送模式设置", pos=(290, 245))'.format(panel),
+
+            'wx.StaticText({}, wx.ID_ANY, u"serialD", pos=(20, 275))'.format(panel),
+            'wx.ComboBox({}, wx.ID_ANY, pos=(170, 275), choices=["1", "2", "3"],style=wx.CB_READONLY)'.format(panel),
+            'wx.StaticText({}, wx.ID_ANY, u"提示：MQTT通道捆绑的串口ID (1~3)", pos=(290, 275))'.format(panel)
         ]
         return quecthing_list
 
@@ -1936,16 +1914,10 @@ class _847017531_MyFrame(wx.Frame):
             wx.MessageBox(u'   请在下方输入框输入新密码', u'提示', wx.YES_DEFAULT | wx.ICON_INFORMATION)
             return
         new_password = self.text_ctrl_14.GetValue()
-        data = {"password": password, "data": {"password": new_password}}
         dlg = wx.MessageDialog(None, u"是否确认修改密码 ?", u"提示", wx.YES_NO | wx.ICON_QUESTION)
         if dlg.ShowModal() == wx.ID_YES:
             # 向main口发送数据
-            func_code = 81
-            data['cmd_code'] = func_code
-            # ts = TransferS(int(func_code), json.dumps(data))
-            # dt = ts.send()
-            format_data = self.package_data(data)
-            ser.write(format_data)
+            self.Modify_config(51, new_password, password)
         dlg.Destroy()
 
     # 密码输入框
