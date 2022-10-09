@@ -95,7 +95,7 @@ DTU GUI基于wxPython开发，现阶段已编译的dtu_gui.exe仅支持Windows�
 
 - 下行报文：
 
-`“1,6,2584251182,ijklmn”`
+`“1,6,ijklmn”`
 
-模块和外部设备（MCU）上行报文和下行报文都是采用字符串可是，数据项之间采用`,`相隔。
+模块和外部设备（MCU）上行报文和下行报文都是采用字符串格式，数据项之间采用`,`相隔。
 ![](./media/DTU_GUI_User_Guides/gui_send_frame.jpg)
