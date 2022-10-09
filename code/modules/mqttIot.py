@@ -54,7 +54,7 @@ class MqttIot(CloudObservable):
         4. cloud.post_data(data)
         5. cloud.close()
     """
-    def __init__(self, server, qos, port, clean_session, client_id, pub_topic=None, sub_topic=None, life_time=120):
+    def __init__(self, server, qos, port, clean_session, client_id, pass_word, pub_topic=None, sub_topic=None, life_time=120):
         """
         1. Init parent class CloudObservable
         2. Init cloud connect params and topic
@@ -72,7 +72,7 @@ class MqttIot(CloudObservable):
         self.__clean_session = clean_session
         self.__life_time = life_time
         self.__client_id = client_id
-        self.__password = None
+        self.__password = pass_word
 
         if pub_topic == None:
             self.pub_topic_dict = {"0": "/python/mqtt/pub"}

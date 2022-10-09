@@ -39,7 +39,7 @@ from usr.settings import settings
 from usr.modules.serial import Serial
 from usr.modules.history import History
 from usr.modules.logging import getLogger
-from usr.dtu_transaction import DownlinkTransaction, OtaTransaction, UplinkTransaction
+from usr.dtu_transaction import DownlinkTransaction, OtaTransaction, UplinkTransaction, GuiToolsInteraction
 from usr.modules.remote import RemotePublish, RemoteSubscribe
 from usr.settings import PROJECT_NAME, PROJECT_VERSION, DEVICE_FIRMWARE_NAME, DEVICE_FIRMWARE_VERSION
 
@@ -146,6 +146,7 @@ class Dtu(Singleton):
                                 int(cloud_config.get("port", 1883)),
                                 cloud_config.get("clean_session"),
                                 client_id,
+                                cloud_config.get("password"),
                                 cloud_config.get("publish"),
                                 cloud_config.get("subscribe"),
                                 cloud_config.get("keep_alive")
@@ -173,9 +174,9 @@ class Dtu(Singleton):
         log.info("DEVICE_FIRMWARE_NAME: %s, DEVICE_FIRMWARE_VERSION: %s" % (DEVICE_FIRMWARE_NAME, DEVICE_FIRMWARE_VERSION))
 
         uart_setting = settings.current_settings["uart_config"]
-        uart_port = settings.current_settings["system_config"]["peripheral_bus"]["uart"]
+
         # Serial initialization
-        serial = Serial(uart_port,
+        serial = Serial(int(uart_setting.get("port")),
                         int(uart_setting.get("baudrate")),
                         int(uart_setting.get("databits")),
                         int(uart_setting.get("parity")),
@@ -185,10 +186,12 @@ class Dtu(Singleton):
 
         # Cloud initialization
         cloud = self.__cloud_init(settings.current_settings["system_config"]["cloud"])
-
+        # GuiToolsInteraction initialization
+        gui_tool_inter = GuiToolsInteraction()
         # UplinkTransaction initialization
         up_transaction = UplinkTransaction()
         up_transaction.add_module(serial)
+        up_transaction.add_module(gui_tool_inter)
         # DownlinkTransaction initialization
         down_transaction = DownlinkTransaction()
         down_transaction.add_module(serial)

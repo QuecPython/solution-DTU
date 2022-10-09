@@ -24,11 +24,6 @@ class UserConfig(object):
             "fota":True,
             "sota":True
 		},
-        "peripheral_device":{},
-        "peripheral_bus":
-        {
-            "uart":2
-        }
     }
     usr_config = {}
     aliyun_config = {
@@ -99,6 +94,7 @@ class UserConfig(object):
         "publish": {"0": "oc/devices/625132b420cfa22b94c54613_dtu_device1_id/sys/messages/up"}
     }
     uart_config = {
+        "port" : "2",
         "baudrate": "115200",
         "databits": "8",
         "parity": "0",

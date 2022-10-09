@@ -1,7 +1,7 @@
 {
     "system_config":
     {
-        "cloud": "tcp_private_cloud",
+        "cloud": "mqtt_private_cloud",
         "usr_config": false,
         "base_function":
 		{
@@ -9,12 +9,7 @@
             "offline_storage": true,
             "fota":true,
             "sota":true
-		},
-        "peripheral_device":{},
-        "peripheral_bus":
-        {
-            "uart":2
-        }
+		}
     },
     "usr_config":
 	{
@@ -69,7 +64,7 @@
         "port": "1883",
 		"DK": "dtudevice1",
         "PK": "p11nKG",
-        "DS": "",
+        "DS": "487f138d160114faa967a9b6ab914110",
         "PS": "TVRBd2FPaVk2Ny85",
 		"keep_alive": 300,
 		"clean_session": false,
@@ -84,9 +79,10 @@
     },
     "mqtt_private_cloud_config":
     {
-        "server": "a15fbbd7ce.iot-mqtts.cn-north-4.myhuaweicloud.com",
-        "port": "1883",
-        "client_id": "",
+        "server": "dbb-rmqx.iwosai.com",
+        "port": "4883",
+        "client_id": "2ff01e56-e02a-4919-935d-de1f2677b4f9",
+        "password": "NvEpDpATJ8Zyyqjt",
         "clean_session": false,
         "qos": "0",
         "keep_alive": 300,
@@ -95,6 +91,7 @@
     },
     "uart_config":
     {
+        "port" : "2",
         "baudrate": "115200",
         "databits": "8",
         "parity": "0",
