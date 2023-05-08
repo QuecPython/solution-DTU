@@ -13,7 +13,7 @@
     },
     "usr_config":
 	{
-    
+      "filter_mask": ""
     },
     "aliyun_config":
 	{	
