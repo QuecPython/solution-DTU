@@ -193,7 +193,10 @@ class Socket(CloudObservable):
             except Exception as e:
                 logger.error("stop listen thread falied. %s" % e)
 
-        self.__connect()
+        # FIX: when connect failed we return False instead of raise Exception for another try(self.init when post data.)
+        if not self.__connect():
+            return False
+
         if self.__keep_alive != 0:
             try:
                 self.__socket.setsockopt(usocket.SOL_SOCKET, usocket.TCP_KEEPALIVE, self.__keep_alive)
