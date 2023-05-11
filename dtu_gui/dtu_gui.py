@@ -209,7 +209,7 @@ class dtu_gui_frame(wx.Frame):
         setting_sizer3.Add((85, 0), 0, 0, 0)
         sota_txt = wx.StaticText(self.setting_config_page, wx.ID_ANY, u"脚本升级")
         setting_sizer3.Add(sota_txt, 0, 0, 0)
-        setting_sizer3.Add((102, 20), 0, 0, 0)
+        setting_sizer3.Add((20, 20), 0, 0, 0)
         setting_sizer3.Add(self.sota_combo_box, 0, 0, 0)
 
         setting_sizer4.Add((20, 0), 0, 0, 0)

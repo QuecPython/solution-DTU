@@ -27,12 +27,12 @@ class CloudConfig(object):
                             'wx.StaticText({}, wx.ID_ANY, u"提示：MQTT的QOS级别，默认0，可选", pos=(290, {}+120))'.format(panel, vertical_start_pos),
 
                             'wx.StaticText({}, wx.ID_ANY, u"订阅主题", pos=(20, {}+150))'.format(panel, vertical_start_pos),
-                            'wx.TextCtrl({}, 808, "", pos=(170, {}+150))'.format(panel, vertical_start_pos),
-                            'wx.StaticText({}, wx.ID_ANY, u"提示：多主题请使用逗号分割", pos=(290, {}+150))'.format(panel, vertical_start_pos),
+                            'wx.TextCtrl({}, 808, "", pos=(170, {}+150), size=wx.Size(320, -1))'.format(panel, vertical_start_pos),
+                            'wx.StaticText({}, wx.ID_ANY, u"提示：多主题请使用逗号分割", pos=(500, {}+150))'.format(panel, vertical_start_pos),
 
                             'wx.StaticText({}, wx.ID_ANY, u"发布主题", pos=(20, {}+180))'.format(panel, vertical_start_pos),
-                            'wx.TextCtrl({}, 809, "", pos=(170, {}+180))'.format(panel, vertical_start_pos),
-                            'wx.StaticText({}, wx.ID_ANY, u"提示：多主题请使用逗号分割", pos=(290, {}+180))'.format(panel, vertical_start_pos)]
+                            'wx.TextCtrl({}, 809, "", pos=(170, {}+180), size=wx.Size(320, -1))'.format(panel, vertical_start_pos),
+                            'wx.StaticText({}, wx.ID_ANY, u"提示：多主题请使用逗号分割", pos=(500, {}+180))'.format(panel, vertical_start_pos)]
 
                             
         return huaweiyun_list
@@ -127,12 +127,12 @@ class CloudConfig(object):
                              'wx.StaticText({}, wx.ID_ANY, u"提示：MQTT的QOS级别，默认0，可选", pos=(290, {}+240))'.format(panel, vertical_start_pos),
 
                              'wx.StaticText({}, wx.ID_ANY, u"订阅主题", pos=(20, {}+270))'.format(panel, vertical_start_pos),
-                             'wx.TextCtrl({}, 812, "", pos=(170, {}+270))'.format(panel, vertical_start_pos),
-                             'wx.StaticText({}, wx.ID_ANY, u"提示：多主题请使用逗号分割", pos=(290, {}+270))'.format(panel, vertical_start_pos),
+                             'wx.TextCtrl({}, 812, "", pos=(170, {}+270), size=wx.Size(320, -1))'.format(panel, vertical_start_pos),
+                             'wx.StaticText({}, wx.ID_ANY, u"提示：多主题请使用逗号分割", pos=(500, {}+270))'.format(panel, vertical_start_pos),
                              
                              'wx.StaticText({}, wx.ID_ANY, u"发布主题", pos=(20, {}+300))'.format(panel, vertical_start_pos),
-                             'wx.TextCtrl({}, 813, "", pos=(170, {}+300))'.format(panel, vertical_start_pos),
-                             'wx.StaticText({}, wx.ID_ANY, u"提示：多主题请使用逗号分割", pos=(290, {}+300))'.format(panel, vertical_start_pos)]
+                             'wx.TextCtrl({}, 813, "", pos=(170, {}+300), size=wx.Size(320, -1))'.format(panel, vertical_start_pos),
+                             'wx.StaticText({}, wx.ID_ANY, u"提示：多主题请使用逗号分割", pos=(500, {}+300))'.format(panel, vertical_start_pos)]
         return aliyun_txyun_list
     
     # mqtt 界面模板
@@ -167,11 +167,11 @@ class CloudConfig(object):
             'wx.StaticText({}, wx.ID_ANY, u"提示：MQTT的QOS级别，默认0，可选", pos=(290, {}+180))'.format(panel, vertical_start_pos),
 
             'wx.StaticText({}, wx.ID_ANY, u"订阅主题", pos=(20, {}+210))'.format(panel, vertical_start_pos),
-            'wx.TextCtrl({}, 810, "", pos=(170, {}+210))'.format(panel, vertical_start_pos),
-            'wx.StaticText({}, wx.ID_ANY, u"提示：多主题请使用逗号分割", pos=(290, {}+210))'.format(panel, vertical_start_pos),
+            'wx.TextCtrl({}, 810, "", pos=(170, {}+210), size=wx.Size(320, -1))'.format(panel, vertical_start_pos),
+            'wx.StaticText({}, wx.ID_ANY, u"提示：多主题请使用逗号分割", pos=(500, {}+210))'.format(panel, vertical_start_pos),
 
             'wx.StaticText({}, wx.ID_ANY, u"发布主题", pos=(20, {}+240))'.format(panel, vertical_start_pos),
-            'wx.TextCtrl({}, 811, "", pos=(170, {}+240))'.format(panel, vertical_start_pos),
-            'wx.StaticText({}, wx.ID_ANY, u"提示：注意主题的格式", pos=(290, {}+240))'.format(panel, vertical_start_pos),
+            'wx.TextCtrl({}, 811, "", pos=(170, {}+240), size=wx.Size(320, -1))'.format(panel, vertical_start_pos),
+            'wx.StaticText({}, wx.ID_ANY, u"提示：注意主题的格式", pos=(500, {}+240))'.format(panel, vertical_start_pos),
         ]
         return mqtt_list
