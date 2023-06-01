@@ -144,34 +144,39 @@ class CloudConfig(object):
 
             'wx.StaticText({}, wx.ID_ANY, "服务器的端口号", pos=(20, {}+30))'.format(panel, vertical_start_pos),
             'wx.TextCtrl({}, 804, "", pos=(170, {}+30))'.format(panel, vertical_start_pos),
-            'wx.StaticText({}, wx.ID_ANY, u"提示：端口号范围 1~65536", pos=(290, {}+30))'.format(panel, vertical_start_pos),
+            'wx.StaticText({}, wx.ID_ANY, u"提示：端口号范围 1~65536", pos=(290, {}+30))'.format(panel,
+                                                                                                vertical_start_pos),
 
             'wx.StaticText({}, wx.ID_ANY, "client_id", pos=(20, {}+60))'.format(panel, vertical_start_pos),
             'wx.TextCtrl({}, 805, "", pos=(170, {}+60))'.format(panel, vertical_start_pos),
             'wx.StaticText({}, wx.ID_ANY, u"提示：自定义客户端", pos=(290, {}+60))'.format(panel, vertical_start_pos),
 
-            'wx.StaticText({}, wx.ID_ANY, "password", pos=(20, {}+90))'.format(panel, vertical_start_pos),
+            'wx.StaticText({}, wx.ID_ANY, "username", pos=(20, {}+90))'.format(panel, vertical_start_pos),
             'wx.TextCtrl({}, 806, "", pos=(170, {}+90))'.format(panel, vertical_start_pos),
-            'wx.StaticText({}, wx.ID_ANY, u"提示：在服务器上注册的密码", pos=(290, {}+90))'.format(panel, vertical_start_pos),
+            'wx.StaticText({}, wx.ID_ANY, u"提示：在服务器上注册的用户名", pos=(290, {}+90))'.format(panel, vertical_start_pos),
 
-            'wx.StaticText({}, wx.ID_ANY, "keep_alive", pos=(20, {}+120))'.format(panel, vertical_start_pos),
+            'wx.StaticText({}, wx.ID_ANY, "password", pos=(20, {}+120))'.format(panel, vertical_start_pos),
             'wx.TextCtrl({}, 807, "", pos=(170, {}+120))'.format(panel, vertical_start_pos),
-            'wx.StaticText({}, wx.ID_ANY, u"提示：客户端的请求超时时间，默认300s,可选", pos=(290, {}+120))'.format(panel, vertical_start_pos),
+            'wx.StaticText({}, wx.ID_ANY, u"提示：在服务器上注册的密码", pos=(290, {}+120))'.format(panel, vertical_start_pos),
 
-            'wx.StaticText({}, wx.ID_ANY, u"clean_session", pos=(20, {}+150))'.format(panel, vertical_start_pos),
-            'wx.ComboBox({}, 808, choices=["0", "1"], style=wx.CB_READONLY, pos=(170, {}+150))'.format(panel, vertical_start_pos),
-            'wx.StaticText({}, wx.ID_ANY, u"提示：MQTT是否保存会话标志位，默认为0 可选", pos=(290, {}+150))'.format(panel, vertical_start_pos),
+            'wx.StaticText({}, wx.ID_ANY, "keep_alive", pos=(20, {}+150))'.format(panel, vertical_start_pos),
+            'wx.TextCtrl({}, 808, "", pos=(170, {}+150))'.format(panel, vertical_start_pos),
+            'wx.StaticText({}, wx.ID_ANY, u"提示：客户端的请求超时时间，默认300s,可选", pos=(290, {}+150))'.format(panel, vertical_start_pos),
 
-            'wx.StaticText({}, wx.ID_ANY, u"QOS", pos=(20, {}+180))'.format(panel, vertical_start_pos),
-            'wx.ComboBox({}, 809, choices=["0", "1", "2"], style=wx.CB_READONLY, pos=(170, {}+180))'.format(panel, vertical_start_pos),
-            'wx.StaticText({}, wx.ID_ANY, u"提示：MQTT的QOS级别，默认0，可选", pos=(290, {}+180))'.format(panel, vertical_start_pos),
+            'wx.StaticText({}, wx.ID_ANY, u"clean_session", pos=(20, {}+180))'.format(panel, vertical_start_pos),
+            'wx.ComboBox({}, 809, choices=["0", "1"], style=wx.CB_READONLY, pos=(170, {}+180))'.format(panel, vertical_start_pos),
+            'wx.StaticText({}, wx.ID_ANY, u"提示：MQTT是否保存会话标志位，默认为0 可选", pos=(290, {}+180))'.format(panel, vertical_start_pos),
 
-            'wx.StaticText({}, wx.ID_ANY, u"订阅主题", pos=(20, {}+210))'.format(panel, vertical_start_pos),
-            'wx.TextCtrl({}, 810, "", pos=(170, {}+210), size=wx.Size(320, -1))'.format(panel, vertical_start_pos),
-            'wx.StaticText({}, wx.ID_ANY, u"提示：多主题请使用逗号分割", pos=(500, {}+210))'.format(panel, vertical_start_pos),
+            'wx.StaticText({}, wx.ID_ANY, u"QOS", pos=(20, {}+210))'.format(panel, vertical_start_pos),
+            'wx.ComboBox({}, 810, choices=["0", "1", "2"], style=wx.CB_READONLY, pos=(170, {}+210))'.format(panel, vertical_start_pos),
+            'wx.StaticText({}, wx.ID_ANY, u"提示：MQTT的QOS级别，默认0，可选", pos=(290, {}+210))'.format(panel, vertical_start_pos),
 
-            'wx.StaticText({}, wx.ID_ANY, u"发布主题", pos=(20, {}+240))'.format(panel, vertical_start_pos),
+            'wx.StaticText({}, wx.ID_ANY, u"订阅主题", pos=(20, {}+240))'.format(panel, vertical_start_pos),
             'wx.TextCtrl({}, 811, "", pos=(170, {}+240), size=wx.Size(320, -1))'.format(panel, vertical_start_pos),
-            'wx.StaticText({}, wx.ID_ANY, u"提示：注意主题的格式", pos=(500, {}+240))'.format(panel, vertical_start_pos),
+            'wx.StaticText({}, wx.ID_ANY, u"提示：自定义主题id为key，主题字符串为value的json格式", pos=(500, {}+240))'.format(panel, vertical_start_pos),
+
+            'wx.StaticText({}, wx.ID_ANY, u"发布主题", pos=(20, {}+270))'.format(panel, vertical_start_pos),
+            'wx.TextCtrl({}, 811, "", pos=(170, {}+270), size=wx.Size(320, -1))'.format(panel, vertical_start_pos),
+            'wx.StaticText({}, wx.ID_ANY, u"提示：自定义主题id为key，主题字符串为value的json格式", pos=(500, {}+270))'.format(panel, vertical_start_pos)
         ]
         return mqtt_list

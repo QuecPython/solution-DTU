@@ -1,0 +1,1 @@
+pyinstaller -Fw dtu_gui.py -i quectel.ico

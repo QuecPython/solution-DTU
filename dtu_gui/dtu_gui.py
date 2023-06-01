@@ -624,20 +624,22 @@ class dtu_gui_frame(wx.Frame):
             label_list_get[4].write(cloud_config["port"])
         if cloud_config["client_id"] != "":
             label_list_get[7].write(cloud_config["client_id"])
+        if cloud_config["username"] != "":
+            label_list_get[10].write(cloud_config["username"])
         if cloud_config["password"] != "":
-            label_list_get[10].write(cloud_config["password"])
-        label_list_get[13].write(str(cloud_config["keep_alive"]))
+            label_list_get[13].write(cloud_config["password"])
+        label_list_get[16].write(str(cloud_config["keep_alive"]))
         if cloud_config["clean_session"] == 1:
-            label_list_get[16].SetSelection(1)
-        elif cloud_config["clean_session"] == 0:
-            label_list_get[16].SetSelection(0)
-        if cloud_config["qos"] == 1:
             label_list_get[19].SetSelection(1)
-        elif cloud_config["qos"] == 0:
+        elif cloud_config["clean_session"] == 0:
             label_list_get[19].SetSelection(0)
-       
-        label_list_get[22].write(json.dumps(cloud_config["subscribe"]))
-        label_list_get[25].write(json.dumps(cloud_config["publish"]))
+        if cloud_config["qos"] == 1:
+            label_list_get[22].SetSelection(1)
+        elif cloud_config["qos"] == 0:
+            label_list_get[22].SetSelection(0)
+
+        label_list_get[25].write(json.dumps(cloud_config["subscribe"]))
+        label_list_get[28].write(json.dumps(cloud_config["publish"]))
 
     def __fill_huawei_config(self, cloud_config):
         label_list_get = eval("label_list")
@@ -934,12 +936,13 @@ class dtu_gui_frame(wx.Frame):
             "server": label_list_get[1].GetValue(),
             "port": label_list_get[4].GetValue(),
             "client_id": label_list_get[7].GetValue(),
-            "password": label_list_get[10].GetValue(),
-            "clean_session": True if label_list_get[16].GetSelection()==1 else False,
-            "qos": int(label_list_get[19].GetStringSelection()),
-            "keep_alive": int(label_list_get[13].GetValue()),
-            "subscribe": json.loads(label_list_get[22].GetValue()),
-            "publish": json.loads(label_list_get[25].GetValue()),
+            "username": label_list_get[10].GetValue(),
+            "password": label_list_get[13].GetValue(),
+            "clean_session": True if label_list_get[19].GetSelection() == 1 else False,
+            "qos": int(label_list_get[22].GetStringSelection()),
+            "keep_alive": int(label_list_get[16].GetValue()),
+            "subscribe": json.loads(label_list_get[25].GetValue()),
+            "publish": json.loads(label_list_get[28].GetValue()),
         }
         print("mqtt_config:", mqtt_config)
         return mqtt_config

@@ -82,6 +82,7 @@
         "server": "dbb-rmqx.iwosai.com",
         "port": "4883",
         "client_id": "2ff01e56-e02a-4919-935d-de1f2677b4f9",
+        "username": "test",
         "password": "NvEpDpATJ8Zyyqjt",
         "clean_session": false,
         "qos": "0",
