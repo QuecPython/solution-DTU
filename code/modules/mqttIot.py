@@ -54,7 +54,7 @@ class MqttIot(CloudObservable):
         4. cloud.post_data(data)
         5. cloud.close()
     """
-    def __init__(self, server, qos, port, clean_session, client_id, pass_word, pub_topic=None, sub_topic=None, life_time=120):
+    def __init__(self, server, qos, port, clean_session, client_id, user, pass_word, pub_topic=None, sub_topic=None, life_time=120):
         """
         1. Init parent class CloudObservable
         2. Init cloud connect params and topic
@@ -63,7 +63,7 @@ class MqttIot(CloudObservable):
         self.conn_type = "mqtt"
         self.__pk = None
         self.__ps = None
-        self.__dk = None
+        self.__dk = user
         self.__ds = None
         self.__server = server
         self.__qos = qos
@@ -97,10 +97,6 @@ class MqttIot(CloudObservable):
             data: response dictionary info
         """
         topic = topic.decode()
-        try:
-            data = ujson.loads(data)
-        except:
-            pass
 
         try:
             self.notifyObservers(self, *("raw_data", {"topic":topic, "data":data} ) )

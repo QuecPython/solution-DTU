@@ -146,6 +146,7 @@ class Dtu(Singleton):
                                 int(cloud_config.get("port", 1883)),
                                 cloud_config.get("clean_session"),
                                 client_id,
+                                cloud_config.get("username"),
                                 cloud_config.get("password"),
                                 cloud_config.get("publish"),
                                 cloud_config.get("subscribe"),

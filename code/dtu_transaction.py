@@ -101,7 +101,6 @@ class DownlinkTransaction(Singleton):
             data = kwargs["data"]
         else:
             data = str(kwargs["data"])
-        
 
         if cloud_type == "tcp_private_cloud":
             packed_data = data
