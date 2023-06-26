@@ -6,6 +6,7 @@ from pubsub import pub
 import os, base64
 from cloud_config import CloudConfig
 from datetime import datetime
+from location import chinese_map, english_map
 
 ser = serial.Serial()  # 创建串口对象
 serPort = serial.tools.list_ports  # 串口列表
@@ -17,6 +18,9 @@ label_list = []  # 云配置标签
 basic_setting_funcode = ["50", "51", "52", "53", "54", "55", "56", "57", "58", "59", "60", "61", "62", "63",] # 设置参数指令
 serial_read_buffer = ""
 
+# 语言
+LANGUAGE = 'chinese'  # english
+
 
 class dtu_gui_frame(wx.Frame):
 
@@ -27,15 +31,25 @@ class dtu_gui_frame(wx.Frame):
         wx.Frame.__init__(self, *args, **kwds)
         self.cloud_config = CloudConfig()
         self.SetSize((1000, 710))
+
+        # Menu
+        self.menu = wx.Menu()
+        cn_item = self.menu.Append(wx.ID_ABOUT, "中文")
+        self.menu.AppendSeparator()
+        en_item = self.menu.Append(wx.ID_EXIT, "English")
         # Menu Bar
         self.frame_menubar = wx.MenuBar()
+        self.frame_menubar.Append(self.menu, "语言")
         self.SetMenuBar(self.frame_menubar)
+
+        self.Bind(wx.EVT_MENU, self.SetChinese, cn_item)
+        self.Bind(wx.EVT_MENU, self.SetEnglish, en_item)
 
         self.SetTitle("DTU Tools")
 
         self.SetBackgroundColour(wx.NullColour)
         bc = self.GetBackgroundColour()
-        print(bc)
+
         # 串口配置页面
         self.uart_connect_page()
 
@@ -75,6 +89,53 @@ class dtu_gui_frame(wx.Frame):
         # 串口发送数据
         self.Bind(wx.EVT_BUTTON, self.send_data, self.send_button)
 
+    def SetChinese(self, event):
+        global LANGUAGE
+        LANGUAGE = 'chinese'
+        self.__set_language(LANGUAGE)
+        self.Layout()
+
+    def SetEnglish(self, event):
+        global LANGUAGE
+        LANGUAGE = 'english'
+        self.__set_language(LANGUAGE)
+        self.Layout()
+
+    def __set_language(self, language):
+        self.Destroy_Window()
+        self.clear_label_list()
+
+        if language == 'chinese':
+            items = chinese_map.items()
+            self.frame_menubar.SetMenuLabel(0, '语言')
+            self.main_page.SetPageText(0, '交互')
+            self.main_page.SetPageText(1, '参数配置')
+            if ser.isOpen():
+                self.enable_uart_button.SetLabel('关闭串口')
+            else:
+                self.enable_uart_button.SetLabel('打开串口')
+        else:
+            items = english_map.items()
+            self.frame_menubar.SetMenuLabel(0, 'language')
+            self.main_page.SetPageText(0, 'repl')
+            self.main_page.SetPageText(1, 'settings')
+            if ser.isOpen():
+                self.enable_uart_button.SetLabel('close serial')
+            else:
+                self.enable_uart_button.SetLabel('open serial')
+
+        for k, v in items:
+            attr = getattr(self, k, None)
+            if attr is None:
+                continue
+
+            if isinstance(attr, (wx.Button, wx.StaticText)):
+                attr.SetLabel(v)
+
+            if isinstance(attr, wx.ComboBox):
+                for index, string in enumerate(v):
+                    attr.SetString(index, string)
+
     def uart_connect_page(self):
         self.uart_port_list_combo_box = wx.ComboBox(self, wx.ID_ANY, choices=[""], style=wx.CB_DROPDOWN)
         self.uart_bautrate_combo_box = wx.ComboBox(self, wx.ID_ANY,
@@ -103,21 +164,21 @@ class dtu_gui_frame(wx.Frame):
         self.uart_config_page_main_page = wx.BoxSizer(wx.HORIZONTAL) # 水平
         sizer_31 = wx.BoxSizer(wx.VERTICAL) # 垂直
         sizer_32 = wx.BoxSizer(wx.HORIZONTAL)
-        label_6 = wx.StaticText(self, wx.ID_ANY, u"【PC端口参数】")
-        sizer_32.Add(label_6, 0, 0, 0)
+        self.label_6 = wx.StaticText(self, wx.ID_ANY, u"【PC端口参数】")
+        sizer_32.Add(self.label_6, 0, 0, 0)
         sizer_32.Add((20, 20), 0, 0, 0)
-        label_7 = wx.StaticText(self, wx.ID_ANY, u"  串口")
-        label_7.SetMinSize((41, 15))
-        sizer_32.Add(label_7, 0, 0, 0)
+        self.label_7 = wx.StaticText(self, wx.ID_ANY, u"串口")
+        self.label_7.SetMinSize((41, 15))
+        sizer_32.Add(self.label_7, 0, 0, 0)
         sizer_32.Add(self.uart_port_list_combo_box, 0, 0, 0)
         sizer_32.Add((20, 20), 0, 0, 0)
-        label_8 = wx.StaticText(self, wx.ID_ANY, u"波特率")
-        sizer_32.Add(label_8, 0, 0, 0)
+        self.label_8 = wx.StaticText(self, wx.ID_ANY, u"波特率")
+        sizer_32.Add(self.label_8, 0, 0, 0)
         sizer_32.Add((20, 20), 0, 0, 0)
         sizer_32.Add(self.uart_bautrate_combo_box, 0, 0, 0)
         sizer_32.Add((20, 20), 0, 0, 0)
-        label_9 = wx.StaticText(self, wx.ID_ANY, u"数据位/校验位/停止位")
-        sizer_32.Add(label_9, 0, 0, 0)
+        self.label_9 = wx.StaticText(self, wx.ID_ANY, u"数据位/校验位/停止位")
+        sizer_32.Add(self.label_9, 0, 0, 0)
         sizer_32.Add((20, 20), 0, 0, 0)
         sizer_32.Add(self.uart_bit_len_combo_box, 0, 0, 0)
         sizer_32.Add(self.uart_parity_combo_box, 0, 0, 0)
@@ -195,84 +256,84 @@ class dtu_gui_frame(wx.Frame):
         self.setting_mian_sizer = wx.BoxSizer(wx.VERTICAL)
 
         setting_sizer1.Add((20, 0), 0, 0, 0)
-        cloud_type_txt = wx.StaticText(self.setting_config_page, wx.ID_ANY, u"云平台通信类型")
-        setting_sizer1.Add(cloud_type_txt, 0, 0, 0)
+        self.cloud_type_txt = wx.StaticText(self.setting_config_page, wx.ID_ANY, u"云平台通信类型")
+        setting_sizer1.Add(self.cloud_type_txt, 0, 0, 0)
         setting_sizer1.Add((65, 20), 0, 0, 0)
         setting_sizer1.Add(self.cloud_type_combo_box, 0, 0, 0)
 
         setting_sizer3.Add((20, 0), 0, 0, 0)
-        fota_txt = wx.StaticText(self.setting_config_page, wx.ID_ANY, u"固件升级")
-        setting_sizer3.Add(fota_txt, 0, 0, 0)
+        self.fota_txt = wx.StaticText(self.setting_config_page, wx.ID_ANY, u"固件升级")
+        setting_sizer3.Add(self.fota_txt, 0, 0, 0)
         setting_sizer3.Add((101, 20), 0, 0, 0)
         setting_sizer3.Add(self.fota_combo_box, 0, 0, 0)
 
         setting_sizer3.Add((85, 0), 0, 0, 0)
-        sota_txt = wx.StaticText(self.setting_config_page, wx.ID_ANY, u"脚本升级")
-        setting_sizer3.Add(sota_txt, 0, 0, 0)
+        self.sota_txt = wx.StaticText(self.setting_config_page, wx.ID_ANY, u"脚本升级")
+        setting_sizer3.Add(self.sota_txt, 0, 0, 0)
         setting_sizer3.Add((20, 20), 0, 0, 0)
         setting_sizer3.Add(self.sota_combo_box, 0, 0, 0)
 
         setting_sizer4.Add((20, 0), 0, 0, 0)
-        sota_txt = wx.StaticText(self.setting_config_page, wx.ID_ANY, u"透传数据过滤设置")
-        setting_sizer4.Add(sota_txt, 0, 0, 0)
+        self.filter_txt = wx.StaticText(self.setting_config_page, wx.ID_ANY, u"透传数据过滤设置")
+        setting_sizer4.Add(self.filter_txt, 0, 0, 0)
         setting_sizer4.Add((52, 20), 0, 0, 0)
         setting_sizer4.Add(self.filter_txt_ctrl, 0, 0, 0)
 
         setting_sizer5.Add((20, 0), 0, 0, 0)
-        history_txt = wx.StaticText(self.setting_config_page, wx.ID_ANY, u"历史数据存储")
-        setting_sizer5.Add(history_txt, 0, 0, 0)
+        self.history_txt = wx.StaticText(self.setting_config_page, wx.ID_ANY, u"历史数据存储")
+        setting_sizer5.Add(self.history_txt, 0, 0, 0)
         setting_sizer5.Add((78, 20), 0, 0, 0)
         setting_sizer5.Add(self.offline_storage_combo_box, 0, 0, 0)
         
         setting_uart_sizer1.Add((20, 0), 0, 0, 0)
-        uart_config_txt = wx.StaticText(self.setting_config_page, wx.ID_ANY, u"串口参数配置：")
-        setting_uart_sizer1.Add(uart_config_txt, 0, 0, 0)
+        self.uart_config_txt = wx.StaticText(self.setting_config_page, wx.ID_ANY, u"串口参数配置")
+        setting_uart_sizer1.Add(self.uart_config_txt, 0, 0, 0)
         setting_uart_sizer1.Add((65, 0), 0, 0, 0)
 
-        uart_port_txt = wx.StaticText(self.setting_config_page, wx.ID_ANY, u"串口号")
-        setting_uart_sizer1.Add(uart_port_txt, 0, 0, 0)
-        setting_uart_sizer1.Add((10, 20), 0, 0, 0)
+        self.uart_port_txt = wx.StaticText(self.setting_config_page, wx.ID_ANY, u"串口号")
+        setting_uart_sizer1.Add(self.uart_port_txt, 0, 0, 0)
+        setting_uart_sizer1.Add((20, 20), 0, 0, 0)
         setting_uart_sizer1.Add(self.uart_port_num_combo_box, 0, 0, 0)
 
         setting_uart_sizer1.Add((40, 0), 0, 0, 0)
-        baudrate_txt = wx.StaticText(self.setting_config_page, wx.ID_ANY, u"波特率")
-        setting_uart_sizer1.Add(baudrate_txt, 0, 0, 0)
-        setting_uart_sizer1.Add((10, 20), 0, 0, 0)
+        self.baudrate_txt = wx.StaticText(self.setting_config_page, wx.ID_ANY, u"波特率")
+        setting_uart_sizer1.Add(self.baudrate_txt, 0, 0, 0)
+        setting_uart_sizer1.Add((20, 20), 0, 0, 0)
         setting_uart_sizer1.Add(self.uart_baudrate_combo_box, 0, 0, 0)
 
         setting_uart_sizer1.Add((40, 0), 0, 0, 0)
-        databits_txt = wx.StaticText(self.setting_config_page, wx.ID_ANY, u"数据位")
-        setting_uart_sizer1.Add(databits_txt, 0, 0, 0)
-        setting_uart_sizer1.Add((10, 20), 0, 0, 0)
+        self.databits_txt = wx.StaticText(self.setting_config_page, wx.ID_ANY, u"数据位")
+        setting_uart_sizer1.Add(self.databits_txt, 0, 0, 0)
+        setting_uart_sizer1.Add((20, 20), 0, 0, 0)
         setting_uart_sizer1.Add(self.uart_databits_combo_box, 0, 0, 0)
 
         setting_uart_sizer1.Add((40, 0), 0, 0, 0)
-        parity_txt = wx.StaticText(self.setting_config_page, wx.ID_ANY, u"校验位")
-        setting_uart_sizer1.Add(parity_txt, 0, 0, 0)
-        setting_uart_sizer1.Add((10, 20), 0, 0, 0)
+        self.parity_txt = wx.StaticText(self.setting_config_page, wx.ID_ANY, u"校验位")
+        setting_uart_sizer1.Add(self.parity_txt, 0, 0, 0)
+        setting_uart_sizer1.Add((20, 20), 0, 0, 0)
         setting_uart_sizer1.Add(self.uart_parity_combo_box, 0, 0, 0)
         
-        setting_uart_sizer2.Add((170, 0), 0, 0, 0)
-        stopbits_txt = wx.StaticText(self.setting_config_page, wx.ID_ANY, u"停止位")
-        setting_uart_sizer2.Add(stopbits_txt, 0, 0, 0)
-        setting_uart_sizer2.Add((10, 20), 0, 0, 0)
+        setting_uart_sizer2.Add((155, 0), 0, 0, 0)
+        self.stopbits_txt = wx.StaticText(self.setting_config_page, wx.ID_ANY, u"停止位")
+        setting_uart_sizer2.Add(self.stopbits_txt, 0, 0, 0)
+        setting_uart_sizer2.Add((20, 20), 0, 0, 0)
         setting_uart_sizer2.Add(self.uart_stopbits_combo_box, 0, 0, 0)
 
         setting_uart_sizer2.Add((40, 0), 0, 0, 0)
-        flowctl_txt = wx.StaticText(self.setting_config_page, wx.ID_ANY, u"流控")
-        setting_uart_sizer2.Add(flowctl_txt, 0, 0, 0)
+        self.flowctl_txt = wx.StaticText(self.setting_config_page, wx.ID_ANY, u"流控")
+        setting_uart_sizer2.Add(self.flowctl_txt, 0, 0, 0)
         setting_uart_sizer2.Add((20, 20), 0, 0, 0)
         setting_uart_sizer2.Add(self.uart_flowctl_combo_box, 0, 0, 0)
 
         setting_uart_sizer2.Add((40, 0), 0, 0, 0)
-        rs485_pin_txt = wx.StaticText(self.setting_config_page, wx.ID_ANY, u"控制485通信方向Pin")
-        setting_uart_sizer2.Add(rs485_pin_txt, 0, 0, 0)
-        setting_uart_sizer2.Add((10, 20), 0, 0, 0)
+        self.rs485_pin_txt = wx.StaticText(self.setting_config_page, wx.ID_ANY, u"控制485通信方向Pin")
+        setting_uart_sizer2.Add(self.rs485_pin_txt, 0, 0, 0)
+        setting_uart_sizer2.Add((20, 20), 0, 0, 0)
         setting_uart_sizer2.Add(self.rs485_direction_pin_txt_ctrl, 0, 0, 0)
 
         setting_sizer6.Add((20, 0), 0, 0, 0)
-        yun_config_txt = wx.StaticText(self.setting_config_page, wx.ID_ANY, u"云参数配置---------------------")
-        setting_sizer6.Add(yun_config_txt, 0, 0, 0)
+        self.yun_config_txt = wx.StaticText(self.setting_config_page, wx.ID_ANY, u"云参数配置---------------------")
+        setting_sizer6.Add(self.yun_config_txt, 0, 0, 0)
 
         self.setting_mian_sizer.Add((0, 5), 0, 0, 0)
         self.setting_mian_sizer.Add(setting_sizer1, 0, wx.EXPAND, 0)
@@ -441,24 +502,24 @@ class dtu_gui_frame(wx.Frame):
         rb = self.cloud_type_combo_box.GetStringSelection()
         self.Destroy_Window()
         self.clear_label_list()
-        if rb == 'TCP私有云' or rb == 'UDP私有云':
-            socket_list = self.cloud_config.socket_interface(panel)
+        if rb in ('TCP私有云', 'UDP私有云', 'TCP', 'UDP'):
+            socket_list = self.cloud_config.socket_interface(panel, LANGUAGE)
             self.generate_label(socket_list)
 
-        elif rb == 'MQTT私有云':
-            mqtt_list = self.cloud_config.mqtt_interface(panel)
+        elif rb in ('MQTT私有云', 'MQTT'):
+            mqtt_list = self.cloud_config.mqtt_interface(panel, LANGUAGE)
             self.generate_label(mqtt_list)
 
-        elif rb == '阿里云' or rb == '腾讯云':
-            aliyun_txyun_list = self.cloud_config.aliyun_txyun_interface(panel)
+        elif rb in ('阿里云', '腾讯云', 'aliyun', 'txyun'):
+            aliyun_txyun_list = self.cloud_config.aliyun_txyun_interface(panel, LANGUAGE)
             self.generate_label(aliyun_txyun_list)
 
-        elif rb == '移远云':
-            quecthing_list = self.cloud_config.quecthing_interface(panel)
+        elif rb in ('移远云', 'quectel'):
+            quecthing_list = self.cloud_config.quecthing_interface(panel, LANGUAGE)
             self.generate_label(quecthing_list)
 
-        elif rb == '华为云':
-            huweiyun_list = self.cloud_config.huaweiyun_interface(panel)
+        elif rb in ('华为云', 'huawei'):
+            huweiyun_list = self.cloud_config.huaweiyun_interface(panel, LANGUAGE)
             self.generate_label(huweiyun_list)
 
     # 串口相关功能函数
@@ -515,10 +576,14 @@ class dtu_gui_frame(wx.Frame):
                 is_open = True
                 self.command_display.Clear()
                 self.command_display.AppendText("欢迎使用 DTU Tools {}\n".format(time_now))
-                self.enable_uart_button.SetLabel(u"关闭串口")
+                self.enable_uart_button.SetLabel(
+                    u"关闭串口" if LANGUAGE == 'chinese' else u"close serial"
+                )
             else:
                 is_open = False
-                self.enable_uart_button.SetLabel(u"打开串口")
+                self.enable_uart_button.SetLabel(
+                    u"打开串口" if LANGUAGE == 'chinese' else u"open serial"
+                )
 
     def __display_data_in_command_frame(self, new_str):
         show_data = "[" + time_now + "]" + "   " + str(new_str)
@@ -1022,9 +1087,9 @@ class dtu_gui_frame(wx.Frame):
         if dlg.ShowModal() == wx.ID_YES:
             # 基本参数
             cloud_type = self.__cloud_congif_convert(self.cloud_type_combo_box.GetStringSelection())
-            sota = True if self.sota_combo_box.GetStringSelection()==u"开启" else False
-            fota = True if self.fota_combo_box.GetStringSelection()==u"开启" else False
-            history_storage = True if self.offline_storage_combo_box.GetStringSelection()==u"开启" else False
+            sota = True if self.sota_combo_box.GetSelection() == 1 else False
+            fota = True if self.fota_combo_box.GetSelection() == 1 else False
+            history_storage = True if self.offline_storage_combo_box.GetSelection() == 1 else False
             uart_config = {
                 "port" : self.uart_port_num_combo_box.GetStringSelection(),
                 "baudrate": self.uart_baudrate_combo_box.GetStringSelection(),
