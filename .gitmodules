@@ -1,0 +1,3 @@
+[submodule "dtu_tool"]
+	path = dtu_tool
+	url = https://github.com/QuecPython/DTU-tool.git
