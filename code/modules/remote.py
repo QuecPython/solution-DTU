@@ -15,6 +15,7 @@
 import _thread
 from usr.modules.logging import getLogger
 from usr.modules.common import Observable, CloudObserver
+from usr.modules.net_manager import NetManager
 
 
 log = getLogger(__name__)
@@ -147,6 +148,10 @@ class RemotePublish(Observable):
             "gps": []
         }
         """
+        if not NetManager.reconnect():
+            log.error('Net Work not ready.')
+            return
+
         res = True
         if self.__cloud_conn():
             if not self.__cloud_post(data, topic_id):
