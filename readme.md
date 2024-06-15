@@ -56,7 +56,7 @@ Before you begin, ensure you have the following prerequisites:
    ```
 
 2. **Flash the Firmware**:
-   Follow the [instructions](https://python.quectel.com/doc/Application_guide/dev-tools/QPYcom/qpycom-dw.html#Download-Firmware) to flash the firmware to the development board.
+   Follow the [instructions](https://python.quectel.com/doc/Application_guide/en/dev-tools/QPYcom/qpycom-dw.html#Download-Firmware) to flash the firmware to the development board.
 
 ### Running the Application
 
