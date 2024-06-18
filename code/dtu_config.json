@@ -1,0 +1,103 @@
+{
+    "system_config":
+    {
+        "cloud": "mqtt_private_cloud",
+        "usr_config": false,
+        "base_function":
+		{
+			"logger": true,
+            "offline_storage": true,
+            "fota":true,
+            "sota":true
+		}
+    },
+    "usr_config":
+	{
+      "filter_mask": ""
+    },
+    "aliyun_config":
+	{	
+		"server": "gzsi5zT5fH3.iot-as-mqtt.cn-shanghai.aliyuncs.com",
+		"DK": "dtu_device1",
+        "PK": "gzsi5zT5fH3",
+        "DS": "173f006cab770615346978583ac430c0",
+        "PS": "D07Ujh1RvKAs6KEY",
+		"burning_method": 1,
+		"keep_alive": 300,
+		"clean_session": false,
+		"qos": 1,
+        "client_id": "",
+        "subscribe": {"0": "/gzsi5zT5fH3/dtu_device1/user/get"},
+        "publish": {"0": "/gzsi5zT5fH3/dtu_device1/user/update"}
+	},
+    "txyun_config":
+	{	
+		"DK": "dtu_device1",
+        "PK": "I81T7DUSFF",
+        "DS": "wF+b5NwEHI53crHmOqdyQA==",
+        "PS": "",
+		"burning_method": 1,
+		"keep_alive": 300,
+		"clean_session": false,
+		"qos": 1,
+        "client_id":"",
+        "subscribe": {"0": "I81T7DUSFF/dtu_device1/control"},
+        "publish": {"0": "I81T7DUSFF/dtu_device1/event"}
+	},
+    "hwyun_config":
+	{	
+        "server": "a15fbbd7ce.iot-mqtts.cn-north-4.myhuaweicloud.com",
+        "port": "1883",
+		"DK": "625132b420cfa22b94c54613_dtu_device1_id",
+        "PK": "",
+        "DS": "a306255686a71e56ad53965fc2771bf8",
+        "PS": "",
+		"keep_alive": 300,
+		"clean_session": false,
+		"qos": 1,
+        "subscribe": {"0": "$oc/devices/625132b420cfa22b94c54613_dtu_device1_id/sys/messages/down"},
+        "publish": {"0": "$oc/devices/625132b420cfa22b94c54613_dtu_device1_id/sys/messages/up"}
+	},
+    "quecthing_config":
+	{	
+        "server":"iot-south.quectel.com",
+        "port": "1883",
+		"DK": "dtudevice1",
+        "PK": "p11nKG",
+        "DS": "487f138d160114faa967a9b6ab914110",
+        "PS": "TVRBd2FPaVk2Ny85",
+		"keep_alive": 300,
+		"clean_session": false,
+		"qos": 1
+	},
+    "tcp_private_cloud_config":
+    {
+        "ip_type":"IPv4",
+        "server": "220.180.239.212",
+        "port": "18011",
+        "keep_alive": 5
+    },
+    "mqtt_private_cloud_config":
+    {
+        "server": "dbb-rmqx.iwosai.com",
+        "port": "4883",
+        "client_id": "2ff01e56-e02a-4919-935d-de1f2677b4f9",
+        "username": "test",
+        "password": "NvEpDpATJ8Zyyqjt",
+        "clean_session": false,
+        "qos": "0",
+        "keep_alive": 300,
+        "subscribe": {"0": "oc/devices/625132b420cfa22b94c54613_dtu_device1_id/sys/messages/down"},
+        "publish": {"0": "oc/devices/625132b420cfa22b94c54613_dtu_device1_id/sys/messages/up"}
+    },
+    "uart_config":
+    {
+        "port" : "2",
+        "baudrate": "115200",
+        "databits": "8",
+        "parity": "0",
+        "stopbits": "1",
+        "flowctl": "0",
+        "rs485_direction_pin": ""
+    }
+}
