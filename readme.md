@@ -38,6 +38,7 @@ Before you begin, ensure you have the following prerequisites:
 
 - **Hardware**:
   - QuecPython development board kit or DTU device.
+    > Click for DTU EVB's [schematic](https://images.quectel.com/python/2024/10/DP-DTU-Q600-EVB-V1.3-SCH.pdf) and [silk screen](https://images.quectel.com/python/2024/10/DP-DTU-Q600-EVB-V1.3-SilkScreen.pdf) documents.
   - USB Data Cable (USB-A to USB-C).
   - PC (Windows 7, Windows 10, or Windows 11).
 

@@ -38,6 +38,7 @@ QuecPython 推出了针对 DTU 的解决方案，包括多种协议的数据传�
 
 - **硬件**：
   - QuecPython 开发板套件或 DTU 设备
+   > 点击查看DTU开发板的[原理图](https://images.quectel.com/python/2024/10/DP-DTU-Q600-EVB-V1.3-SCH.pdf)和[丝印图](https://images.quectel.com/python/2024/10/DP-DTU-Q600-EVB-V1.3-SilkScreen.pdf)文档。
   - USB 数据线（USB-A 转 USB-C）
   - 电脑（Windows 7、Windows 10 或 Windows 11）
 
