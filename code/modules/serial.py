@@ -54,13 +54,13 @@ class Serial(object):
 
     def _uart_cb(self, args):
         self._log.debug("_uart_cb called with args:", args)
-        if self._queue.size() == 0:
+        if self._queue.size() == 0:  # type: ignore 
             self._log.debug("_uart_cb send a signal")
             self._queue.put(None)
 
     def _timer_cb(self, args):
         self._log.debug("_timer_cb called with args:", args)
-        if self._queue.size() == 0:
+        if self._queue.size() == 0:   # type: ignore 
             self._log.debug("_timer_cb send a signal")
             self._queue.put(None)
 
@@ -95,7 +95,7 @@ class Serial(object):
                 self._timer.stop()
 
         r_data =  self._uart.read(min(nbytes, self._uart.any())).decode()
-        if self._queue.size():
+        if self._queue.size():  # type: ignore 
             self._log.debug("clean an extra signal")
             self._queue.get()
 

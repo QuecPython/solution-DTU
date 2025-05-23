@@ -50,7 +50,7 @@ class Dtu(Singleton):
     """Dtu main function call
     """
     def __init__(self):
-        self.__ota_timer = osTimer()
+        self.__ota_timer = osTimer()  # type: ignore
         self.__ota_transaction = None
 
     def __cloud_init(self, protocol):
@@ -64,6 +64,8 @@ class Dtu(Singleton):
         """
         if protocol == "aliyun":
             cloud_config = settings.current_settings.get("aliyun_config")
+            if cloud_config is None:
+                raise Exception("Couldn't get setiings")
             client_id = cloud_config["client_id"] if cloud_config.get("client_id") else modem.getDevImei()
             cloud = AliYunIot(cloud_config.get("PK"),
                                 cloud_config.get("PS"),
@@ -85,6 +87,8 @@ class Dtu(Singleton):
             return cloud
         elif protocol == ("quecthing"):
             cloud_config = settings.current_settings.get("quecthing_config")
+            if cloud_config is None:
+                raise Exception("Couldn't get setiings")
             cloud = QuecThing(cloud_config.get("PK"),
                                     cloud_config.get("PS"),
                                     cloud_config.get("DK"),
@@ -98,6 +102,8 @@ class Dtu(Singleton):
             return cloud
         elif protocol == "txyun":
             cloud_config = settings.current_settings.get("txyun_config")
+            if cloud_config is None:
+                raise Exception("Couldn't get setiings")
             client_id = cloud_config["client_id"] if cloud_config.get("client_id") else modem.getDevImei()
             cloud = TXYunIot(cloud_config.get("PK"),
                                 cloud_config.get("PS"),
@@ -118,6 +124,8 @@ class Dtu(Singleton):
             return cloud
         elif protocol == "hwyun":
             cloud_config = settings.current_settings.get("hwyun_config")
+            if cloud_config is None:
+                raise Exception("Couldn't get setiings")
             client_id = cloud_config["client_id"] if cloud_config.get("client_id") else modem.getDevImei()
             cloud = HuaweiIot(cloud_config.get("PK", None),
                                 cloud_config.get("PS", None),
@@ -140,6 +148,8 @@ class Dtu(Singleton):
             return cloud
         elif protocol.startswith("mqtt"):
             cloud_config = settings.current_settings.get("mqtt_private_cloud_config")
+            if cloud_config is None:
+                raise Exception("Couldn't get setiings")
             client_id = cloud_config["client_id"] if cloud_config.get("client_id") else modem.getDevImei()
             cloud = MqttIot(cloud_config.get("server", None),
                                 int(cloud_config.get("qos", 0)),
@@ -156,6 +166,8 @@ class Dtu(Singleton):
             return cloud
         elif protocol.startswith("tcp"):
             cloud_config = settings.current_settings.get("tcp_private_cloud_config")
+            if cloud_config is None:
+                raise Exception("Couldn't get setiings")
             cloud = Socket(ip_type = cloud_config.get("ip_type"),
                                 keep_alive = cloud_config.get("keep_alive"),
                                 domain = cloud_config.get("server"),
@@ -166,6 +178,8 @@ class Dtu(Singleton):
     
     def __periodic_ota_check(self, args):
         """Periodically check whether cloud have an upgrade plan"""
+        if self.__ota_transaction is None:
+                raise Exception("OTA check failed")
         self.__ota_transaction.ota_check()
 
     def start(self):
@@ -187,6 +201,8 @@ class Dtu(Singleton):
 
         # Cloud initialization
         cloud = self.__cloud_init(settings.current_settings["system_config"]["cloud"])
+        if cloud is None:
+            raise Exception("Cloud init failed")
         # GuiToolsInteraction initialization
         gui_tool_inter = GuiToolsInteraction()
         # UplinkTransaction initialization
@@ -229,7 +245,7 @@ class Dtu(Singleton):
         try:
             _thread.start_new_thread(up_transaction.uplink_main, ())
         except:
-            raise self.Error(self.error_map[self.ErrCode.ESYS])
+            raise self.Error(self.error_map[self.ErrCode.ESYS]) # FIXME: how does it work?
 
 
 if __name__ == "__main__":

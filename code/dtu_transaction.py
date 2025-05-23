@@ -25,7 +25,7 @@
 """
 
 
-import log
+# import log
 import sim
 import net
 import usys
@@ -47,10 +47,10 @@ log = getLogger(__name__)
 class DownlinkTransaction(Singleton):
     """Data downlink:Receive data from the cloud and send it to serial
     """
-    def __init__(self):
-        self.__serial = None
+    def __init__(self) -> None:
+        self.__serial: Serial | None = None
 
-    def add_module(self, module, callback=None):
+    def add_module(self, module: Serial, callback=None) -> bool:
         if isinstance(module, Serial):
             self.__serial = module
             return True
@@ -107,6 +107,8 @@ class DownlinkTransaction(Singleton):
         else:
             packed_data = "%s,%s,%s".encode('utf-8') % (str(msg_id), str(len(data)), data)
         # Send packed data through serial
+        if self.__serial is None:
+            raise Exception("Serial not available")
         self.__serial.write(packed_data)    
 
 
@@ -193,9 +195,9 @@ class UplinkTransaction(Singleton):
     """
     def __init__(self):
         self.__remote_pub = None
-        self.__serial = None
+        self.__serial: Serial | None = None
         self.__history = None
-        self.__gui_tools_interac = None
+        self.__gui_tools_interac: GuiToolsInteraction | None = None
         self.__parse_data = ""
         self.__send_to_cloud_data = []
 
@@ -272,8 +274,12 @@ class UplinkTransaction(Singleton):
         Args:
             data (bytes): data read from uart
         """
+        if self.__gui_tools_interac is None:
+            raise Exception("GUI tools not available")
         gui_tool_ack = self.__gui_tools_interac.parse_serial_data(data)
         if gui_tool_ack: # GUI tools command data
+            if self.__serial is None:
+                raise Exception("Serial not available")
             self.__serial.write(gui_tool_ack)
             return
 
@@ -326,6 +332,8 @@ class UplinkTransaction(Singleton):
     def uplink_main(self):
         """Read serial data, parse and upload to the cloud
         """
+        if self.__serial is None:
+            raise Exception("Serial not available")
         while 1:
             # Read uart data
             read_byte = self.__serial.read(nbytes=1024, timeout=100)
@@ -336,7 +344,7 @@ class UplinkTransaction(Singleton):
                     usys.print_exception(e)
                     log.error("Parse uart data error: %s" % e)
   
-    def report_history(self):
+    def report_history(self) -> bool:
         """Report history data to cloud
         Returns:
             boolen: True: Successfully post
@@ -367,15 +375,15 @@ class UplinkTransaction(Singleton):
 
 
 class GuiToolsInteraction():
-    def __init__(self):
-        self.__query_command = {
+    def __init__(self) -> None:
+        self.__query_command: dict[int, str] = {
             0: "get_imei",
             1: "get_number",
             2: "get_csq",
             3: "get_cur_config",
             4: "get_iccid",
         }
-        self.__basic_setting_command = {
+        self.__basic_setting_command: dict[int, str] = {
             255: "restart",
             50: "set_fota",
             51: "set_sota",
@@ -467,16 +475,17 @@ class GuiToolsInteraction():
             return {"code": code, "status": 0}
 
     def __exec_command_code(self, cmd_code, data=None):
+        ret = None
         if cmd_code in self.__query_command.keys():
             try:
-                cmd = "__" + self.__query_command.get(cmd_code)
+                cmd = "__" + self.__query_command.get(cmd_code, "")
                 func = getattr(self, cmd)
                 ret = func(cmd_code, data)
             except Exception as e:
                 log.error("search_command_func_code_list:", e)
         elif cmd_code in self.__basic_setting_command.keys():
             try:
-                cmd = "__" + self.__basic_setting_command.get(cmd_code)
+                cmd = "__" + self.__basic_setting_command.get(cmd_code, "")
                 func = getattr(self, cmd)
                 ret = func(cmd_code, data)
             except Exception as e:
@@ -486,7 +495,7 @@ class GuiToolsInteraction():
             ret = {"code": cmd_code, "status": 0, "error": "Command code error"}
         return ret
 
-    def parse_serial_data(self, serial_data):
+    def parse_serial_data(self, serial_data) -> str:
         """Parse uart data in the format specified by the GUI
 
         Args:
