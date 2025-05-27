@@ -85,7 +85,7 @@ class MqttIot(CloudObservable):
 
     def __subscribe_topic(self):
         for id, usr_sub_topic in self.sub_topic_dict.items():
-            if self.__mqtt.subscribe(usr_sub_topic, qos=0) == -1:
+            if self.__mqtt is not None and self.__mqtt.subscribe(usr_sub_topic, qos=0) == -1:
                 log.error("Topic [%s] Subscribe Falied." % usr_sub_topic)
 
 
@@ -104,16 +104,17 @@ class MqttIot(CloudObservable):
             log.error("{}".format(e))
 
     def __listen(self):
-        while True:
-            self.__mqtt.wait_msg()
-            utime.sleep_ms(100)
+        if self.__mqtt is not None:
+            while True:
+                self.__mqtt.wait_msg()
+                utime.sleep_ms(100)
 
     def __start_listen(self):
         """Start a new thread to listen to the cloud publish 
         """
         _thread.start_new_thread(self.__listen, ())
 
-    def init(self, enforce=False):
+    def init(self, enforce=False) -> bool:
         """mqtt connect and subscribe topic
 
         Parameter:
@@ -154,7 +155,10 @@ class MqttIot(CloudObservable):
             return False
 
     def close(self):
+        if self.__mqtt is None:
+            return False
         self.__mqtt.disconnect()
+        return True
 
     def get_status(self):
         """Get mqtt connect status
@@ -163,12 +167,17 @@ class MqttIot(CloudObservable):
             True -- connect success
             False -- connect falied
         """
+        if self.__mqtt is None:
+            return False
         try:
             return True if self.__mqtt.get_mqttsta() == 0 else False
         except:
             return False
     
     def through_post_data(self, data, topic_id):
+        if self.__mqtt is None:
+            log.error("mqtt is not connected.")
+            return False
         try:
             self.__mqtt.publish(self.pub_topic_dict[topic_id], data, self.__qos)
         except Exception:
@@ -178,13 +187,13 @@ class MqttIot(CloudObservable):
             return True
 
     def post_data(self, data):
-        pass
+        return False
 
     def ota_request(self):
-        pass
+        return False
 
     def ota_action(self, action, module=None):
-        pass
+        return False
     
     def device_report(self):
-        pass
+        return False

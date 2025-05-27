@@ -59,7 +59,14 @@ class Settings(Singleton):
         if opt in ["fota", "sota", "offline_storage"]:
             self.current_settings["system_config"]["base_function"][opt] = val
             return True
-        elif opt in ["uart_config", "aliyun_config", "txyun_config", "hwyun_config", "quecthing_config", "tcp_private_cloud_config", "mqtt_private_cloud_config"]:
+        elif opt in [
+            "uart_config", 
+            "aliyun_config", 
+            "txyun_config", 
+            "hwyun_config", 
+            "tcp_private_cloud_config", 
+            "mqtt_private_cloud_config"
+        ]:
             if not isinstance(val, dict):
                 return False
             self.current_settings[opt] = val

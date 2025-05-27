@@ -66,17 +66,6 @@ class UserConfig(object):
         "subscribe": {"0": "$oc/devices/625132b420cfa22b94c54613_dtu_device1_id/sys/messages/down"},
         "publish": {"0": "$oc/devices/625132b420cfa22b94c54613_dtu_device1_id/sys/messages/up"}
     }
-    quecthing_config = {
-        "server":"iot-south.quectel.com",
-        "port": "1883",
-		"DK": "dtudevice1",
-        "PK": "p11js2",
-        "DS": "",
-        "PS": "VU5nVkNRNy9lOUNX",
-		"keep_alive": 300,
-		"clean_session": False,
-		"qos": 1
-    }
     tcp_private_cloud_config = {
         "ip_type":"IPv4",
         "server": "a15fbbd7ce.iot-mqtts.cn-north-4.myhuaweicloud.com",

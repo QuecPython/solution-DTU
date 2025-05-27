@@ -26,7 +26,10 @@
 
 
 import uos
-import usys
+try:
+    import usys  # type: ignore
+except ImportError:
+    import sys as usys
 import fota
 import ujson
 import utime
@@ -300,6 +303,9 @@ class AliYunIot(CloudObservable):
         return res
 
     def __subscribe_topic(self, topic, qos=0):
+        if self.__ali is None:
+            log.error("AliYun is not connected.")
+            return False
         subscribe_res = self.__ali.subscribe(topic, qos=0)
         if subscribe_res == -1:
             raise TypeError("AliYun subscribe topic %s falied" % topic)
@@ -331,7 +337,7 @@ class AliYunIot(CloudObservable):
 
             return True
         except Exception as e:
-            usys.print_exception(e)
+            usys.print_exception(e) # type: ignore
             log.error(e)
             return False
 
@@ -449,6 +455,9 @@ class AliYunIot(CloudObservable):
         event_params = {}
         service_params = {}
         # Format Publish Params.
+        if self.__object_model is None:
+            log.error("Object model is not set. Please set object model by cloud.set_object_model(AliObjectModel).")
+            return res
         for k, v in data.items():
             if hasattr(self.__object_model.properties, k):
                 property_params[k] = {
@@ -587,6 +596,9 @@ class AliYunIot(CloudObservable):
 
     def close(self):
         """Aliyun disconnect"""
+        if self.__ali is None:
+            log.error("AliYun is not connected.")
+            return False
         try:
             self.__ali.disconnect()
         except Exception as e:
@@ -600,12 +612,15 @@ class AliYunIot(CloudObservable):
             True -- connect success
            False -- connect falied
         """
+        if self.__ali is None:
+            log.error("AliYun is not connected.")
+            return False
         try:
             return True if self.__ali.getAliyunSta() == 0 else False
         except:
             return False
 
-    def post_data(self, data):
+    def post_data(self, data) -> bool:
         """Publish object model property, event
 
         Parameter:
@@ -625,6 +640,9 @@ class AliYunIot(CloudObservable):
             Ture: Success
             False: Failed
         """
+        if self.__ali is None:
+            log.error("AliYun is not connected.")
+            return False
         try:
             publish_data = self.__data_format(data)
             # Publish Property Data.
@@ -647,6 +665,9 @@ class AliYunIot(CloudObservable):
         return False
 
     def through_post_data(self, data, topic_id):
+        if self.__ali is None:
+            log.error("AliYun is not connected.")
+            return False
         try:
             res = self.__ali.publish(self.pub_topic_dict[topic_id], data, qos=self.__qos)
             print("res:", res)
@@ -666,6 +687,9 @@ class AliYunIot(CloudObservable):
             Ture: Success
             False: Failed
         """
+        if self.__ali is None:
+            log.error("AliYun is not connected.")
+            return False
         log.debug("rrpc_response message_id: %s" % message_id)
         topic = self.rrpc_topic_response.format(message_id)
         log.debug("rrpc_response topic: %s" % topic)
@@ -750,6 +774,9 @@ class AliYunIot(CloudObservable):
                 "module": module
             }
         }
+        if self.__ali is None:
+            log.error("AliYun is not connected.")
+            return False
         publish_res = self.__ali.publish(self.ota_topic_device_inform, ujson.dumps(publish_data), qos=0)
         log.debug("version: %s, module: %s, publish_res: %s" % (version, module, publish_res))
         return publish_res
@@ -783,6 +810,9 @@ class AliYunIot(CloudObservable):
                 "module": module,
             }
         }
+        if self.__ali is None:
+            log.error("AliYun is not connected.")
+            return False
         publish_res = self.__ali.publish(self.ota_topic_device_progress, ujson.dumps(publish_data), qos=0)
         if publish_res:
             return self.__get_post_res(msg_id)
@@ -810,6 +840,9 @@ class AliYunIot(CloudObservable):
             },
             "method": "thing.ota.firmware.get"
         }
+        if self.__ali is None:
+            log.error("AliYun is not connected.")
+            return False
         publish_res = self.__ali.publish(self.ota_topic_firmware_get, ujson.dumps(publish_data), qos=0)
         log.debug("module: %s, publish_res: %s" % (module, publish_res))
         if publish_res:
@@ -848,6 +881,9 @@ class AliYunIot(CloudObservable):
                 }
             }
         }
+        if self.__ali is None:
+            log.error("AliYun is not connected.")
+            return False
         publish_res = self.__ali.publish(self.ota_topic_file_download, ujson.dumps(publish_data), qos=0)
         if publish_res:
             return self.__get_post_res(msg_id)
@@ -911,6 +947,10 @@ class AliOTA(object):
 
     def __check_md5(self, cloud_md5):
         log.debug("AliOTA __check_md5")
+        if self.__file_hash is None:
+            log.error("File hash is not initialized.")
+            self.__aliyuniot.ota_device_progress(-3, "MD5 Verification Failed. File hash is not initialized.", module=self.__module)
+            return False
         file_md5 = ubinascii.hexlify(self.__file_hash.digest()).decode("ascii")
         msg = "DMP Calc MD5 Value: %s, Device Calc MD5 Value: %s" % (cloud_md5, file_md5)
         log.debug(msg)
@@ -1000,6 +1040,7 @@ class AliOTA(object):
     def __unzip_size(self, tar_size):
         # TDOO: To Sure unzip size is file size or tar size
         file_size = tar_size * 2
+        i = 0
         for i in range(1, 19):
             if file_size <= 1 << i:
                 break
@@ -1070,7 +1111,7 @@ class AliOTA(object):
         log.debug("__set_upgrade_status upgrade_status %s" % upgrade_status)
         #self.__aliyuniot.notifyObservers(self, *("object_model", [("ota_status", (self.__module, upgrade_status, self.__version))]))
 
-    def set_ota_info(self, data):
+    def set_ota_info(self, data: dict):
         """
         upgrade_file:
         {

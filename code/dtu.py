@@ -29,7 +29,6 @@ import modem
 import osTimer
 from usr.modules.common import Singleton
 from usr.modules.aliyunIot import AliYunIot
-from usr.modules.quecthing import QuecThing
 from usr.modules.mqttIot import MqttIot
 from usr.modules.huawei_cloud import HuaweiIot
 from usr.modules.txyunIot import TXYunIot
@@ -83,21 +82,6 @@ class Dtu(Singleton):
                                 firmware_name=DEVICE_FIRMWARE_NAME,
                                 firmware_version=DEVICE_FIRMWARE_VERSION
                                 )
-            cloud.init(enforce=True)
-            return cloud
-        elif protocol == ("quecthing"):
-            cloud_config = settings.current_settings.get("quecthing_config")
-            if cloud_config is None:
-                raise Exception("Couldn't get setiings")
-            cloud = QuecThing(cloud_config.get("PK"),
-                                    cloud_config.get("PS"),
-                                    cloud_config.get("DK"),
-                                    cloud_config.get("DS"),
-                                    cloud_config.get("server")+":"+cloud_config.get("port"),
-                                    int(cloud_config.get("qos", 0)),
-                                    cloud_config.get("keep_alive"),
-                                    mcu_name=PROJECT_NAME,
-                                    mcu_version=PROJECT_VERSION)
             cloud.init(enforce=True)
             return cloud
         elif protocol == "txyun":
@@ -189,6 +173,7 @@ class Dtu(Singleton):
         log.info("DEVICE_FIRMWARE_NAME: %s, DEVICE_FIRMWARE_VERSION: %s" % (DEVICE_FIRMWARE_NAME, DEVICE_FIRMWARE_VERSION))
 
         uart_setting = settings.current_settings["uart_config"]
+        uart2_setting = settings.current_settings["uart_secondary_config"]
 
         # Serial initialization
         serial = Serial(int(uart_setting.get("port")),
@@ -198,20 +183,37 @@ class Dtu(Singleton):
                         int(uart_setting.get("stopbits")),
                         int(uart_setting.get("flowctl")),
                         uart_setting.get("rs485_direction_pin"))
+        serial2 = Serial(int(uart2_setting.get("port")),
+                        int(uart2_setting.get("baudrate")),
+                        int(uart2_setting.get("databits")),
+                        int(uart2_setting.get("parity")),
+                        int(uart2_setting.get("stopbits")),
+                        int(uart2_setting.get("flowctl")),
+                        uart2_setting.get("rs485_direction_pin"))
 
         # Cloud initialization
         cloud = self.__cloud_init(settings.current_settings["system_config"]["cloud"])
         if cloud is None:
             raise Exception("Cloud init failed")
+        cloud2 = self.__cloud_init(settings.current_settings["system_config"]["cloud_secondary"])
+        if cloud2 is None:
+            raise Exception("Cloud (secondary) init failed")
         # GuiToolsInteraction initialization
         gui_tool_inter = GuiToolsInteraction()
         # UplinkTransaction initialization
         up_transaction = UplinkTransaction()
         up_transaction.add_module(serial)
         up_transaction.add_module(gui_tool_inter)
+        
+        up_transaction2 = UplinkTransaction()
+        up_transaction2.add_module(serial2)
+        up_transaction2.add_module(gui_tool_inter)
         # DownlinkTransaction initialization
         down_transaction = DownlinkTransaction()
         down_transaction.add_module(serial)
+        
+        down_transaction2 = DownlinkTransaction()
+        down_transaction2.add_module(serial2)
         # OtaTransaction initialization
         ota_transaction = OtaTransaction()
 
@@ -219,12 +221,14 @@ class Dtu(Singleton):
         remote_sub = RemoteSubscribe()
         remote_sub.add_executor(down_transaction, 1)
         remote_sub.add_executor(ota_transaction, 2)
+        remote_sub.add_executor(down_transaction2, 3)
         cloud.addObserver(remote_sub)
 
         # RemotePublish initialization
         remote_pub = RemotePublish()
         remote_pub.add_cloud(cloud)
         up_transaction.add_module(remote_pub)
+        up_transaction2.add_module(remote_pub)
         ota_transaction.add_module(remote_pub)
 
         # History initialization
@@ -232,8 +236,10 @@ class Dtu(Singleton):
             history = History()
             remote_pub.addObserver(history)
             up_transaction.add_module(history)
+            up_transaction2.add_module(history)
             # Send history data to the cloud after being powered on
             up_transaction.report_history()
+            up_transaction2.report_history()
             
         # Send module release information to cloud. After receiving this information, 
         # the cloud server checks whether to upgrade modules
@@ -244,8 +250,9 @@ class Dtu(Singleton):
         # Start uplink transaction
         try:
             _thread.start_new_thread(up_transaction.uplink_main, ())
+            _thread.start_new_thread(up_transaction2.uplink_main, ())
         except:
-            raise self.Error(self.error_map[self.ErrCode.ESYS]) # FIXME: how does it work?
+            raise self.Error(self.error_map[self.ErrCode.ESYS]) # FIXME: how does it work? # type: ignore
 
 
 if __name__ == "__main__":

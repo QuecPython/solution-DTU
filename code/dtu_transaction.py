@@ -28,7 +28,10 @@
 # import log
 import sim
 import net
-import usys
+try:
+    import usys as sys # type: ignore
+except ImportError:
+    import sys
 import ujson
 import utime
 import modem
@@ -86,8 +89,6 @@ class DownlinkTransaction(Singleton):
             msg_id = self.__get_sub_topic_id(kwargs.get("topic"))
             if msg_id == None:
                 raise Exception("Not found correct topic id")
-        elif cloud_type == "quecthing":
-            msg_id = kwargs.get("pkgid")
         elif cloud_type == "tcp_private_cloud":
             msg_id = None
         else:
@@ -161,20 +162,7 @@ class OtaTransaction(Singleton):
         log.debug("ota_plain args: %s, kwargs: %s" % (str(args), str(kwargs)))
         current_settings = settings.get()
         
-        if current_settings["system_config"]["cloud"] == "quecthing":
-            if args and args[0]:
-                if args[0][0] == "ota_cfg":
-                    module = args[0][1].get("componentNo")
-                    target_version = args[0][1].get("targetVersion")
-                    if module == DEVICE_FIRMWARE_NAME and current_settings["system_config"]["base_function"]["fota"] == True:
-                        source_version = DEVICE_FIRMWARE_VERSION
-                    elif module == PROJECT_NAME and current_settings["system_config"]["base_function"]["sota"] == True:
-                        source_version = PROJECT_VERSION
-                    else:
-                        return
-                    if target_version != source_version:
-                        self.__remote_ota_action(action=1, module=module)
-        elif current_settings["system_config"]["cloud"] == "aliyun":
+        if current_settings["system_config"]["cloud"] == "aliyun":
             if args and args[0]:
                 if args[0][0] == "ota_cfg":
                     module = args[0][1].get("module")
@@ -216,8 +204,6 @@ class UplinkTransaction(Singleton):
         cloud_config = settings.current_settings.get(cloud_name + "_config")
         if cloud_config == None:
             raise Exception("Cloud config parameter error")
-        elif cloud_name == "quecthing":
-            return ["0"]
         else:
             return cloud_config.get("subscribe").keys()
 
@@ -341,7 +327,7 @@ class UplinkTransaction(Singleton):
                 try:
                     self.__uplink_data(read_byte)
                 except Exception as e:
-                    usys.print_exception(e)
+                    sys.print_exception(e) # type: ignore
                     log.error("Parse uart data error: %s" % e)
   
     def report_history(self) -> bool:
