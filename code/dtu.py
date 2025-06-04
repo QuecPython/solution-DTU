@@ -29,7 +29,6 @@ import modem
 import osTimer
 from usr.modules.common import Singleton
 from usr.modules.aliyunIot import AliYunIot
-from usr.modules.quecthing import QuecThing
 from usr.modules.mqttIot import MqttIot
 from usr.modules.huawei_cloud import HuaweiIot
 from usr.modules.txyunIot import TXYunIot
@@ -81,19 +80,6 @@ class Dtu(Singleton):
                                 firmware_name=DEVICE_FIRMWARE_NAME,
                                 firmware_version=DEVICE_FIRMWARE_VERSION
                                 )
-            cloud.init(enforce=True)
-            return cloud
-        elif protocol == ("quecthing"):
-            cloud_config = settings.current_settings.get("quecthing_config")
-            cloud = QuecThing(cloud_config.get("PK"),
-                                    cloud_config.get("PS"),
-                                    cloud_config.get("DK"),
-                                    cloud_config.get("DS"),
-                                    cloud_config.get("server")+":"+cloud_config.get("port"),
-                                    int(cloud_config.get("qos", 0)),
-                                    cloud_config.get("keep_alive"),
-                                    mcu_name=PROJECT_NAME,
-                                    mcu_version=PROJECT_VERSION)
             cloud.init(enforce=True)
             return cloud
         elif protocol == "txyun":
