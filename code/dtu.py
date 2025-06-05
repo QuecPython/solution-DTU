@@ -167,7 +167,9 @@ class Dtu(Singleton):
         self.__ota_transaction.ota_check()
 
     def start(self):
-        """Dtu init flow
+        """
+        Initializes and starts the DTU (Data Transfer Unit) system components.
+
         """
         log.info("PROJECT_NAME: %s, PROJECT_VERSION: %s" % (PROJECT_NAME, PROJECT_VERSION))
         log.info("DEVICE_FIRMWARE_NAME: %s, DEVICE_FIRMWARE_VERSION: %s" % (DEVICE_FIRMWARE_NAME, DEVICE_FIRMWARE_VERSION))
@@ -242,7 +244,7 @@ class Dtu(Singleton):
             _thread.start_new_thread(up_transaction.uplink_main, ())
             _thread.start_new_thread(config_transaction.config_main, ())
         except:
-            raise self.Error(self.error_map[self.ErrCode.ESYS]) # FIXME: how does it work? # type: ignore
+            raise self.Error(self.error_map[self.ErrCode.ESYS]) # type: ignore
 
 
 if __name__ == "__main__":

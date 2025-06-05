@@ -504,6 +504,20 @@ class GuiToolsInteraction():
             return {"code": code, "status": 0}
 
     def __exec_command_code(self, cmd_code, data=None):
+        """Executes a command based on the provided command code and optional data.
+        
+        Checks if the given `cmd_code` exists in either the query command or basic setting command dictionaries.
+        If found, it dynamically constructs the method name, retrieves the corresponding method, and executes it with the
+        provided `cmd_code` and `data`. If the command code is not found in either dictionary, or if an exception occurs
+        during execution, an error is logged and an error response is returned.
+        
+        Args:
+            cmd_code (str): The command code to execute.
+            data (optional): Additional data to pass to the command handler.
+        Returns:
+            Any: The result of the executed command handler, or an error dictionary if the command code is invalid or an exception occurs.
+        """
+        
         ret = None
         if cmd_code in self.__query_command.keys():
             try:
