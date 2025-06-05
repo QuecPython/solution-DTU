@@ -38,7 +38,7 @@ from usr.settings import settings
 from usr.modules.serial import Serial
 from usr.modules.history import History
 from usr.modules.logging import getLogger
-from usr.dtu_transaction import DownlinkTransaction, OtaTransaction, UplinkTransaction, GuiToolsInteraction
+from usr.dtu_transaction import DownlinkTransaction, OtaTransaction, UplinkTransaction, GuiToolsInteraction, ConfigTransaction
 from usr.modules.remote import RemotePublish, RemoteSubscribe
 from usr.settings import PROJECT_NAME, PROJECT_VERSION, DEVICE_FIRMWARE_NAME, DEVICE_FIRMWARE_VERSION
 
@@ -49,7 +49,7 @@ class Dtu(Singleton):
     """Dtu main function call
     """
     def __init__(self):
-        self.__ota_timer = osTimer()
+        self.__ota_timer = osTimer()  # type: ignore
         self.__ota_transaction = None
 
     def __cloud_init(self, protocol):
@@ -63,6 +63,8 @@ class Dtu(Singleton):
         """
         if protocol == "aliyun":
             cloud_config = settings.current_settings.get("aliyun_config")
+            if cloud_config is None:
+                raise Exception("Couldn't get setiings")
             client_id = cloud_config["client_id"] if cloud_config.get("client_id") else modem.getDevImei()
             cloud = AliYunIot(cloud_config.get("PK"),
                                 cloud_config.get("PS"),
@@ -84,6 +86,8 @@ class Dtu(Singleton):
             return cloud
         elif protocol == "txyun":
             cloud_config = settings.current_settings.get("txyun_config")
+            if cloud_config is None:
+                raise Exception("Couldn't get setiings")
             client_id = cloud_config["client_id"] if cloud_config.get("client_id") else modem.getDevImei()
             cloud = TXYunIot(cloud_config.get("PK"),
                                 cloud_config.get("PS"),
@@ -104,6 +108,8 @@ class Dtu(Singleton):
             return cloud
         elif protocol == "hwyun":
             cloud_config = settings.current_settings.get("hwyun_config")
+            if cloud_config is None:
+                raise Exception("Couldn't get setiings")
             client_id = cloud_config["client_id"] if cloud_config.get("client_id") else modem.getDevImei()
             cloud = HuaweiIot(cloud_config.get("PK", None),
                                 cloud_config.get("PS", None),
@@ -126,6 +132,8 @@ class Dtu(Singleton):
             return cloud
         elif protocol.startswith("mqtt"):
             cloud_config = settings.current_settings.get("mqtt_private_cloud_config")
+            if cloud_config is None:
+                raise Exception("Couldn't get setiings")
             client_id = cloud_config["client_id"] if cloud_config.get("client_id") else modem.getDevImei()
             cloud = MqttIot(cloud_config.get("server", None),
                                 int(cloud_config.get("qos", 0)),
@@ -142,6 +150,8 @@ class Dtu(Singleton):
             return cloud
         elif protocol.startswith("tcp"):
             cloud_config = settings.current_settings.get("tcp_private_cloud_config")
+            if cloud_config is None:
+                raise Exception("Couldn't get setiings")
             cloud = Socket(ip_type = cloud_config.get("ip_type"),
                                 keep_alive = cloud_config.get("keep_alive"),
                                 domain = cloud_config.get("server"),
@@ -152,15 +162,20 @@ class Dtu(Singleton):
     
     def __periodic_ota_check(self, args):
         """Periodically check whether cloud have an upgrade plan"""
+        if self.__ota_transaction is None:
+                raise Exception("OTA check failed")
         self.__ota_transaction.ota_check()
 
     def start(self):
-        """Dtu init flow
+        """
+        Initializes and starts the DTU (Data Transfer Unit) system components.
+
         """
         log.info("PROJECT_NAME: %s, PROJECT_VERSION: %s" % (PROJECT_NAME, PROJECT_VERSION))
         log.info("DEVICE_FIRMWARE_NAME: %s, DEVICE_FIRMWARE_VERSION: %s" % (DEVICE_FIRMWARE_NAME, DEVICE_FIRMWARE_VERSION))
 
         uart_setting = settings.current_settings["uart_config"]
+        uart2_setting = settings.current_settings["uart_secondary_config"]
 
         # Serial initialization
         serial = Serial(int(uart_setting.get("port")),
@@ -170,18 +185,31 @@ class Dtu(Singleton):
                         int(uart_setting.get("stopbits")),
                         int(uart_setting.get("flowctl")),
                         uart_setting.get("rs485_direction_pin"))
+        serial2 = Serial(int(uart2_setting.get("port")),
+                        int(uart2_setting.get("baudrate")),
+                        int(uart2_setting.get("databits")),
+                        int(uart2_setting.get("parity")),
+                        int(uart2_setting.get("stopbits")),
+                        int(uart2_setting.get("flowctl")),
+                        uart2_setting.get("rs485_direction_pin"))
 
         # Cloud initialization
         cloud = self.__cloud_init(settings.current_settings["system_config"]["cloud"])
+        if cloud is None:
+            raise Exception("Cloud init failed")
         # GuiToolsInteraction initialization
         gui_tool_inter = GuiToolsInteraction()
         # UplinkTransaction initialization
         up_transaction = UplinkTransaction()
         up_transaction.add_module(serial)
-        up_transaction.add_module(gui_tool_inter)
+        
+        config_transaction = ConfigTransaction()
+        config_transaction.add_module(serial2)
+        config_transaction.add_module(gui_tool_inter)
         # DownlinkTransaction initialization
         down_transaction = DownlinkTransaction()
         down_transaction.add_module(serial)
+        
         # OtaTransaction initialization
         ota_transaction = OtaTransaction()
 
@@ -214,8 +242,9 @@ class Dtu(Singleton):
         # Start uplink transaction
         try:
             _thread.start_new_thread(up_transaction.uplink_main, ())
+            _thread.start_new_thread(config_transaction.config_main, ())
         except:
-            raise self.Error(self.error_map[self.ErrCode.ESYS])
+            raise self.Error(self.error_map[self.ErrCode.ESYS]) # type: ignore
 
 
 if __name__ == "__main__":

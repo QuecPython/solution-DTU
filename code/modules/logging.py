@@ -59,12 +59,12 @@ class Logger:
 
     def log(self, name, level, *message):
         if self.__debug is False:
-            if self.__level_code.get(level) < self.__level_code.get(self.__level):
+            if self.__level_code[level] < self.__level_code[self.__level]:
                 return
 
         if hasattr(utime, "strftime"):
             print(
-                "[{}]".format(utime.strftime("%Y-%m-%d %H:%M:%S")),
+                "[{}]".format(utime.strftime("%Y-%m-%d %H:%M:%S")),  # type: ignore
                 "[{}]".format(name),
                 "[{}]".format(level),
                 *message

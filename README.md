@@ -94,7 +94,6 @@ solution-DTU/
 │   │   ├── logging.py
 │   │   ├── mqttIot.py
 │   │   ├── net_manager.py
-│   │   ├── quecthing.py
 │   │   ├── remote.py
 │   │   ├── serial.py
 │   │   ├── socketIot.py

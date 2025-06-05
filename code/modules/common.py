@@ -138,25 +138,25 @@ class CloudObservable(Singleton):
         for o in self.__observers:
             o.execute(self, *args, **kwargs)
 
-    def init(self, enforce=False):
+    def init(self, enforce=False) -> bool:
         """Cloud init"""
-        pass
+        return False
 
-    def close(self):
+    def close(self) -> bool:
         """Cloud disconnect"""
-        pass
+        return False
 
-    def post_data(self, data):
+    def post_data(self, data) -> bool:
         """Cloud publish data"""
-        pass
+        return False
 
-    def ota_request(self, *args, **kwargs):
+    def ota_request(self, *args, **kwargs) -> bool:
         """Cloud publish ota plain request"""
-        pass
+        return False
 
-    def ota_action(self, action, module=None):
+    def ota_action(self, action, module=None) -> bool:
         """Cloud publish ota upgrade or not request"""
-        pass
+        return False
 
 
 class CloudObjectModel(Singleton):

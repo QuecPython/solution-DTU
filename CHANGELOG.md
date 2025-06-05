@@ -1,27 +1,25 @@
 # ChangeLog
 
-此项目的所有显着更改都将记录在此文件中。
-
+All significant changes to this project will be documented in this file.
 
 ## [v2.0.0] - 2022-05-30
 
-### Changed
-
-- 整个项目的结构进行调整，采用了观察者模式的设计方案对各个模块进行重构。
-- 将所有的云端的接口统一和中间件Remote接口统一
+- Adjusted the overall project structure and refactored each module using the observer pattern design.
+- Unified all cloud interfaces and middleware Remote interfaces.
 
 ## [v2.0.1] - 2022-07-05
 
-### Changed
+- Fixed a bug where only one .py file could be upgraded when updating the Quectel Cloud project script files.
+- Fixed a bug where memory allocation failed in gc when extracting tar packages during Quectel Cloud project script upgrades.
 
-- 修复移远云升级项目脚本文件时，只能升级一个py文件bug。
-- 修复移远云升级项目脚本文件时，解压tar包gc内存分配失败bug。
-  
 ## [v3.0.0] - 2022-08-17
 
-### Changed
+- Removed the command mode and Mosbus mode of DTU, only retaining the transparent transmission mode.
+- Removed the code and functionality related to the DTU GUI channel.
+- DTU now only supports MQTT and TCP protocols.
 
-- 删除DTU的命令模式和Mosbus模式，只保留透传模式。
-- 删除和dtu gui通道代码，删除dtu gui功能。
-- 目前DTU只保留对MQTT协议和TCP协议的支持
+## [v3.1.0] - 2025-06-05
 
+- Removed Quec Thing support
+- Separated serial ports for DTU Tool (GUI app) and the device communication
+- Minor enhancements and newer API support

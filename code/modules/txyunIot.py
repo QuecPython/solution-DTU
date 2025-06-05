@@ -26,7 +26,7 @@
 
 
 import uos
-import log
+# import log
 import ujson
 from TenCentYun import TXyun
 from usr.modules.logging import getLogger
@@ -90,6 +90,9 @@ class TXYunIot(CloudObservable):
             self.sub_topic_dict = sub_topic
 
     def __txyun_subscribe_topic(self):
+        if self.__txyun is None:
+            log.error("Txyun is not connected.")
+            return False
         for id, usr_sub_topic in self.sub_topic_dict.items():
             if self.__txyun.subscribe(usr_sub_topic, qos=0) == -1:
                 log.error("Topic [%s] Subscribe Falied." % usr_sub_topic)
@@ -165,6 +168,8 @@ class TXYunIot(CloudObservable):
 
     def close(self):
         """TxYun disconnect"""
+        if self.__txyun is None:
+            return False
         try:
             self.__txyun.disconnect()
         except:
@@ -178,6 +183,8 @@ class TXYunIot(CloudObservable):
             True -- connect success
             False -- connect falied
         """
+        if self.__txyun is None:
+            return False
         try:
             return True if self.__txyun.getTXyunsta() == 0 else False
         except:
@@ -189,6 +196,9 @@ class TXYunIot(CloudObservable):
             Ture: Success
             False: Failed
         """
+        if self.__txyun is None:
+            log.error("Txyun is not connected.")
+            return False
         try:
             pub_res = self.__txyun.publish(self.pub_topic_dict[topic_id], data, qos=0)
             return pub_res
@@ -198,13 +208,13 @@ class TXYunIot(CloudObservable):
         return False
 
     def post_data(self, data):
-        pass
+        return False
 
     def ota_request(self):
-        pass
+        return False
 
     def ota_action(self, action, module=None):
-        pass
+        return False
 
     def device_report(self):
-        pass
+        return False

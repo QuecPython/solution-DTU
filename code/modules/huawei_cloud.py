@@ -98,6 +98,9 @@ class HuaweiIot(CloudObservable):
             self.sub_topic_dict = sub_topic
 
     def __huaweiyun_subscribe_topic(self):
+        if self.__huaweiyun is None:
+            log.error("HuaweiYun MQTTClient is None, please init first.")
+            return
         for id, usr_sub_topic in self.sub_topic_dict.items():
             if self.__huaweiyun.subscribe(usr_sub_topic, qos=0) == -1:
                 log.error("Topic [%s] Subscribe Falied." % usr_sub_topic)
@@ -123,6 +126,9 @@ class HuaweiIot(CloudObservable):
             log.error("{}".format(e))
 
     def __listen(self):
+        if self.__huaweiyun is None:
+            log.error("HuaweiYun MQTTClient is None, please init first.")
+            return
         while True:
             self.__huaweiyun.wait_msg()
             utime.sleep_ms(100)
@@ -154,7 +160,7 @@ class HuaweiIot(CloudObservable):
         h_outer.update(h_inner.digest())
         return ubinascii.hexlify(h_outer.digest()).decode()
 
-    def init(self, enforce=False):
+    def init(self, enforce=False) -> bool:
         """Huweiyun connect and subscribe topic
 
         Parameter:
@@ -201,7 +207,10 @@ class HuaweiIot(CloudObservable):
             return False
 
     def close(self):
+        if self.__huaweiyun is None:
+            return False
         self.__huaweiyun.disconnect()
+        return True
 
     def get_status(self):
         """Get huaweiyun connect status
@@ -210,12 +219,17 @@ class HuaweiIot(CloudObservable):
             True -- connect success
             False -- connect falied
         """
+        if self.__huaweiyun is None:
+            return False
         try:
             return True if self.__huaweiyun.get_mqttsta() == 0 else False
         except:
             return False
     
     def through_post_data(self, data, topic_id):
+        if self.__huaweiyun is None:
+            log.error("Huaweiyun is not connected.")
+            return False
         try:
             self.__huaweiyun.publish(self.pub_topic_dict[topic_id], data, self.__qos)
         except Exception:
@@ -225,13 +239,13 @@ class HuaweiIot(CloudObservable):
             return True
 
     def post_data(self, data):
-        pass
+        return False
 
     def ota_request(self):
-        pass
+        return False
 
     def ota_action(self, action, module=None):
-        pass
+        return False
     
     def device_report(self):
-        pass
+        return False

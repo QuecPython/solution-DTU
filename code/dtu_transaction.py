@@ -25,10 +25,13 @@
 """
 
 
-import log
+# import log
 import sim
 import net
-import usys
+try:
+    import usys as sys # type: ignore
+except ImportError:
+    import sys
 import ujson
 import utime
 import modem
@@ -47,10 +50,10 @@ log = getLogger(__name__)
 class DownlinkTransaction(Singleton):
     """Data downlink:Receive data from the cloud and send it to serial
     """
-    def __init__(self):
-        self.__serial = None
+    def __init__(self) -> None:
+        self.__serial: Serial | None = None
 
-    def add_module(self, module, callback=None):
+    def add_module(self, module: Serial, callback=None) -> bool:
         if isinstance(module, Serial):
             self.__serial = module
             return True
@@ -69,7 +72,7 @@ class DownlinkTransaction(Singleton):
         cloud_config = settings.current_settings.get(cloud_name + "_config")
         if cloud_config == None:
             raise Exception("Cloud config parameter error")
-        for k, v in cloud_config.get("subscribe").items():
+        for k, v in cloud_config.get("subscribe", {}).items():
             if topic == v:
                 return k
 
@@ -86,8 +89,6 @@ class DownlinkTransaction(Singleton):
             msg_id = self.__get_sub_topic_id(kwargs.get("topic"))
             if msg_id == None:
                 raise Exception("Not found correct topic id")
-        elif cloud_type == "quecthing":
-            msg_id = kwargs.get("pkgid")
         elif cloud_type == "tcp_private_cloud":
             msg_id = None
         else:
@@ -106,7 +107,10 @@ class DownlinkTransaction(Singleton):
             packed_data = data
         else:
             packed_data = "%s,%s,%s".encode('utf-8') % (str(msg_id), str(len(data)), data)
+        log.debug("Got data: {}".format(packed_data))
         # Send packed data through serial
+        if self.__serial is None:
+            raise Exception("Serial not available")
         self.__serial.write(packed_data)    
 
 
@@ -159,20 +163,7 @@ class OtaTransaction(Singleton):
         log.debug("ota_plain args: %s, kwargs: %s" % (str(args), str(kwargs)))
         current_settings = settings.get()
         
-        if current_settings["system_config"]["cloud"] == "quecthing":
-            if args and args[0]:
-                if args[0][0] == "ota_cfg":
-                    module = args[0][1].get("componentNo")
-                    target_version = args[0][1].get("targetVersion")
-                    if module == DEVICE_FIRMWARE_NAME and current_settings["system_config"]["base_function"]["fota"] == True:
-                        source_version = DEVICE_FIRMWARE_VERSION
-                    elif module == PROJECT_NAME and current_settings["system_config"]["base_function"]["sota"] == True:
-                        source_version = PROJECT_VERSION
-                    else:
-                        return
-                    if target_version != source_version:
-                        self.__remote_ota_action(action=1, module=module)
-        elif current_settings["system_config"]["cloud"] == "aliyun":
+        if current_settings["system_config"]["cloud"] == "aliyun":
             if args and args[0]:
                 if args[0][0] == "ota_cfg":
                     module = args[0][1].get("module")
@@ -193,9 +184,9 @@ class UplinkTransaction(Singleton):
     """
     def __init__(self):
         self.__remote_pub = None
-        self.__serial = None
+        self.__serial: Serial | None = None
         self.__history = None
-        self.__gui_tools_interac = None
+        self.__gui_tools_interac: GuiToolsInteraction | None = None
         self.__parse_data = ""
         self.__send_to_cloud_data = []
 
@@ -214,8 +205,6 @@ class UplinkTransaction(Singleton):
         cloud_config = settings.current_settings.get(cloud_name + "_config")
         if cloud_config == None:
             raise Exception("Cloud config parameter error")
-        elif cloud_name == "quecthing":
-            return ["0"]
         else:
             return cloud_config.get("subscribe").keys()
 
@@ -272,10 +261,6 @@ class UplinkTransaction(Singleton):
         Args:
             data (bytes): data read from uart
         """
-        gui_tool_ack = self.__gui_tools_interac.parse_serial_data(data)
-        if gui_tool_ack: # GUI tools command data
-            self.__serial.write(gui_tool_ack)
-            return
 
         if settings.current_settings["system_config"]["cloud"] == "tcp_private_cloud":
             self.__remote_post_data(data=data)
@@ -326,6 +311,9 @@ class UplinkTransaction(Singleton):
     def uplink_main(self):
         """Read serial data, parse and upload to the cloud
         """
+        log.debug("Starting uplink loop")
+        if self.__serial is None:
+            raise Exception("Serial not available")
         while 1:
             # Read uart data
             read_byte = self.__serial.read(nbytes=1024, timeout=100)
@@ -333,10 +321,11 @@ class UplinkTransaction(Singleton):
                 try:
                     self.__uplink_data(read_byte)
                 except Exception as e:
-                    usys.print_exception(e)
+                    sys.print_exception(e) # type: ignore
                     log.error("Parse uart data error: %s" % e)
+        log.debug("Exited uplink loop")
   
-    def report_history(self):
+    def report_history(self) -> bool:
         """Report history data to cloud
         Returns:
             boolen: True: Successfully post
@@ -364,18 +353,66 @@ class UplinkTransaction(Singleton):
 
         return res
 
+class ConfigTransaction(Singleton):
+    """Data uplink: read data from the serial and apply configuration
+    """
+    def __init__(self) -> None:
+        self.__serial: Serial | None = None
+        self.__gui_tools_interac: GuiToolsInteraction | None = None
+        
+
+    def __config_data(self, data) -> None:
+        """Parsing uart data, check if it is a configuration command
+
+        Args:
+            data (bytes): data read from uart
+        """
+        if self.__gui_tools_interac is None:
+            raise Exception("GUI tools not available")
+        gui_tool_ack: str = self.__gui_tools_interac.parse_serial_data(data)
+        if gui_tool_ack: # GUI tools command data
+            if self.__serial is None:
+                raise Exception("Serial not available")
+            self.__serial.write(gui_tool_ack)
+            return
+        
+
+    def add_module(self, module, callback=None) -> bool:
+        if isinstance(module, Serial):
+            self.__serial = module
+            return True
+        elif isinstance(module, GuiToolsInteraction):
+            self.__gui_tools_interac = module
+            return True
+        return False
+
+
+    def config_main(self) -> None:
+        """Read serial data, parse and upload to the cloud
+        """
+        if self.__serial is None:
+            raise Exception("Serial not available")
+        while 1:
+            # Read uart data
+            read_byte = self.__serial.read(nbytes=1024, timeout=100)
+            if read_byte:
+                try:
+                    self.__config_data(read_byte)
+                except Exception as e:
+                    sys.print_exception(e) # type: ignore
+                    log.error("Parse uart data error: %s" % e)
 
 
 class GuiToolsInteraction():
-    def __init__(self):
-        self.__query_command = {
+    def __init__(self) -> None:
+        self.__query_command: dict[int, str] = {
             0: "get_imei",
             1: "get_number",
             2: "get_csq",
             3: "get_cur_config",
             4: "get_iccid",
         }
-        self.__basic_setting_command = {
+        self.__basic_setting_command: dict[int, str] = {
             255: "restart",
             50: "set_fota",
             51: "set_sota",
@@ -467,16 +504,31 @@ class GuiToolsInteraction():
             return {"code": code, "status": 0}
 
     def __exec_command_code(self, cmd_code, data=None):
+        """Executes a command based on the provided command code and optional data.
+        
+        Checks if the given `cmd_code` exists in either the query command or basic setting command dictionaries.
+        If found, it dynamically constructs the method name, retrieves the corresponding method, and executes it with the
+        provided `cmd_code` and `data`. If the command code is not found in either dictionary, or if an exception occurs
+        during execution, an error is logged and an error response is returned.
+        
+        Args:
+            cmd_code (str): The command code to execute.
+            data (optional): Additional data to pass to the command handler.
+        Returns:
+            Any: The result of the executed command handler, or an error dictionary if the command code is invalid or an exception occurs.
+        """
+        
+        ret = None
         if cmd_code in self.__query_command.keys():
             try:
-                cmd = "__" + self.__query_command.get(cmd_code)
+                cmd = "__" + self.__query_command.get(cmd_code, "")
                 func = getattr(self, cmd)
                 ret = func(cmd_code, data)
             except Exception as e:
                 log.error("search_command_func_code_list:", e)
         elif cmd_code in self.__basic_setting_command.keys():
             try:
-                cmd = "__" + self.__basic_setting_command.get(cmd_code)
+                cmd = "__" + self.__basic_setting_command.get(cmd_code, "")
                 func = getattr(self, cmd)
                 ret = func(cmd_code, data)
             except Exception as e:
@@ -486,7 +538,7 @@ class GuiToolsInteraction():
             ret = {"code": cmd_code, "status": 0, "error": "Command code error"}
         return ret
 
-    def parse_serial_data(self, serial_data):
+    def parse_serial_data(self, serial_data) -> str:
         """Parse uart data in the format specified by the GUI
 
         Args:

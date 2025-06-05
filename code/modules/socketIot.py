@@ -22,7 +22,10 @@
 @date      :2022-08-05 10:48:43
 @copyright :Copyright (c) 2022
 """
-import usys
+try:
+    import usys # type: ignore
+except ImportError:
+    import sys as usys
 import utime
 import _thread
 import usocket
@@ -66,12 +69,12 @@ class Socket(CloudObservable):
         """
         if self.__domain is not None:
             if self.__port is None:
-                self.__port == 8883 if self.__domain.startswith("https://") else 1883
+                self.__port = 8883 if self.__domain.startswith("https://") else 1883
             try:
                 addr_info = usocket.getaddrinfo(self.__domain, self.__port)
                 self.__ip = addr_info[0][-1][0]
             except Exception as e:
-                usys.print_exception(e)
+                usys.print_exception(e) # type: ignore
                 raise ValueError("Domain %s DNS parsing error. %s" % (self.__domain, str(e)))
         self.__addr = (self.__ip, self.__port)
 
@@ -102,10 +105,16 @@ class Socket(CloudObservable):
             try:
                 self.__socket = usocket.socket(*self.__socket_args)
                 if self.__protocol == "TCP":
+                    if (
+                        self.__addr is None
+                        or not isinstance(self.__addr, tuple)
+                        or None in self.__addr
+                    ):
+                        raise ValueError("Socket address is not properly initialized: %s" % str(self.__addr))
                     self.__socket.connect(self.__addr)
                 return True
             except Exception as e:
-                usys.print_exception(e)
+                usys.print_exception(e) # type: ignore
 
         return False
 
@@ -122,7 +131,7 @@ class Socket(CloudObservable):
                 self.__socket = None
                 return True
             except Exception as e:
-                usys.print_exception(e)
+                usys.print_exception(e) # type: ignore
                 return False
         else:
             return True
@@ -163,7 +172,7 @@ class Socket(CloudObservable):
                 if write_data_num == len(data):
                     return True
             except Exception as e:
-                usys.print_exception(e)
+                usys.print_exception(e) # type: ignore
 
         return False
     
@@ -189,13 +198,17 @@ class Socket(CloudObservable):
                 logger.error("tcp disconnect falied. %s" % e)
             try:
                 if self.__listen_thread_id is not None:
-                    _thread.stop_thread(self.__listen_thread_id)
+                    _thread.stop_thread(self.__listen_thread_id) # type: ignore
             except Exception as e:
                 logger.error("stop listen thread falied. %s" % e)
 
         # FIX: when connect failed we return False instead of raise Exception for another try(self.init when post data.)
         if not self.__connect():
             return False
+        
+        if self.__socket is None:
+            logger.error("socket connect failed.")
+            raise Exception("socket connect failed")
 
         if self.__keep_alive != 0:
             try:
@@ -240,21 +253,21 @@ class Socket(CloudObservable):
                 elif self.__protocol == "UDP":
                     _status = 0
             except Exception as e:
-                usys.print_exception(e)
+                usys.print_exception(e) # type: ignore
         return _status
 
     def through_post_data(self, data, topic_id):
         return self.__send(data)
 
     def post_data(self, data):
-        pass
+        return False
 
     def ota_request(self):
-        pass
+        return False
 
     def ota_action(self, action, module=None):
-        pass
+        return False
 
     def device_report(self):
-        pass
+        return False
 
