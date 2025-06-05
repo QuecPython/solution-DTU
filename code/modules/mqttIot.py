@@ -84,10 +84,28 @@ class MqttIot(CloudObservable):
             self.sub_topic_dict = sub_topic
 
     def __subscribe_topic(self):
-        for id, usr_sub_topic in self.sub_topic_dict.items():
-            if self.__mqtt is not None and self.__mqtt.subscribe(usr_sub_topic, qos=0) == -1:
-                log.error("Topic [%s] Subscribe Falied." % usr_sub_topic)
+        """Subscribe to all configured topics
+        
+        Returns:
+            bool: True if all subscriptions succeeded, False if any failed
+        """
+        if self.__mqtt is None:
+            log.error("MQTT client is not initialized")
+            return False
 
+        success = True
+        for id, usr_sub_topic in self.sub_topic_dict.items():
+            try:
+                result = self.__mqtt.subscribe(usr_sub_topic, qos=0)
+                if result == -1:
+                    log.error("Topic [%s] Subscribe Failed." % usr_sub_topic)
+                    success = False
+                else:
+                    log.debug("Successfully subscribed to topic: %s" % usr_sub_topic)
+            except Exception as e:
+                log.error("Error subscribing to topic [%s]: %s" % (usr_sub_topic, str(e)))
+                success = False
+        return success
 
     def __sub_cb(self, topic, data):
         """mqtt subscribe topic callback
@@ -97,7 +115,7 @@ class MqttIot(CloudObservable):
             data: response dictionary info
         """
         topic = topic.decode()
-
+        log.debug("__sub_cb topic: {} data {}".format(topic, data))
         try:
             self.notifyObservers(self, *("raw_data", {"topic":topic, "data":data} ) )
         except Exception as e:
@@ -107,7 +125,11 @@ class MqttIot(CloudObservable):
         if self.__mqtt is not None:
             while True:
                 self.__mqtt.wait_msg()
-                utime.sleep_ms(100)
+                log.debug("listening...")
+                log.debug("MQTT conn status: {}".format(self.__mqtt.get_mqttsta()))
+                utime.sleep(0.1)
+        else:
+            log.error("Trying to listen when MQTT is uninitialized")
 
     def __start_listen(self):
         """Start a new thread to listen to the cloud publish 
@@ -117,14 +139,14 @@ class MqttIot(CloudObservable):
     def init(self, enforce=False) -> bool:
         """mqtt connect and subscribe topic
 
-        Parameter:
-            enforce:
-                True: enfore cloud connect and subscribe topic
-                False: check connect status, return True if cloud connected
+            Parameter:
+                enforce:
+                    True: enforce cloud connect and subscribe topic
+                    False: check connect status, return True if cloud connected
 
-        Return:
-            Ture: Success
-            False: Failed
+            Return:
+                True: Success
+                False: Failed
         """
         log.debug("[init start] enforce: %s" % enforce)
         if enforce is False and self.__mqtt is not None:
@@ -142,11 +164,15 @@ class MqttIot(CloudObservable):
             self.__mqtt.connect(clean_session=self.__clean_session)
         except Exception as e:
             log.error("mqtt connect error: %s" % e)
-        else:
-            self.__mqtt.set_callback(self.__sub_cb)
-            self.__subscribe_topic()
-            self.__start_listen()
-            log.debug("mqtt start.")
+        self.__mqtt.set_callback(self.__sub_cb)
+
+        if not self.__subscribe_topic():
+            log.error("Failed to subscribe to one or more topics")
+            self.close()
+            return False
+
+        self.__start_listen()
+        log.debug("mqtt start.")
 
         log.debug("self.get_status(): %s" % self.get_status())
         if self.get_status():

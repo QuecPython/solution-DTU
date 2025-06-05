@@ -1,7 +1,6 @@
 {
     "system_config": {
         "cloud": "mqtt_private_cloud",
-        "cloud_secondary": "mqtt_private_cloud",
         "usr_config": false,
         "base_function": {
             "logger": true,

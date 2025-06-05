@@ -38,7 +38,7 @@ from usr.settings import settings
 from usr.modules.serial import Serial
 from usr.modules.history import History
 from usr.modules.logging import getLogger
-from usr.dtu_transaction import DownlinkTransaction, OtaTransaction, UplinkTransaction, GuiToolsInteraction
+from usr.dtu_transaction import DownlinkTransaction, OtaTransaction, UplinkTransaction, GuiToolsInteraction, ConfigTransaction
 from usr.modules.remote import RemotePublish, RemoteSubscribe
 from usr.settings import PROJECT_NAME, PROJECT_VERSION, DEVICE_FIRMWARE_NAME, DEVICE_FIRMWARE_VERSION
 
@@ -195,25 +195,19 @@ class Dtu(Singleton):
         cloud = self.__cloud_init(settings.current_settings["system_config"]["cloud"])
         if cloud is None:
             raise Exception("Cloud init failed")
-        cloud2 = self.__cloud_init(settings.current_settings["system_config"]["cloud_secondary"])
-        if cloud2 is None:
-            raise Exception("Cloud (secondary) init failed")
         # GuiToolsInteraction initialization
         gui_tool_inter = GuiToolsInteraction()
         # UplinkTransaction initialization
         up_transaction = UplinkTransaction()
         up_transaction.add_module(serial)
-        up_transaction.add_module(gui_tool_inter)
         
-        up_transaction2 = UplinkTransaction()
-        up_transaction2.add_module(serial2)
-        up_transaction2.add_module(gui_tool_inter)
+        config_transaction = ConfigTransaction()
+        config_transaction.add_module(serial2)
+        config_transaction.add_module(gui_tool_inter)
         # DownlinkTransaction initialization
         down_transaction = DownlinkTransaction()
         down_transaction.add_module(serial)
         
-        down_transaction2 = DownlinkTransaction()
-        down_transaction2.add_module(serial2)
         # OtaTransaction initialization
         ota_transaction = OtaTransaction()
 
@@ -221,14 +215,12 @@ class Dtu(Singleton):
         remote_sub = RemoteSubscribe()
         remote_sub.add_executor(down_transaction, 1)
         remote_sub.add_executor(ota_transaction, 2)
-        remote_sub.add_executor(down_transaction2, 3)
         cloud.addObserver(remote_sub)
 
         # RemotePublish initialization
         remote_pub = RemotePublish()
         remote_pub.add_cloud(cloud)
         up_transaction.add_module(remote_pub)
-        up_transaction2.add_module(remote_pub)
         ota_transaction.add_module(remote_pub)
 
         # History initialization
@@ -236,10 +228,8 @@ class Dtu(Singleton):
             history = History()
             remote_pub.addObserver(history)
             up_transaction.add_module(history)
-            up_transaction2.add_module(history)
             # Send history data to the cloud after being powered on
             up_transaction.report_history()
-            up_transaction2.report_history()
             
         # Send module release information to cloud. After receiving this information, 
         # the cloud server checks whether to upgrade modules
@@ -250,7 +240,7 @@ class Dtu(Singleton):
         # Start uplink transaction
         try:
             _thread.start_new_thread(up_transaction.uplink_main, ())
-            _thread.start_new_thread(up_transaction2.uplink_main, ())
+            _thread.start_new_thread(config_transaction.config_main, ())
         except:
             raise self.Error(self.error_map[self.ErrCode.ESYS]) # FIXME: how does it work? # type: ignore
 

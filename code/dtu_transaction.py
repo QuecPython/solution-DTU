@@ -72,7 +72,7 @@ class DownlinkTransaction(Singleton):
         cloud_config = settings.current_settings.get(cloud_name + "_config")
         if cloud_config == None:
             raise Exception("Cloud config parameter error")
-        for k, v in cloud_config.get("subscribe").items():
+        for k, v in cloud_config.get("subscribe", {}).items():
             if topic == v:
                 return k
 
@@ -107,6 +107,7 @@ class DownlinkTransaction(Singleton):
             packed_data = data
         else:
             packed_data = "%s,%s,%s".encode('utf-8') % (str(msg_id), str(len(data)), data)
+        log.debug("Got data: {}".format(packed_data))
         # Send packed data through serial
         if self.__serial is None:
             raise Exception("Serial not available")
@@ -260,14 +261,6 @@ class UplinkTransaction(Singleton):
         Args:
             data (bytes): data read from uart
         """
-        if self.__gui_tools_interac is None:
-            raise Exception("GUI tools not available")
-        gui_tool_ack = self.__gui_tools_interac.parse_serial_data(data)
-        if gui_tool_ack: # GUI tools command data
-            if self.__serial is None:
-                raise Exception("Serial not available")
-            self.__serial.write(gui_tool_ack)
-            return
 
         if settings.current_settings["system_config"]["cloud"] == "tcp_private_cloud":
             self.__remote_post_data(data=data)
@@ -318,6 +311,7 @@ class UplinkTransaction(Singleton):
     def uplink_main(self):
         """Read serial data, parse and upload to the cloud
         """
+        log.debug("Starting uplink loop")
         if self.__serial is None:
             raise Exception("Serial not available")
         while 1:
@@ -329,6 +323,7 @@ class UplinkTransaction(Singleton):
                 except Exception as e:
                     sys.print_exception(e) # type: ignore
                     log.error("Parse uart data error: %s" % e)
+        log.debug("Exited uplink loop")
   
     def report_history(self) -> bool:
         """Report history data to cloud
@@ -358,6 +353,54 @@ class UplinkTransaction(Singleton):
 
         return res
 
+class ConfigTransaction(Singleton):
+    """Data uplink: read data from the serial and apply configuration
+    """
+    def __init__(self) -> None:
+        self.__serial: Serial | None = None
+        self.__gui_tools_interac: GuiToolsInteraction | None = None
+        
+
+    def __config_data(self, data) -> None:
+        """Parsing uart data, check if it is a configuration command
+
+        Args:
+            data (bytes): data read from uart
+        """
+        if self.__gui_tools_interac is None:
+            raise Exception("GUI tools not available")
+        gui_tool_ack: str = self.__gui_tools_interac.parse_serial_data(data)
+        if gui_tool_ack: # GUI tools command data
+            if self.__serial is None:
+                raise Exception("Serial not available")
+            self.__serial.write(gui_tool_ack)
+            return
+        
+
+    def add_module(self, module, callback=None) -> bool:
+        if isinstance(module, Serial):
+            self.__serial = module
+            return True
+        elif isinstance(module, GuiToolsInteraction):
+            self.__gui_tools_interac = module
+            return True
+        return False
+
+
+    def config_main(self) -> None:
+        """Read serial data, parse and upload to the cloud
+        """
+        if self.__serial is None:
+            raise Exception("Serial not available")
+        while 1:
+            # Read uart data
+            read_byte = self.__serial.read(nbytes=1024, timeout=100)
+            if read_byte:
+                try:
+                    self.__config_data(read_byte)
+                except Exception as e:
+                    sys.print_exception(e) # type: ignore
+                    log.error("Parse uart data error: %s" % e)
 
 
 class GuiToolsInteraction():
