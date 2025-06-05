@@ -71,19 +71,19 @@
         "keep_alive": 5
     },
     "mqtt_private_cloud_config": {
-        "server": "dbb-rmqx.iwosai.com",
-        "port": "4883",
+        "server": "test.mosquitto.org",
+        "port": "1883",
         "client_id": "2ff01e56-e02a-4919-935d-de1f2677b4f9",
-        "username": "test",
-        "password": "NvEpDpATJ8Zyyqjt",
+        "username": "",
+        "password": "",
         "clean_session": false,
         "qos": "0",
-        "keep_alive": 300,
+        "keep_alive": 100,
         "subscribe": {
-            "0": "oc/devices/625132b420cfa22b94c54613_dtu_device1_id/sys/messages/down"
+            "0": "/quedtu123_test/dev1/down"
         },
         "publish": {
-            "0": "oc/devices/625132b420cfa22b94c54613_dtu_device1_id/sys/messages/up"
+            "0": "/quedtu123_test/dev1/up"
         }
     },
     "uart_config": {
