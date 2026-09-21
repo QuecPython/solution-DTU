@@ -1,6 +1,6 @@
 # QuecPython DTU 解决方案
 
-中文 | [English](readme.md)
+中文 | [English](README.md)
 
 欢迎来到 QuecPython DTU 解决方案仓库！本仓库提供了一个全面的解决方案，用于使用 QuecPython DTU 设备应用程序。
 
