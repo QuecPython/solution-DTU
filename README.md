@@ -1,6 +1,6 @@
 # QuecPython DTU Solution
 
-[中文](readme_zh.md) | English
+[中文](README.zh.md) | English
 
 Welcome to the QuecPython DTU Solution repository! This repository provides a comprehensive solution for developing DTU device applications using QuecPython.
 
